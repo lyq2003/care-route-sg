@@ -8,35 +8,49 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* CareRoute Color Palette - Elderly Friendly */
+    --background: 43 60% 96%; /* Beige #f6f5e9 */
+    --foreground: 210 11% 15%; /* Dark grey for high contrast */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%; /* Pure white for cards */
+    --card-foreground: 210 11% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 11% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Light blue primary - calm and soothing */
+    --primary: 195 35% 85%; /* Light blue #d0e3e8 */
+    --primary-foreground: 210 11% 15%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Muted green secondary - gentle and safe */
+    --secondary: 130 15% 55%; /* Muted green #8aa88b */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Soft grey for muted elements */
+    --muted: 210 20% 91%; /* Soft grey #e8ebed */
+    --muted-foreground: 210 11% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent using primary blue */
+    --accent: 195 35% 85%;
+    --accent-foreground: 210 11% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - red for urgent actions */
+    --destructive: 0 70% 65%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success - using muted green */
+    --success: 130 15% 55%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Warning - warm orange */
+    --warning: 35 85% 70%;
+    --warning-foreground: 210 11% 15%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 195 35% 75%;
+
+    --radius: 1rem; /* Larger radius for friendlier feel */
 
     --sidebar-background: 0 0% 98%;
 

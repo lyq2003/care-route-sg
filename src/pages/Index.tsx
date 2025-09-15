@@ -1,14 +1,112 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import WelcomeScreen from "@/components/WelcomeScreen";
+import SignInScreen from "@/components/SignInScreen";
+import SignUpScreen from "@/components/SignUpScreen";
+import ElderlyDashboard from "@/components/ElderlyDashboard";
+import RequestHelpScreen from "@/components/RequestHelpScreen";
+import { useToast } from "@/hooks/use-toast";
+
+type Screen = "welcome" | "signin" | "signup" | "dashboard" | "request-help";
+
+interface User {
+  name: string;
+  userType: string;
+  phone: string;
+}
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
+  const [user, setUser] = useState<User | null>(null);
+  const { toast } = useToast();
+
+  const handleSignIn = (phone: string, password: string) => {
+    // Simulate sign in - in real app, this would call an API
+    const mockUser = {
+      name: "Margaret Chen",
+      userType: "elderly",
+      phone: phone,
+    };
+    setUser(mockUser);
+    setCurrentScreen("dashboard");
+    toast({
+      title: "Welcome back!",
+      description: "You have successfully signed in.",
+    });
+  };
+
+  const handleSignUp = (userType: string, userData: any) => {
+    // Simulate sign up - in real app, this would call an API
+    const newUser = {
+      name: userData.fullName,
+      userType: userType,
+      phone: userData.phone,
+    };
+    setUser(newUser);
+    setCurrentScreen("dashboard");
+    toast({
+      title: "Account created!",
+      description: "Welcome to CareRoute. Your account has been set up successfully.",
+    });
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    setCurrentScreen("welcome");
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out.",
+    });
+  };
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case "welcome":
+        return (
+          <WelcomeScreen 
+            onGetStarted={() => setCurrentScreen("signin")} 
+          />
+        );
+      
+      case "signin":
+        return (
+          <SignInScreen 
+            onBack={() => setCurrentScreen("welcome")}
+            onSignIn={handleSignIn}
+            onGoToSignUp={() => setCurrentScreen("signup")}
+          />
+        );
+      
+      case "signup":
+        return (
+          <SignUpScreen 
+            onBack={() => setCurrentScreen("signin")}
+            onSignUpComplete={handleSignUp}
+          />
+        );
+      
+      case "dashboard":
+        return user ? (
+          <ElderlyDashboard 
+            user={user}
+            onRequestHelp={() => setCurrentScreen("request-help")}
+            onSmartRoutes={() => toast({ title: "Smart Routes", description: "Coming soon!" })}
+            onSignOut={handleSignOut}
+          />
+        ) : null;
+      
+      case "request-help":
+        return (
+          <RequestHelpScreen 
+            onBack={() => setCurrentScreen("dashboard")}
+          />
+        );
+      
+      default:
+        return <WelcomeScreen onGetStarted={() => setCurrentScreen("signin")} />;
+    }
+  };
+
+  return <div className="min-h-screen">{renderScreen()}</div>;
 };
 
 export default Index;
