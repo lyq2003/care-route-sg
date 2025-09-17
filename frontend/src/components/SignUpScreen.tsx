@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, User, Heart, HandHeart, Shield } from "lucide-react";
+import { useNavigate  } from "react-router-dom";
+import { axiosInstance } from "./axios";
 
 interface SignUpScreenProps {
   onBack: () => void;
@@ -15,11 +17,13 @@ type UserType = "elderly" | "caregiver" | "volunteer" | "admin" | null;
 export default function SignUpScreen({ onBack, onSignUpComplete }: SignUpScreenProps) {
   const [step, setStep] = useState<"role" | "details">("role");
   const [selectedRole, setSelectedRole] = useState<UserType>(null);
+  const [error,setError] = useState(null);
   const [formData, setFormData] = useState({
     fullName: "",
-    phone: "",
+    email: "",
     password: "",
   });
+  const navigate = useNavigate();
 
   const userTypes = [
     {
@@ -57,13 +61,29 @@ export default function SignUpScreen({ onBack, onSignUpComplete }: SignUpScreenP
     setStep("details");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedRole && formData.fullName && formData.phone && formData.password) {
-      onSignUpComplete(selectedRole, formData);
-    }
-  };
-
+        setError(null);
+        try{
+          // Logic for checking with backend to sign up
+          const response = await axiosInstance.post("/auth/signup",
+          {
+            name: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            role: selectedRole
+          },
+          { withCredentials: true}
+          );
+          console.log("Sigup response:", response.data);
+    
+          // CHANGE TO REDIRECT TO HOME SCREEN ONCE IT IS DONE
+          navigate('/login');
+        } catch (err: any) {
+          console.error("Signup failed:", err);
+          setError(err.response?.data?.message || "Failed to signup, Please try again.");
+        }
+      };
   if (step === "role") {
     return (
       <div className="min-h-screen bg-background px-6 py-8">
@@ -154,15 +174,15 @@ export default function SignUpScreen({ onBack, onSignUpComplete }: SignUpScreenP
 
         <div className="space-y-2">
           <Label htmlFor="phone" className="text-lg font-medium">
-            Phone Number
+            Email
           </Label>
           <Input
             id="phone"
             type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             className="h-14 text-lg"
-            placeholder="+65 xxxx xxxx"
+            placeholder="Enter your email"
             required
           />
         </div>

@@ -1,9 +1,12 @@
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, MapPin, User, Heart, HandHeart, Shield } from "lucide-react";
+import { useNavigate  } from "react-router-dom";
+import { axiosInstance } from "./axios";
 
 interface SignInScreenProps {
   onBack: () => void;
@@ -13,22 +16,42 @@ interface SignInScreenProps {
 
 export default function SignInScreen({ onBack, onSignIn, onGoToSignUp }: SignInScreenProps) {
   const [formData, setFormData] = useState({
-    phone: "",
+    email: "",
     password: "",
   });
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
+  const [error,setError] = useState(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.phone && formData.password) {
+    setError(null);
+    try{
+      // Logic for checking with backend to see if password is correct
+      const response = await axiosInstance.post("/auth/login",
+      {
+        email: formData.email,
+        password: formData.password,
+      },
+      { withCredentials: true}
+      );
+      console.log("Login response:", response.data);
+
+      // CHANGE TO REDIRECT TO HOME SCREEN ONCE IT IS DONE
       setShowRoleSelector(true);
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(err.response?.data?.message || "Failed to login, Please try again.");
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
-    onSignIn(formData.phone, formData.password);
+    onSignIn(formData.email, formData.password);
   };
 
   const roleOptions = [
@@ -64,15 +87,15 @@ export default function SignInScreen({ onBack, onSignIn, onGoToSignUp }: SignInS
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-lg font-medium">
-                Phone Number
+                Email 
               </Label>
               <Input
                 id="phone"
                 type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="h-14 text-lg"
-                placeholder="+65 xxxx xxxx"
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -107,7 +130,7 @@ export default function SignInScreen({ onBack, onSignIn, onGoToSignUp }: SignInS
               </div>
             </div>
             
-            <Button variant="outline" size="lg" className="w-full mt-4 bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
+            <Button variant="outline" size="lg" onClick={handleGoogleLogin} className="w-full mt-4 bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
