@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SignupPage from "./components/SignUpScreen";
 import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
+import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -28,7 +29,6 @@ const App = () => (
             path='/login'
             element={
               <SigninPage
-                onBack={() => window.history.back()}
                 onSignIn={(credentials) => {
                   // TODO: Implement sign-in logic here
                   console.log('Sign in with', credentials);
@@ -51,11 +51,12 @@ const App = () => (
               />
             }
           />
+          <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 
           <Route element={<PrivateRoute />}>
             <Route
-              path="/elderly_home"
+              path="/elderly_dashboard"
               element={
                 <ElderlyDashboard
                   user={{ name: "John Doe", userType: "elderly", phone: "12345678" }}

@@ -31,8 +31,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: false, //(This cause cookies to be sent over HTTPS)process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 86400000, // 24 hours
     httpOnly: true,
+    samesite: 'none',
   }
 }));
 

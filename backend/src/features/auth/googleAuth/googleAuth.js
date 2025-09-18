@@ -7,7 +7,7 @@ exports.handleOauthCallback = async(req, res) =>{
         const user= req.user;
         const{ data:profile,error }=await supabase
         .from('user_profiles')
-        .select('username,avatar_url')
+        .select('username,role')
         .eq('user_id',user.id)
         .single();
         
@@ -19,7 +19,7 @@ exports.handleOauthCallback = async(req, res) =>{
         req.session.user ={ 
             ...user,
             username:profile?.username||null,
-            avatar_url:profile?.avatar_url||null,
+            role:profile?.role||null,
             online: true,
         };
         // save session
@@ -41,9 +41,9 @@ exports.handleOauthCallback = async(req, res) =>{
 
             // Check if this is a new user and redirect accordingly
             if (req.user.isNewUser) {
-                res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=true` || 'http://localhost:5173/auth/success?newUser=true');
+                res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=true` || 'http://localhost:3000/auth/success?newUser=true');
             } else {
-                res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=false` || 'http://localhost:5173/auth/success?newUser=false');
+                res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=false&role=${profile?.role}` || 'http://localhost:3000/auth/success?newUser=false');
             }
         });
     }catch (err){

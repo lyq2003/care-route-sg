@@ -16,7 +16,7 @@ exports.login = async (req,res)=>{
         });
 
         if (error) {
-            console.error("Signin error:", err);
+            console.error("Signin error:", error);
             return res.status(401).json({ message: error.message });
         }
 
@@ -32,39 +32,40 @@ exports.login = async (req,res)=>{
         if (profileError) console.warn("Profile not found:", profileError);
         else profile = profileData;
 
+        
         // Set session data
-        req.session.user = {
-        ...user,
-        username: profile?.username || null,
-        avatar_url: profile?.avatar_url || null,
-        role: profile?.role || "user",
-        online: true,
+        req.session.user ={ 
+            ...user,
+            username:profile?.username||null,
+            role:profile?.role||null,
+            online: true,
         };
+
 
         // Save session and update DB
         req.session.save(async (err) => {
-        if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ message: "Failed to create session" });
-        }
+            if (err) {
+                console.error("Session save error:", err);
+                return res.status(500).json({ message: "Failed to create session" });
+            }
 
-        // Update online status in DB
-        const { error: updateError } = await supabase
-            .from("user_profiles")
-            .update({ online: true })
-            .eq("user_id", user.id);
+            // Update online status in DB
+            const { error: updateError } = await supabase
+                .from("user_profiles")
+                .update({ online: true })
+                .eq("user_id", user.id);
 
-        if (updateError) {
-            console.error("Error updating user online status:", updateError);
-        }
-        
-        // CHange the redirect URL after making home page
-        return res.status(200).json({
-            message: "Login successful",
-            user: data.user,
-            session: data.session,
-            redirectUrl: `${process.env.CLIENT_URL}`
-        });
+            if (updateError) {
+                console.error("Error updating user online status:", updateError);
+            }
+
+            // After successful login 
+            return res.status(200).json({
+                message: "Login successful",
+                user: data.user,
+                session: data.session,
+                redirectUrl: `${process.env.CLIENT_URL}/auth/success?newUser=false&role=${profile?.role}`
+            });
         });
     } catch (err) {
     console.error("Login error:", err);

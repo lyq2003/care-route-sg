@@ -9,12 +9,13 @@ function AuthSuccess(){
     const { setUser } = useContext(AuthContext);
     const [searchParams] = useSearchParams();
     const isNewUser=searchParams.get('newUser') === 'true';
+    const role=searchParams.get('role');
     // Socket
     const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
     const [isReady,setIsReady] = useState(false);
 
     useEffect(() => {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/users/profile`, {
         credentials: 'include', // sends the cookie automatically
       })
       .then(res => {
@@ -53,13 +54,17 @@ function AuthSuccess(){
     if(isReady){
         console.log({ authUser })
 
-
+        // Change the /roles after the page is created?
         // Use a small delay to ensure state is updated before navigation
         setTimeout(() => {
             console.log('AuthSuccess: Navigating to /home');
             if(isNewUser){
-              navigate('/profile', {replace:true});
-            }else{
+              navigate('/roles', {replace:true});
+            }
+            else if(role === 'elderly'){
+              navigate('/elderly_dashboard', {replace: true});
+            }
+            else{
               navigate('/home', { replace: true });
             }
         }, 100);

@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Heart, MapPin, Users, Shield } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useNavigate  } from "react-router-dom";
 
-interface WelcomeScreenProps {
-  onGetStarted: () => void;
-}
 
-export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
+export default function WelcomeScreen() {
+  const navigate = useNavigate();
+  const onGetStarted = () =>{
+      navigate('/login');
+  }
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
