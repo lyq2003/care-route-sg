@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,21 +34,11 @@ import {
   Brain,
   Accessibility
 } from "lucide-react";
+import { useNavigate  } from "react-router-dom";
+import { axiosInstance } from "./axios";
 
-interface User {
-  name: string;
-  userType: string;
-  phone: string;
-}
-
-interface ElderlyDashboardProps {
-  user: User;
-  onRequestHelp: () => void;
-  onSmartRoutes: () => void;
-  onSignOut: () => void;
-}
-
-export default function ElderlyDashboard({ user, onRequestHelp, onSmartRoutes, onSignOut }: ElderlyDashboardProps) {
+export default function ElderlyDashboard() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("home");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
@@ -63,9 +53,8 @@ export default function ElderlyDashboard({ user, onRequestHelp, onSmartRoutes, o
   });
   const [showRouteResults, setShowRouteResults] = useState(false);
   const [profileData, setProfileData] = useState({
-    fullName: user.name,
-    phone: user.phone,
-    email: "margaret.chen@email.com",
+    fullName: "",
+    email: "",
     language: "English",
     voiceAssistance: false,
     accessibilityNeeds: {
@@ -117,7 +106,53 @@ export default function ElderlyDashboard({ user, onRequestHelp, onSmartRoutes, o
       setShowVolunteerMatch(true);
     }
   };
+  useEffect(() =>{
+    const fetchProfile = async()=>{
+      try{
+        const response = await axiosInstance.get('/profile/getId',
+          { withCredentials: true }
+        );
+        const data = response.data.profile; 
 
+        setProfileData({
+          fullName: data.username || "",
+          email: data.email || "",
+          language: data.language || "English",  // Default to "English" if not available
+          voiceAssistance: data.voiceAssistance || false,
+          accessibilityNeeds: {
+            wheelchair: data.accessibilityNeeds?.wheelchair || false,
+            visual: data.accessibilityNeeds?.visual || false,
+            hearing: data.accessibilityNeeds?.hearing || false,
+            mobility: data.accessibilityNeeds?.mobility || true,  // Default to true if not available
+            cognitive: data.accessibilityNeeds?.cognitive || false
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+    fetchProfile();
+    }, []);
+    const onSignOut = async () => {
+      try{
+        await axiosInstance.post(`/auth/logout`, {} ,{
+          withCredentials: true,
+        });
+        window.location.href = '/login'; // Force full refresh
+        } catch(err){
+          console.error('Logout failed:', err);
+          alert('Logout failed. Please try again.');
+        }
+    }
+
+  // to do soon enough
+  const onRequestHelp = () =>{
+    
+  }
+
+  const onSmartRoutes = ()=>{}
+
+  
   const handleRouteSearch = () => {
     if (routeFormData.from && routeFormData.to) {
       setShowRouteResults(true);
@@ -191,7 +226,7 @@ export default function ElderlyDashboard({ user, onRequestHelp, onSmartRoutes, o
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-card-foreground">
-                      Welcome, {user.name}
+                      Welcome, {profileData.fullName}
                     </h2>
                     <p className="text-muted-foreground">How can we help you today?</p>
                   </div>
@@ -614,18 +649,6 @@ export default function ElderlyDashboard({ user, onRequestHelp, onSmartRoutes, o
                     id="fullName"
                     value={profileData.fullName}
                     onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                    className="h-12 text-lg"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-lg font-medium">
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     className="h-12 text-lg"
                   />
                 </div>

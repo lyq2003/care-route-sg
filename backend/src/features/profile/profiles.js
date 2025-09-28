@@ -1,5 +1,5 @@
 const express = require('express');
-const { supabase } = require('../../config/supabase');
+const { supabase, supabaseAdmin } = require('../../config/supabase');
 const router= express.Router();
 
 async function getAllProfile(){
@@ -54,10 +54,33 @@ async function getProfileByname(username){
     if(error) throw error;
     return data;
 }
+
+async function updateRole(user_id,role){
+    console.log("The user_id and role is:", user_id,role);
+    const {data, error} = await supabaseAdmin.auth.admin
+    .updateUserById(user_id, {
+        user_metadata:{
+            role: role,
+        },
+    });
+
+    const {data1,error1} = await supabase
+    .from('user_profiles')
+    .update({role})
+    .eq('user_id',user_id)
+    .select()
+    .single();
+
+    if(error) throw error;
+    if(error1) throw error1;
+    return data1;
+}
+
 module.exports={
     createProfile,
     updateProfile,
     getprofile,
     getAllProfile,
-    getProfileByname
+    getProfileByname,
+    updateRole
 }

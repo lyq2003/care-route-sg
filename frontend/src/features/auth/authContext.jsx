@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-
+import { axiosInstance } from '../../components/axios';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children })=>{
@@ -12,7 +12,7 @@ export const AuthProvider = ({ children })=>{
         setLoading(true);
         try {
             console.log('AuthContext: Checking authentication status...');
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/profile`, { credentials: 'include' });
+            const res = await axiosInstance.get("/users/profile", { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 console.log('AuthContext: User authenticated:', data);

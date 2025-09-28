@@ -10,12 +10,11 @@ function AuthSuccess(){
     const [searchParams] = useSearchParams();
     const isNewUser=searchParams.get('newUser') === 'true';
     const role=searchParams.get('role');
-    // Socket
     const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
     const [isReady,setIsReady] = useState(false);
 
     useEffect(() => {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/users/profile`, {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
         credentials: 'include', // sends the cookie automatically
       })
       .then(res => {
@@ -27,6 +26,7 @@ function AuthSuccess(){
         console.log('AuthSuccess: User data received:', userData);
         // update user state in authcontext with fetched user data
         setUser(userData);
+        checkAuth(); 
       })
       .catch((error) => {
         // If token invalid or no token, redirect to login page

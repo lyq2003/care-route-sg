@@ -64,7 +64,7 @@ exports.login = async (req,res)=>{
                 message: "Login successful",
                 user: data.user,
                 session: data.session,
-                redirectUrl: `${process.env.CLIENT_URL}/auth/success?newUser=false&role=${profile?.role}`
+                redirectUrl: `/auth/success?newUser=false&role=${profile?.role}`
             });
         });
     } catch (err) {
@@ -85,6 +85,7 @@ exports.signup = async (req,res) => {
             password,
             options: {
                 data: {
+                    displayName: name,
                     username: name,
                     role: role
                 },

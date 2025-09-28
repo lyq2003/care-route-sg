@@ -3,8 +3,6 @@
 const supabase = require('../config/supabase');
 
 const requireAuth = async (req, res, next) => {
-  console.log("Test test");
-  console.log("Session user is:", req.session.user);
   if (!req.session.user) {
     return res.status(401).json({ error: 'Authentication required', user:null });
   }

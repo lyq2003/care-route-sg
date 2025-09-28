@@ -8,12 +8,7 @@ import { ArrowLeft, MapPin, User, Heart, HandHeart, Shield } from "lucide-react"
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 
-interface SignInScreenProps {
-  onSignIn: (phone: string, password: string) => void;
-  onGoToSignUp: () => void;
-}
-
-export default function SignInScreen({ onSignIn, onGoToSignUp }: SignInScreenProps) {
+export default function SignInScreen() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
@@ -24,8 +19,9 @@ export default function SignInScreen({ onSignIn, onGoToSignUp }: SignInScreenPro
   const [error,setError] = useState(null);
 
   const onBack = () => {
-    window.location.href = `/WelcomeScreen`;
+    navigate(`/WelcomeScreen`);
   }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -36,32 +32,12 @@ export default function SignInScreen({ onSignIn, onGoToSignUp }: SignInScreenPro
         email: formData.email,
         password: formData.password,
       },
-      { withCredentials: true}
+      { withCredentials: true }
       );
-      console.log("Login response:", response.data);
 
-      // ✅ Add detailed logging
-      console.log("Full login response:", response);
-      console.log("Response data:", response.data);
-      console.log("Response status:", response.status);
-      
-      // Check what properties exist in response.data
-      console.log("Available properties in response.data:", Object.keys(response.data));
-      
-      // Check specifically for redirectUrl
-      console.log("redirectUrl exists?", 'redirectUrl' in response.data);
-      console.log("redirectUrl value:", response.data.redirectUrl);
-
-      // CHANGE TO REDIRECT TO HOME SCREEN ONCE IT IS DONE
       // Handle the redirect response
       if (response.data.redirectUrl) {
-        // Extract URL params from the redirect URL
-          console.log("Redirecting to:", response.data.redirectUrl);
-    
-        setTimeout(() => {
-          window.location.href = response.data.redirectUrl;
-          //navigate(navigationPath, { replace: true });
-        }, 100);
+          navigate(response.data.redirectUrl);
       } else {
         // Fallback if no redirectUrl is provided
         navigate('/error');
@@ -76,9 +52,12 @@ export default function SignInScreen({ onSignIn, onGoToSignUp }: SignInScreenPro
     window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
+  const onGoToSignUp = () =>{
+    navigate('/signup');
+  }
+
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
-    onSignIn(formData.email, formData.password);
   };
 
   const roleOptions = [

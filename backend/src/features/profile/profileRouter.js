@@ -1,7 +1,7 @@
 const express = require('express');
 const profiles = require('./profiles');
 const router = express.Router();
-const authController = require('../auth/authController');
+const authController = require('../auth/normalAuth/authController');
 const { requireAuth } = require('../../middleware/auth');
 
 router.post('/create',requireAuth,async(req,res) =>{
@@ -31,6 +31,25 @@ router.put('/update',requireAuth,async(req,res) =>{
     }catch(err){
         console.error('Error updating profile', err.message);
         res.status(500).json({success:false,error:'Failed to update profile'});
+    }
+})
+
+router.put('/updateRole', requireAuth, async(req,res) =>{
+    try{
+        const user_id = req.user.id;
+        const { role } = req.body;
+
+        if(!role){
+            return res.status(400).json({
+                success:false,
+                error: 'Empty role'
+            });
+        }
+        const newRole=await profiles.updateRole(user_id,role);
+        res.status(201).json({success:true,role:newRole});
+    }catch(err){
+        console.error('Error updating role', err.message);
+        res.status(500).json({success:false,error:'Failed to update role'});
     }
 })
 
@@ -81,6 +100,7 @@ router.get('/getotherUsers', requireAuth, async(req,res) =>{
         res.status(500).json({success:false,error:'Failed to get users profile'});
     }
 }) 
+
 router.get('/',requireAuth,authController.profile);
 
 module.exports=router;

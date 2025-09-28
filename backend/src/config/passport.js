@@ -34,7 +34,7 @@ passport.use(new GoogleStrategy({
                 provider: 'google',
                 provider_id: profile.id,
                 name: profile.displayName,
-                avatar_url: profile.photos[0].value,
+                role: profile.role,
                 full_name: profile.displayName
               }
             });
@@ -58,7 +58,7 @@ passport.use(new GoogleStrategy({
           provider: 'google',
           providerId: profile.id,
           name: profile.displayName,
-          avatar: profile.photos[0].value,
+          role: profile.role,
           full_name: profile.displayName
         }
       });

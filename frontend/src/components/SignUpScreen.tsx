@@ -9,12 +9,11 @@ import { axiosInstance } from "./axios";
 
 interface SignUpScreenProps {
   onBack: () => void;
-  onSignUpComplete: (userType: string, userData: any) => void;
 }
 
 type UserType = "elderly" | "caregiver" | "volunteer" | "admin" | null;
 
-export default function SignUpScreen({ onBack, onSignUpComplete }: SignUpScreenProps) {
+export default function SignUpScreen({ onBack}: SignUpScreenProps) {
   const [step, setStep] = useState<"role" | "details">("role");
   const [selectedRole, setSelectedRole] = useState<UserType>(null);
   const [error,setError] = useState(null);
@@ -62,7 +61,7 @@ export default function SignUpScreen({ onBack, onSignUpComplete }: SignUpScreenP
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+        e.preventDefault();
         setError(null);
         try{
           // Logic for checking with backend to sign up

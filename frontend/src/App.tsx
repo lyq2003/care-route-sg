@@ -8,6 +8,7 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
+import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
 import Index from "./pages/Index";
@@ -26,31 +27,16 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path='/auth/success' element={<AuthSuccess />} />
           <Route
-            path='/login'
-            element={
-              <SigninPage
-                onSignIn={(credentials) => {
-                  // TODO: Implement sign-in logic here
-                  console.log('Sign in with', credentials);
-                }}
-                onGoToSignUp={() => {
-                  window.location.href = '/signup';
-                }}
-              />
-            }
-          />
+            path='/login' element={ <SigninPage/>} />
           <Route
             path='/signup'
             element={
               <SignupPage
                 onBack={() => window.history.back()}
-                onSignUpComplete={() => {
-                  // TODO: Implement sign-up completion logic here
-                  console.log('Sign up complete');
-                }}
               />
             }
           />
+          <Route path="roles" element={<RolesScreen />} />
           <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 
@@ -58,14 +44,10 @@ const App = () => (
             <Route
               path="/elderly_dashboard"
               element={
-                <ElderlyDashboard
-                  user={{ name: "John Doe", userType: "elderly", phone: "12345678" }}
-                  onRequestHelp={() => { /* TODO: implement help request */ }}
-                  onSmartRoutes={() => { /* TODO: implement smart routes */ }}
-                  onSignOut={() => { /* TODO: implement sign out */ }}
-                />
+                <ElderlyDashboard/>
               }
             />
+            <Route path="roles" element={<RolesScreen />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

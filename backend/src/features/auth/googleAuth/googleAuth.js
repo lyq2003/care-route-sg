@@ -40,7 +40,7 @@ exports.handleOauthCallback = async(req, res) =>{
             }
 
             // Check if this is a new user and redirect accordingly
-            if (req.user.isNewUser) {
+            if (!profile.role) {
                 res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=true` || 'http://localhost:3000/auth/success?newUser=true');
             } else {
                 res.redirect(`${process.env.CLIENT_URL}/auth/success?newUser=false&role=${profile?.role}` || 'http://localhost:3000/auth/success?newUser=false');
