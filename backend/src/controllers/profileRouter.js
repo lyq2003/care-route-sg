@@ -1,8 +1,8 @@
 const express = require('express');
-const profiles = require('./profiles');
+const profiles = require('../services/profiles');
 const router = express.Router();
-const authController = require('../auth/normalAuth/authController');
-const { requireAuth } = require('../../middleware/auth');
+const authController = require('../services/auth/auth_service');
+const { requireAuth } = require('../middleware/auth');
 
 router.post('/create',requireAuth,async(req,res) =>{
     try{

@@ -1,4 +1,4 @@
-const { supabaseAdmin } = require('../../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 
 class User {
     static async getAll() {

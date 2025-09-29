@@ -1,7 +1,7 @@
 // routes/auth.js
 const express = require('express');
-const authController = require('./normalAuth/authController');
-const googleAuth = require('./googleAuth/googleAuth')
+const authController = require('../services/auth/auth_service');
+const googleAuth = require('../services/auth/googleAuth')
 const passport = require('passport');
 const router = express.Router();
 // Google OAuth routes
