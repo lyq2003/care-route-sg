@@ -57,7 +57,10 @@ function AuthSuccess(){
         // Change the /roles after the page is created?
         // Use a small delay to ensure state is updated before navigation
         setTimeout(() => {
-            console.log('AuthSuccess: Navigating based on role:', role);
+            console.log('AuthSuccess: Navigating to /home');
+            if(isNewUser){
+              navigate('/roles', {replace:true});
+            }
             if (isNewUser) {
               navigate('/roles', { replace: true });
             } else if(role) {
