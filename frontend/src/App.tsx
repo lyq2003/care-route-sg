@@ -8,6 +8,7 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
+import AdminDashboard from "./components/AdminDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -24,7 +25,7 @@ const App = () => (
       <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<WelcomeScreen />} />
           <Route path='/auth/success' element={<AuthSuccess />} />
           <Route
             path='/login' element={ <SigninPage/>} />
@@ -45,6 +46,12 @@ const App = () => (
               path="/elderly_dashboard"
               element={
                 <ElderlyDashboard/>
+              }
+            />
+            <Route
+              path="/admin_dashboard"
+              element={
+                <AdminDashboard/>
               }
             />
             <Route path="roles" element={<RolesScreen />} />

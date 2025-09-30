@@ -57,15 +57,24 @@ function AuthSuccess(){
         // Change the /roles after the page is created?
         // Use a small delay to ensure state is updated before navigation
         setTimeout(() => {
-            console.log('AuthSuccess: Navigating to /home');
+            console.log('AuthSuccess: Navigating based on role:', role);
             if(isNewUser){
               navigate('/roles', {replace:true});
             }
             else if(role === 'elderly'){
               navigate('/elderly_dashboard', {replace: true});
             }
+            else if(role === 'admin'){
+              navigate('/admin_dashboard', {replace: true});
+            }
+            else if(role === 'volunteer'){
+              navigate('/volunteer_dashboard', {replace: true});
+            }
+            else if(role === 'caregiver'){
+              navigate('/caregiver_dashboard', {replace: true});
+            }
             else{
-              navigate('/home', { replace: true });
+              navigate('/roles', { replace: true });
             }
         }, 100);
     }

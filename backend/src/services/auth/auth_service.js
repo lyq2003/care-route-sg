@@ -49,6 +49,27 @@ exports.login = async (req,res)=>{
                 return res.status(500).json({ message: "Failed to create session" });
             }
 
+            // Determine redirect URL based on user role
+            let redirectUrl;
+            switch (profile?.role) {
+                case 'admin':
+                    redirectUrl = '/admin_dashboard';
+                    break;
+                case 'elderly':
+                    redirectUrl = '/elderly_dashboard';
+                    break;
+                case 'volunteer':
+                    redirectUrl = '/volunteer_dashboard';
+                    break;
+                case 'caregiver':
+                    redirectUrl = '/caregiver_dashboard';
+                    break;
+                default:
+                    redirectUrl = '/roles';  // Redirect to role selection if no role is set
+            }
+
+            console.log("Redirecting to:", redirectUrl); // Debug log
+
             // Update online status in DB
             const { error: updateError } = await supabase
                 .from("user_profiles")
