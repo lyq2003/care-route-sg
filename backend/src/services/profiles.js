@@ -1,5 +1,5 @@
 const express = require('express');
-const { supabase, supabaseAdmin } = require('../../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const router= express.Router();
 
 async function getAllProfile(){

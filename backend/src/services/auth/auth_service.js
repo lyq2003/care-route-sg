@@ -1,5 +1,5 @@
-const profiles = require('../../profile/profiles');
-const { supabase }=require('../config/supabase');
+const profiles = require('../profiles');
+const { supabase }=require('../../config/supabase');
 
 // Login
 exports.login = async (req,res)=>{

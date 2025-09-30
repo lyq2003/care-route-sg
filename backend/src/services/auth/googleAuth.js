@@ -1,4 +1,4 @@
-const profiles = require('../../profile/profiles');
+const profiles = require('../profiles');
 const { supabase }=require('../../config/supabase');
 
 // Login
