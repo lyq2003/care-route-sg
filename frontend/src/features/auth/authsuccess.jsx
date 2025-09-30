@@ -61,8 +61,10 @@ function AuthSuccess(){
             if(isNewUser){
               navigate('/roles', {replace:true});
             }
-            else if(role === 'elderly'){
-              navigate('/elderly_dashboard', {replace: true});
+            if (isNewUser) {
+              navigate('/roles', { replace: true });
+            } else if(role) {
+              navigate(`/${role}_dashboard`, { replace: true });
             }
             else{
               navigate('/home', { replace: true });
