@@ -58,23 +58,13 @@ function AuthSuccess(){
         // Use a small delay to ensure state is updated before navigation
         setTimeout(() => {
             console.log('AuthSuccess: Navigating based on role:', role);
-            if(isNewUser){
-              navigate('/roles', {replace:true});
-            }
-            else if(role === 'elderly'){
-              navigate('/elderly_dashboard', {replace: true});
-            }
-            else if(role === 'admin'){
-              navigate('/admin_dashboard', {replace: true});
-            }
-            else if(role === 'volunteer'){
-              navigate('/volunteer_dashboard', {replace: true});
-            }
-            else if(role === 'caregiver'){
-              navigate('/caregiver_dashboard', {replace: true});
+            if (isNewUser) {
+              navigate('/roles', { replace: true });
+            } else if(role) {
+              navigate(`/${role}_dashboard`, { replace: true });
             }
             else{
-              navigate('/roles', { replace: true });
+              navigate('/home', { replace: true });
             }
         }, 100);
     }
