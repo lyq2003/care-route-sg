@@ -8,6 +8,7 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
+import VolunteerDashboard from "./components/VolunteerDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -47,6 +48,7 @@ const App = () => (
                 <ElderlyDashboard/>
               }
             />
+            <Route path="/volunteer_dashboard" element={<VolunteerDashboard/>}/>
             <Route path="roles" element={<RolesScreen />} />
           </Route>
           <Route path="*" element={<NotFound />} />
