@@ -9,6 +9,7 @@ import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
 import VolunteerDashboard from "./components/VolunteerDashboard";
+import AdminDashboard from "./components/AdminDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -48,7 +49,18 @@ const App = () => (
                 <ElderlyDashboard/>
               }
             />
-            <Route path="/volunteer_dashboard" element={<VolunteerDashboard/>}/>
+            <Route
+              path="/volunteer_dashboard"
+              element={
+                <VolunteerDashboard/>
+              }
+            />
+            <Route
+              path="/admin_dashboard"
+              element={
+                <AdminDashboard/>
+              }
+            />
             <Route path="roles" element={<RolesScreen />} />
           </Route>
           <Route path="*" element={<NotFound />} />
