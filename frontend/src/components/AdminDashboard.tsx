@@ -105,12 +105,34 @@ export default function AdminDashboard() {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [suspensionDuration, setSuspensionDuration] = useState<7 | 30 | 90>(7);
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats by getting all users and calculating stats
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/admin/stats');
-      if (response.data.success) {
-        setStats(response.data.data);
+      // Fetch all users first
+      const response = await axios.get('/users/');
+      if (response.data) {
+        const allUsers = response.data;
+        
+        // Calculate stats from the user data
+        const totalUsers = allUsers.length;
+        const activeUsers = allUsers.filter(user => 
+          (user.status || 'active') === 'active'
+        ).length;
+        const suspendedUsers = allUsers.filter(user => 
+          user.status === 'suspended'
+        ).length;
+        const deactivatedUsers = allUsers.filter(user => 
+          user.status === 'deactivated'
+        ).length;
+        
+        setStats({
+          totalUsers,
+          activeUsers,
+          suspendedUsers,
+          deactivatedUsers,
+          pendingReports: 0, // Will be updated when we implement reports
+          totalRequests: 0   // Will be updated when we implement requests
+        });
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -126,14 +148,21 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/admin/users', {
-        params: {
-          page: 1,
-          limit: 50
-        }
-      });
-      if (response.data.success) {
-        setUsers(response.data.data.users);
+      const response = await axios.get('/users/');
+      if (response.data) {
+        // Transform the user data to match our interface
+        const transformedUsers = response.data.map(user => ({
+          userid: user.id,
+          fullname: user.name || user.email?.split('@')[0] || 'Unknown User',
+          email: user.email,
+          phone: user.phone || 'Not provided',
+          role: user.role || 'elderly', // Default to elderly if no role
+          status: user.status || 'active', // Default to active if no status
+          createdAt: user.created_at || new Date().toISOString(),
+          profilePicture: user.avatar,
+          online: user.online || false
+        }));
+        setUsers(transformedUsers);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
