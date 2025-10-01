@@ -261,10 +261,11 @@ class AdminController {
     }
   }
 
-  // Reactivate user
+  // Reactivate user (manual admin reactivation for deactivated accounts)
   async reactivateUser(req, res) {
     try {
       const { userId } = req.params;
+      const { reason } = req.body;
       const adminId = req.user.id;
 
       // Validation
@@ -275,7 +276,14 @@ class AdminController {
         });
       }
 
-      const updatedUser = await adminService.reactivateUser(userId, adminId);
+      if (!reason || reason.trim().length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Reactivation reason must be at least 10 characters'
+        });
+      }
+
+      const updatedUser = await adminService.reactivateUser(userId, adminId, reason.trim());
 
       res.status(200).json({
         success: true,
@@ -293,6 +301,51 @@ class AdminController {
       }
 
       if (error.message.includes('cannot be reactivated')) {
+        return res.status(400).json({
+          success: false,
+          error: error.message
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Unsuspend user (automatic unsuspension when duration expires)
+  async unsuspendUser(req, res) {
+    try {
+      const { userId } = req.params;
+      const { reason = 'Suspension period expired' } = req.body;
+
+      // Validation
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID is required'
+        });
+      }
+
+      const updatedUser = await adminService.unsuspendUser(userId, reason);
+
+      res.status(200).json({
+        success: true,
+        message: 'User unsuspended successfully',
+        data: updatedUser
+      });
+    } catch (error) {
+      console.error('Unsuspend user error:', error);
+      
+      if (error.message === 'User not found') {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
+        });
+      }
+
+      if (error.message.includes('cannot be unsuspended')) {
         return res.status(400).json({
           success: false,
           error: error.message

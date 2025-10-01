@@ -67,8 +67,11 @@ router.post('/users/:userId/suspend', adminController.suspendUser);
 // POST /api/admin/users/:userId/deactivate - Deactivate user
 router.post('/users/:userId/deactivate', adminController.deactivateUser);
 
-// POST /api/admin/users/:userId/reactivate - Reactivate user
+// POST /api/admin/users/:userId/reactivate - Reactivate deactivated user (manual admin action)
 router.post('/users/:userId/reactivate', adminController.reactivateUser);
+
+// POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
+router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
 
 // Request Management Routes
 // GET /api/admin/requests - Get all help requests with pagination and filters
