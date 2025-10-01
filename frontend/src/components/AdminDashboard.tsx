@@ -101,9 +101,13 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [reasonText, setReasonText] = useState("");
   const [showReasonModal, setShowReasonModal] = useState(false);
-  const [actionType, setActionType] = useState<'suspend' | 'deactivate' | null>(null);
+  const [actionType, setActionType] = useState<'suspend' | 'deactivate' | 'reactivate' | null>(null);
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [suspensionDuration, setSuspensionDuration] = useState<7 | 30 | 90>(7);
+  const [reportActionType, setReportActionType] = useState<'suspend' | 'deactivate' | 'reject' | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isReviewingReport, setIsReviewingReport] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
 
   // Fetch dashboard stats by getting all users and calculating stats
   const fetchStats = async () => {
@@ -182,9 +186,42 @@ export default function AdminDashboard() {
     fetchUsers();
   }, []);
 
-  // Mock data for requests and reports (since we're focusing on user management)
+  // Mock data for requests and reports (enhanced for testing)
   const helpRequests: HelpRequest[] = [];
-  const reports: Report[] = [];
+  
+  const reports: Report[] = [
+    {
+      id: "rpt-001",
+      reporterName: "Sarah Chen",
+      reportedUser: "John Smith",
+      reportedRole: "volunteer",
+      reason: "Inappropriate behavior during help session. Volunteer made inappropriate comments and showed unprofessional conduct.",
+      status: "Pending",
+      timestamp: "2024-10-01 10:30 AM",
+      evidence: "Screenshot of messages, witness testimony"
+    },
+    {
+      id: "rpt-002",
+      reporterName: "Mary Johnson",
+      reportedUser: "David Lee",
+      reportedRole: "elderly",
+      reason: "Abusive language and threatening behavior towards volunteer. Multiple incidents reported.",
+      status: "In Progress",
+      timestamp: "2024-09-30 2:15 PM",
+      evidence: "Chat logs, audio recording"
+    },
+    {
+      id: "rpt-003",
+      reporterName: "Admin System",
+      reportedUser: "Alex Wong",
+      reportedRole: "volunteer",
+      reason: "No-show for scheduled help sessions multiple times without notice. Pattern of unreliability.",
+      status: "Pending",
+      timestamp: "2024-09-29 9:00 AM",
+      evidence: "Schedule logs, missed appointment records"
+    }
+  ];
+  
   const reviews: Review[] = [];
 
   const filteredUsers = users.filter(user =>
@@ -193,8 +230,32 @@ export default function AdminDashboard() {
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Calculate suspension time remaining
+  const getSuspensionTimeRemaining = (user: User): string | null => {
+    if (user.status !== 'suspended') return null;
+    
+    // In a real implementation, this would come from user.suspensionEndDate
+    // For now, return a mock calculation based on user ID for demonstration
+    const mockEndDates = {
+      'user1': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
+      'user2': new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days
+      'user3': new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days
+    };
+    
+    const suspensionEndDate = mockEndDates[user.userid as keyof typeof mockEndDates] || 
+                            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+    
+    const now = new Date();
+    const timeRemaining = suspensionEndDate.getTime() - now.getTime();
+    
+    if (timeRemaining <= 0) return "Expires soon";
+    
+    const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
+    return `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining`;
+  };
+
   // Handle user actions
-  const openReasonModal = (action: 'suspend' | 'deactivate', userId: string) => {
+  const openReasonModal = (action: 'suspend' | 'deactivate' | 'reactivate', userId: string) => {
     setActionType(action);
     setTargetUserId(userId);
     setReasonText("");
@@ -235,27 +296,23 @@ export default function AdminDashboard() {
   };
 
   /*
-   * USER MANAGEMENT ACTIONS - TWO CONTEXTS:
+   * USER MANAGEMENT - STATUS OVERVIEW ONLY:
    * 
-   * 1. DIRECT USER MANAGEMENT (Admin Dashboard):
-   *    SUSPEND: Temporary disciplinary action (reversible)
-   *      - Scope: elderly, volunteer, caregiver users only
-   *      - Use case: Policy violations, temporary punishment
+   * USER MANAGEMENT PAGE (Status Management):
+   *    VIEW: See all users with role, status, and join date filters
+   *    STATUS MONITORING: View Active, Suspended, Deactivated users
+   *    SUSPENSION COUNTDOWN: Show days remaining for suspended users (auto-unsuspend when expires)
+   *    REACTIVATION: Manual admin reactivation for deactivated accounts (appeals/admin decision)
    *    
-   *    DEACTIVATE: Account closure (reversible)
-   *      - Scope: elderly, volunteer, caregiver users only  
-   *      - Use case: Account closure, inactivity
-   *    
-   *    REACTIVATE: Restore suspended or deactivated account
-   *      - Scope: elderly, volunteer, caregiver users only
+   *    Scope: Only elderly and volunteer users can be suspended/deactivated
+   *    Note: Caregiver accounts remain permanently active - no suspension/deactivation allowed
+   *          When elderly is suspended/deactivated, caregivers receive notifications but remain active
    * 
-   * 2. REPORT RESOLUTION (Report Dashboard):
-   *    DEACTIVATE: Ban equivalent action (reversible but treated as permanent)
-   *      - Scope: elderly, volunteer users only (NOT caregiver)
-   *      - Use case: Abuse reports, serious violations
-   *      - Note: Same API endpoint as direct deactivate, but stricter role restrictions
-   *    
-   *    REJECT: Dismiss report with no action taken
+   * REPORTS PAGE (Disciplinary Actions):
+   *    REVIEW REPORTS: Admin reviews submitted reports against users
+   *    REPORT STATUS: Pending -> In Progress -> Resolved/Rejected
+   *    DISCIPLINARY ACTIONS: Suspend (auto-expires) or Deactivate (manual reactivation) based on report review
+   *    SCOPE: Elderly and volunteer users only - caregivers cannot be subject to disciplinary actions
    */
 
   const handleDeactivateUser = async () => {
@@ -289,14 +346,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleReactivateUser = async (userId: string) => {
-    setActionLoading(userId);
+  const handleReactivateUser = async () => {
+    if (!targetUserId || !reasonText.trim()) return;
+    
+    setActionLoading(targetUserId);
     try {
-      const response = await axios.post(`/api/admin/users/${userId}/reactivate`);
+      const response = await axios.post(`/api/admin/users/${targetUserId}/reactivate`, {
+        reason: reasonText.trim()
+      });
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
         await fetchStats(); // Refresh stats
+        setShowReasonModal(false);
+        setReasonText("");
         toast({
           title: "Success",
           description: "User reactivated successfully",
@@ -319,12 +382,115 @@ export default function AdminDashboard() {
     // Implementation would open volunteer selection
   };
 
+  // Report management functions
+  const handleStartReportReview = async (reportId: string) => {
+    const report = reports.find(r => r.id === reportId);
+    
+    // Check if report is already in progress
+    if (report?.status === "In Progress") {
+      toast({
+        title: "Report Already Under Review",
+        description: "This report is currently being reviewed by another admin. View in read-only mode.",
+        variant: "destructive"
+      });
+      setSelectedReport(report);
+      setShowEvidenceModal(true);
+      return;
+    }
+
+    setIsReviewingReport(true);
+    try {
+      // Set report status to "In Progress"
+      const response = await axios.post(`/api/admin/reports/${reportId}/start-review`);
+      
+      if (response.data.success) {
+        // Find and select the report
+        if (report) {
+          setSelectedReport(report);
+          toast({
+            title: "Report Review Started",
+            description: "Report status updated to In Progress",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to start report review:', error);
+      
+      if (error.response?.status === 409) {
+        toast({
+          title: "Report Already Assigned",
+          description: "Another admin has started reviewing this report",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.error || "Failed to start report review",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsReviewingReport(false);
+    }
+  };
+
+  const openReportActionModal = (action: 'suspend' | 'deactivate' | 'reject', reportId: string) => {
+    setReportActionType(action);
+    setSelectedReportId(reportId);
+    setReasonText("");
+    setShowReasonModal(true);
+  };
+
+  const handleReportAction = async () => {
+    if (!selectedReportId || !reportActionType) return;
+    
+    if (reportActionType !== 'reject' && !reasonText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for this action",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setActionLoading(selectedReportId);
+    try {
+      const response = await axios.post(`/api/admin/reports/${selectedReportId}/resolve`, {
+        action: reportActionType,
+        reason: reasonText.trim(),
+        duration: reportActionType === 'suspend' ? suspensionDuration : undefined
+      });
+      
+      if (response.data.success) {
+        setShowReasonModal(false);
+        setReasonText("");
+        setSuspensionDuration(7);
+        setReportActionType(null);
+        setSelectedReportId(null);
+        
+        // Refresh data
+        await fetchUsers();
+        await fetchStats();
+        
+        toast({
+          title: "Success",
+          description: `Report resolved with ${reportActionType} action`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to resolve report:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to resolve report",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleResolveReport = (reportId: string, action: "deactivate" | "reject") => {
-    console.log(`${action === "deactivate" ? "Deactivating user for" : "Rejecting"} report:`, reportId);
-    // REPORT RESOLUTION LOGIC:
-    // - "deactivate" = ban equivalent (only for elderly and volunteer users in reports)
-    // - "reject" = no action taken, report dismissed
-    // Note: This is different from direct user management where suspend/deactivate applies to elderly, volunteer, caregiver
+    openReportActionModal(action, reportId);
   };
 
   const handleRemoveReview = (reviewId: string) => {
@@ -503,10 +669,21 @@ export default function AdminDashboard() {
                       <Calendar className="w-4 h-4" />
                       Joined: {new Date(user.createdAt).toLocaleDateString()}
                     </div>
-                    {user.online && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        Online
+                    {/* Account Status Information */}
+                    <div className="flex items-center gap-2 font-medium">
+                      <User className="w-4 h-4" />
+                      <span className={`${
+                        user.status === 'active' ? 'text-green-600' :
+                        user.status === 'suspended' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        Account Status: {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                      </span>
+                    </div>
+                    {user.status === "suspended" && (
+                      <div className="flex items-center gap-2 text-yellow-600">
+                        <Clock className="w-4 h-4" />
+                        Unsuspends in: {getSuspensionTimeRemaining(user)}
                       </div>
                     )}
                   </div>
@@ -521,50 +698,34 @@ export default function AdminDashboard() {
                       View Details
                     </Button>
                     
-                    {user.status === "active" && (
-                      <>
-                        {/* SUSPEND: Temporary disciplinary action - elderly, volunteer, caregiver only */}
-                        {(user.role === "elderly" || user.role === "volunteer" || user.role === "caregiver") && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-yellow-600 hover:text-yellow-700"
-                            onClick={() => openReasonModal('suspend', user.userid)}
-                            disabled={actionLoading === user.userid}
-                          >
-                            <UserX className="w-4 h-4 mr-2" />
-                            {actionLoading === user.userid ? 'Processing...' : 'Suspend'}
-                          </Button>
-                        )}
-                        
-                        {/* DEACTIVATE: Account closure/ban equivalent - elderly, volunteer, caregiver only */}
-                        {user.role !== "admin" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-orange-600 hover:text-orange-700"
-                            onClick={() => openReasonModal('deactivate', user.userid)}
-                            disabled={actionLoading === user.userid}
-                          >
-                            <UserX className="w-4 h-4 mr-2" />
-                            {actionLoading === user.userid ? 'Processing...' : 'Deactivate'}
-                          </Button>
-                        )}
-                      </>
+                    {/* Suspended accounts auto-unsuspend when duration expires */}
+                    {user.status === "suspended" && (
+                      <div className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Auto-unsuspends: {getSuspensionTimeRemaining(user)}
+                      </div>
                     )}
                     
-                    {/* REACTIVATE: Restore suspended or deactivated accounts - any non-admin user */}
-                    {(user.status === "suspended" || user.status === "deactivated") && (
+                    {/* Manual reactivation for banned/deactivated accounts with valid reasoning */}
+                    {user.status === "deactivated" && (user.role === "elderly" || user.role === "volunteer") && (
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-green-600 hover:text-green-700"
-                        onClick={() => handleReactivateUser(user.userid)}
+                        onClick={() => openReasonModal('reactivate', user.userid)}
                         disabled={actionLoading === user.userid}
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />
-                        {actionLoading === user.userid ? 'Processing...' : 'Reactivate'}
+                        {actionLoading === user.userid ? 'Processing...' : 'Reactivate Account'}
                       </Button>
+                    )}
+                    
+                    {/* Caregiver accounts remain permanently active */}
+                    {user.role === "caregiver" && (
+                      <div className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-lg flex items-center gap-1">
+                        <UserCheck className="w-3 h-3" />
+                        Active
+                      </div>
                     )}
                   </div>
                 </div>
@@ -650,73 +811,173 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">Report Management</h2>
       
+      {/* Report Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">{reports.filter(r => r.status === "Pending").length}</div>
+          <div className="text-sm text-muted-foreground">Pending Reviews</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-yellow-600">{reports.filter(r => r.status === "In Progress").length}</div>
+          <div className="text-sm text-muted-foreground">In Progress</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">{reports.filter(r => r.status === "Resolved").length}</div>
+          <div className="text-sm text-muted-foreground">Resolved</div>
+        </Card>
+      </div>
+
+      {/* Policy Notice */}
+      <Card className="p-4 mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Caregiver Account Policy</h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Caregiver accounts remain active and cannot be suspended or deactivated. 
+              When elderly accounts are banned/suspended, linked caregivers are notified but remain active to serve other elderly users.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Pending Reports Section */}
       <Card className="p-6 shadow-sm border-border/50">
-        <h3 className="text-base font-semibold text-foreground mb-4">Pending Reports</h3>
+        <h3 className="text-base font-semibold text-foreground mb-4">Reports Requiring Review</h3>
         
         {reports.length === 0 ? (
           <div className="text-center py-12">
             <Flag className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No pending reports to review.</p>
+            <p className="text-muted-foreground">No reports to review.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {reports.map((report) => (
-              <Card key={report.id} className="p-5 bg-muted/50 shadow-sm border-border/50">
+              <Card key={report.id} className={`p-5 shadow-sm border-border/50 ${
+                report.status === "In Progress" ? "bg-yellow-50 dark:bg-yellow-900/20" :
+                report.status === "Pending" ? "bg-blue-50 dark:bg-blue-900/20" :
+                "bg-muted/50"
+              }`}>
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-semibold text-foreground">
                         Report against {report.reportedUser}
                       </h4>
-                      <Badge className={getRoleStyles(report.reportedRole)}>
-                        {report.reportedRole}
-                      </Badge>
+                      <div className="flex gap-2 mt-1">
+                        <Badge className={getRoleStyles(report.reportedRole)}>
+                          {report.reportedRole}
+                        </Badge>
+                        <Badge className={getStatusBadgeColor(report.status)}>
+                          {report.status}
+                        </Badge>
+                        {report.status === "In Progress" && (
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            <User className="w-3 h-3 mr-1" />
+                            Under Review by Admin
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Badge className={getStatusBadgeColor(report.status)}>
-                      {report.status}
-                    </Badge>
                   </div>
 
                   <div className="text-sm text-muted-foreground">
-                    Reported by: {report.reporterName}
+                    Reported by: <span className="font-medium">{report.reporterName}</span>
                   </div>
 
-                  <p className="text-sm text-foreground">{report.reason}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-sm text-foreground">{report.reason}</p>
+                  </div>
+
+                  {report.evidence && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <AlertCircle className="w-4 h-4" />
+                      Evidence available: {report.evidence}
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     {report.timestamp}
                   </div>
 
-                  {report.status === "Pending" && (
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedReport(report)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Review Report
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleResolveReport(report.id, "deactivate")}
-                      >
-                        <UserX className="w-4 h-4 mr-2" />
-                        Deactivate User
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleResolveReport(report.id, "reject")}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Reject Report
-                      </Button>
-                    </div>
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2 flex-wrap">
+                    {report.status === "Pending" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartReportReview(report.id)}
+                          disabled={isReviewingReport}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          {isReviewingReport ? 'Starting Review...' : 'Start Review'}
+                        </Button>
+                      </>
+                    )}
+                    
+                    {report.status === "In Progress" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setShowEvidenceModal(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Evidence
+                        </Button>
+                        
+                        {/* Disciplinary Actions - Only for elderly and volunteer */}
+                        {(report.reportedRole === "elderly" || report.reportedRole === "volunteer") && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-yellow-600 hover:text-yellow-700"
+                              onClick={() => openReportActionModal('suspend', report.id)}
+                              disabled={actionLoading === report.id}
+                            >
+                              <UserX className="w-4 h-4 mr-2" />
+                              Suspend User
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => openReportActionModal('deactivate', report.id)}
+                              disabled={actionLoading === report.id}
+                            >
+                              <UserX className="w-4 h-4 mr-2" />
+                              Ban User
+                            </Button>
+                          </>
+                        )}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-gray-600 hover:text-gray-700"
+                          onClick={() => openReportActionModal('reject', report.id)}
+                          disabled={actionLoading === report.id}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Reject Report
+                        </Button>
+                      </>
+                    )}
+                    
+                    {report.status === "Resolved" && (
+                      <Badge className="bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Completed
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}
@@ -803,16 +1064,24 @@ export default function AdminDashboard() {
         {activeTab === "reviews" && renderReviewModeration()}
       </div>
 
-      {/* Reason Modal */}
+      {/* Reason Modal - Updated for both user management and report actions */}
       {showReasonModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md p-6">
             <h3 className="text-lg font-semibold mb-4">
-              {actionType === 'suspend' ? 'Suspend User' : 'Deactivate User'}
+              {reportActionType ? (
+                reportActionType === 'reject' ? 'Reject Report' :
+                reportActionType === 'suspend' ? 'Suspend User (Report Action)' :
+                'Ban User (Report Action)'
+              ) : (
+                actionType === 'suspend' ? 'Suspend User' : 
+                actionType === 'deactivate' ? 'Deactivate User' :
+                'Reactivate User'
+              )}
             </h3>
             
-            {/* Suspension Duration Selection */}
-            {actionType === 'suspend' && (
+            {/* Suspension Duration Selection - Only for suspend actions */}
+            {(actionType === 'suspend' || reportActionType === 'suspend') && (
               <div className="mb-4">
                 <Label className="text-sm font-medium mb-3 block">Suspension Duration:</Label>
                 <div className="space-y-3">
@@ -866,12 +1135,16 @@ export default function AdminDashboard() {
             )}
             
             <p className="text-sm text-muted-foreground mb-4">
-              Please provide a reason for this action (minimum 10 characters):
+              {reportActionType === 'reject' 
+                ? 'Please provide a reason for rejecting this report:'
+                : actionType === 'reactivate'
+                ? 'Please provide a valid reason for reactivating this account (minimum 10 characters):'
+                : 'Please provide a reason for this action (minimum 10 characters):'}
             </p>
             <Textarea
               value={reasonText}
               onChange={(e) => setReasonText(e.target.value)}
-              placeholder={`Enter reason for ${actionType}...`}
+              placeholder={reportActionType ? `Enter reason for ${reportActionType}...` : `Enter reason for ${actionType}...`}
               className="mb-4"
               rows={3}
             />
@@ -882,19 +1155,200 @@ export default function AdminDashboard() {
                 onClick={() => {
                   setShowReasonModal(false);
                   setReasonText("");
-                  setSuspensionDuration(7); // Reset to default
+                  setSuspensionDuration(7);
+                  setReportActionType(null);
+                  setSelectedReportId(null);
                 }}
               >
                 Cancel
               </Button>
               <Button
                 size="sm"
-                onClick={actionType === 'suspend' ? handleSuspendUser : handleDeactivateUser}
-                disabled={reasonText.trim().length < 10 || actionLoading !== null}
-                className={actionType === 'suspend' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-orange-600 hover:bg-orange-700'}
+                onClick={reportActionType ? handleReportAction : (
+                  actionType === 'suspend' ? handleSuspendUser : 
+                  actionType === 'deactivate' ? handleDeactivateUser :
+                  handleReactivateUser
+                )}
+                disabled={(reportActionType !== 'reject' && actionType !== 'reactivate' && reasonText.trim().length < 10) || 
+                         (actionType === 'reactivate' && reasonText.trim().length < 10) || 
+                         actionLoading !== null}
+                className={
+                  reportActionType === 'suspend' || actionType === 'suspend' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                  reportActionType === 'deactivate' || actionType === 'deactivate' ? 'bg-red-600 hover:bg-red-700' :
+                  actionType === 'reactivate' ? 'bg-green-600 hover:bg-green-700' :
+                  'bg-gray-600 hover:bg-gray-700'
+                }
               >
-                {actionLoading ? 'Processing...' : (actionType === 'suspend' ? `Suspend User (${suspensionDuration} days)` : 'Deactivate User')}
+                {actionLoading ? 'Processing...' : (
+                  reportActionType === 'suspend' || actionType === 'suspend' ? `Suspend User (${suspensionDuration} days)` :
+                  reportActionType === 'deactivate' || actionType === 'deactivate' ? 'Ban User' :
+                  actionType === 'reactivate' ? 'Reactivate Account' :
+                  reportActionType === 'reject' ? 'Reject Report' : 'Confirm'
+                )}
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Evidence Viewer Modal */}
+      {showEvidenceModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Report Evidence</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Report ID: {selectedReport.id} | Against: {selectedReport.reportedUser}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowEvidenceModal(false);
+                    setSelectedReport(null);
+                  }}
+                >
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Report Details */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Reporter:</Label>
+                  <p className="text-sm">{selectedReport.reporterName}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Reported User:</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm">{selectedReport.reportedUser}</span>
+                    <Badge className={getRoleStyles(selectedReport.reportedRole)}>
+                      {selectedReport.reportedRole}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Report Reason:</Label>
+                  <div className="bg-muted/30 p-3 rounded-lg mt-1">
+                    <p className="text-sm">{selectedReport.reason}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Evidence:</Label>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-1 border border-blue-200 dark:border-blue-800">
+                    {selectedReport.evidence ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">{selectedReport.evidence}</p>
+                        
+                        {/* Mock evidence items */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MessageSquare className="w-4 h-4 text-blue-600" />
+                              <span className="text-xs font-medium">Chat Log</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Conversation screenshots showing inappropriate behavior
+                            </p>
+                            <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
+                              View Details
+                            </Button>
+                          </div>
+                          
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User className="w-4 h-4 text-green-600" />
+                              <span className="text-xs font-medium">Witness Statement</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Third-party confirmation of the incident
+                            </p>
+                            <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
+                              Read Statement
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <AlertCircle className="w-12 h-12 mx-auto mb-2 text-orange-500" />
+                        <p className="text-sm text-muted-foreground">Evidence retrieval error</p>
+                        <Button variant="outline" size="sm" className="mt-2">
+                          Retry
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Timestamp:</Label>
+                  <p className="text-sm text-muted-foreground">{selectedReport.timestamp}</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end mt-6 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowEvidenceModal(false);
+                    setSelectedReport(null);
+                  }}
+                >
+                  Close
+                </Button>
+                
+                {selectedReport.status === "In Progress" && (selectedReport.reportedRole === "elderly" || selectedReport.reportedRole === "volunteer") && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-yellow-600 hover:text-yellow-700"
+                      onClick={() => {
+                        setShowEvidenceModal(false);
+                        openReportActionModal('suspend', selectedReport.id);
+                      }}
+                    >
+                      <UserX className="w-4 h-4 mr-2" />
+                      Suspend User
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        setShowEvidenceModal(false);
+                        openReportActionModal('deactivate', selectedReport.id);
+                      }}
+                    >
+                      <UserX className="w-4 h-4 mr-2" />
+                      Ban User
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-700"
+                      onClick={() => {
+                        setShowEvidenceModal(false);
+                        openReportActionModal('reject', selectedReport.id);
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject Report
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </Card>
         </div>

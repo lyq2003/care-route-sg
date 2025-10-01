@@ -239,11 +239,11 @@ class AdminService {
       
       // Check if user is manageable by admin (not an admin themselves)
       if (!user.isManageableByAdmin()) {
-        throw new Error(`Cannot suspend admin users. Only elderly, volunteer, and caregiver users can be suspended.`);
+        throw new Error(`Cannot suspend admin users. Only elderly and volunteer users can be suspended.`);
       }
       
       if (!user.canBeSuspended()) {
-        throw new Error(`User cannot be suspended. Current status: ${user.status}, role: ${user.role}. Only elderly, volunteer, and caregiver users can be suspended.`);
+        throw new Error(`User cannot be suspended. Current status: ${user.status}, role: ${user.role}. Only elderly and volunteer users can be suspended. Caregivers remain permanently active.`);
       }
 
       // Validate duration
@@ -307,11 +307,11 @@ class AdminService {
       
       // Check if user is manageable by admin (not an admin themselves)
       if (!user.isManageableByAdmin()) {
-        throw new Error(`Cannot deactivate admin users. Only elderly, volunteer, and caregiver users can be deactivated.`);
+        throw new Error(`Cannot deactivate admin users. Only elderly and volunteer users can be deactivated.`);
       }
       
       if (!user.canBeDeactivated()) {
-        throw new Error(`User cannot be deactivated. Current status: ${user.status}, role: ${user.role}. Only elderly, volunteer, and caregiver users can be deactivated.`);
+        throw new Error(`User cannot be deactivated. Current status: ${user.status}, role: ${user.role}. Only elderly and volunteer users can be deactivated. Caregivers remain permanently active.`);
       }
 
       const deactivatedAt = new Date().toISOString();
@@ -357,19 +357,19 @@ class AdminService {
     }
   }
 
-  // Reactivate user (updates both Auth metadata and profile status)
-  async reactivateUser(userId, adminId) {
+  // Reactivate user (manual admin reactivation for deactivated accounts)
+  async reactivateUser(userId, adminId, reason) {
     try {
       // First get the user to validate
       const user = await this.getUserById(userId);
       
       // Check if user is manageable by admin (not an admin themselves)
       if (!user.isManageableByAdmin()) {
-        throw new Error(`Cannot reactivate admin users. Only elderly, volunteer, and caregiver users can be reactivated.`);
+        throw new Error(`Cannot reactivate admin users. Only elderly and volunteer users can be reactivated.`);
       }
       
       if (!user.canBeReactivated()) {
-        throw new Error(`User cannot be reactivated. Current status: ${user.status}, role: ${user.role}. Only elderly, volunteer, and caregiver users who are suspended or deactivated can be reactivated.`);
+        throw new Error(`User cannot be reactivated. Current status: ${user.status}, role: ${user.role}. Only deactivated elderly and volunteer users can be reactivated.`);
       }
 
       const reactivatedAt = new Date().toISOString();
@@ -382,10 +382,11 @@ class AdminService {
         user_metadata: {
           ...currentUser.user.user_metadata,
           status: User.STATUS.ACTIVE,
-          suspended_at: null,
-          suspension_reason: null,
           deactivated_at: null,
-          deactivation_reason: null
+          deactivation_reason: null,
+          reactivated_at: reactivatedAt,
+          reactivated_by: adminId,
+          reactivation_reason: reason
         }
       });
 
@@ -407,8 +408,66 @@ class AdminService {
         // Don't throw error - auth update is primary
       }
 
-      // Log admin action
-      await this.logAdminAction(adminId, 'REACTIVATE_USER', userId, {});
+      // Log admin action with reason
+      await this.logAdminAction(adminId, 'REACTIVATE_USER', userId, { reason });
+
+      // Return updated user
+      return await this.getUserById(userId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Unsuspend user (automatic unsuspension when duration expires)
+  async unsuspendUser(userId, reason = 'Suspension period expired') {
+    try {
+      // First get the user to validate
+      const user = await this.getUserById(userId);
+      
+      // Check if user can be unsuspended (only suspended users)
+      if (!user.canBeUnsuspended()) {
+        throw new Error(`User cannot be unsuspended. Current status: ${user.status}, role: ${user.role}. Only suspended elderly and volunteer users can be unsuspended.`);
+      }
+
+      const unsuspendedAt = new Date().toISOString();
+      
+      // Get current user data to preserve existing metadata
+      const { data: currentUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      // Update auth user metadata using admin client
+      const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...currentUser.user.user_metadata,
+          status: User.STATUS.ACTIVE,
+          suspended_at: null,
+          suspension_reason: null,
+          suspension_duration: null,
+          suspension_end_date: null,
+          unsuspended_at: unsuspendedAt,
+          unsuspension_reason: reason
+        }
+      });
+
+      if (authError) {
+        throw new Error(`Failed to update auth user: ${authError.message}`);
+      }
+
+      // Also update profile table if profile exists
+      const { error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .update({ 
+          status: User.STATUS.ACTIVE,
+          updated_at: unsuspendedAt 
+        })
+        .eq('user_id', userId);
+
+      if (profileError) {
+        console.warn('Failed to update profile status:', profileError);
+        // Don't throw error - auth update is primary
+      }
+
+      // Log system action (no adminId for automatic actions)
+      await this.logAdminAction('SYSTEM', 'AUTO_UNSUSPEND_USER', userId, { reason });
 
       // Return updated user
       return await this.getUserById(userId);

@@ -61,28 +61,32 @@ class User {
     ADMIN: 'admin'
   };
 
-  // Check if user can be suspended (Elderly, Volunteers, Caregivers only)
+  // Check if user can be suspended (Elderly and Volunteers only)
   canBeSuspended() {
     return this.status === User.STATUS.ACTIVE && 
            (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER || 
-            this.role === User.ROLES.CAREGIVER);
+            this.role === User.ROLES.VOLUNTEER);
   }
 
-  // Check if user can be deactivated (Elderly, Volunteers, Caregivers)
+  // Check if user can be deactivated (Elderly and Volunteers only)
   canBeDeactivated() {
     return this.status === User.STATUS.ACTIVE && 
            (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER || 
-            this.role === User.ROLES.CAREGIVER);
+            this.role === User.ROLES.VOLUNTEER);
   }
 
-  // Check if user can be reactivated (any user who is suspended or deactivated)
+  // Check if user can be reactivated (only deactivated elderly/volunteers for manual admin reactivation)
   canBeReactivated() {
-    return (this.status === User.STATUS.SUSPENDED || this.status === User.STATUS.DEACTIVATED) &&
+    return this.status === User.STATUS.DEACTIVATED &&
            (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER || 
-            this.role === User.ROLES.CAREGIVER);
+            this.role === User.ROLES.VOLUNTEER);
+  }
+
+  // Check if user can be auto-unsuspended (only suspended elderly/volunteers for automatic unsuspension)
+  canBeUnsuspended() {
+    return this.status === User.STATUS.SUSPENDED &&
+           (this.role === User.ROLES.ELDERLY || 
+            this.role === User.ROLES.VOLUNTEER);
   }
 
   // Check if user is manageable by admin (not an admin themselves)
