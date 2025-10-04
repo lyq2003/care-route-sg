@@ -1,8 +1,8 @@
 const ReportStatus = Object.freeze({
-  Pending: "Pending",
-  InProgress: "InProgress",
-  Resolved: "Resolved",
-  Rejected: "Rejected"
+  PENDING: "PENDING",
+  IN_PROGRESS: "IN_PROGRESS",
+  RESOLVED: "RESOLVED",
+  REJECTED: "REJECTED"
 });
 
-export default ReportStatus;
+module.exports = ReportStatus;

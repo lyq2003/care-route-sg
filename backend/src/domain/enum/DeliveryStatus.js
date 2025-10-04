@@ -1,8 +1,8 @@
 const DeliveryStatus = Object.freeze({
-  Queued: "Queued",
-  Sent: "Sent",
-  Failed: "Failed",
-  Read: "Read"
+  QUEUED: "QUEUED",
+  SENT: "SENT",
+  FAILED: "FAILED",
+  READ: "READ"
 });
 
-export default DeliveryStatus;
+module.exports = DeliveryStatus;

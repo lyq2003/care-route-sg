@@ -1,7 +1,7 @@
 const NotificationChannel = Object.freeze({
-  InApp: "InApp",
+  IN_APP: "IN_APP",
   SMS: "SMS",
-  Email: "Email"
+  EMAIL: "EMAIL"
 });
 
-export default NotificationChannel;
+module.exports = NotificationChannel;

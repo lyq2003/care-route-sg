@@ -1,6 +1,6 @@
 const AttachmentParentType = Object.freeze({
-  HelpRequest: "HelpRequest",
-  Report: "Report"
+  HELP_REQUEST: "HELP_REQUEST",
+  REPORT: "REPORT"
 });
 
-export default AttachmentParentType;
+module.exports = AttachmentParentType;

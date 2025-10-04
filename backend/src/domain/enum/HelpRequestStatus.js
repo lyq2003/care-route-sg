@@ -1,10 +1,10 @@
 const HelpRequestStatus = Object.freeze({
-  Pending: "Pending",
-  Matched: "Matched",
-  InProgress: "InProgress",
-  Completed: "Completed",
-  Cancelled: "Cancelled",
-  Rejected: "Rejected"
+  PENDING: "PENDING",
+  MATCHED: "MATCHED",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  REJECTED: "REJECTED"
 });
 
-export default HelpRequestStatus;
+module.exports = HelpRequestStatus;

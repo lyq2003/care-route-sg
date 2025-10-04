@@ -1,7 +1,7 @@
 const UserStatus = Object.freeze({
-  Active: "Active",
-  Suspended: "Suspended",
-  Deactivated: "Deactivated"
+  ACTIVE: "ACTIVE",
+  SUSPENDED: "SUSPENDED",
+  DEACTIVATED: "DEACTIVATED"
 });
 
-export default UserStatus;
+module.exports = UserStatus;
