@@ -1,5 +1,3 @@
-// CommonJS version
-
 const User = require('./user');
 const UserStatus = require('./enum/UserStatus');
 const Role = require('./enum/Role');
