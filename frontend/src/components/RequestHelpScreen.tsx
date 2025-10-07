@@ -61,6 +61,8 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // TODO: validate location -> use case 2.2 EX 2
+
     const submitFormData = new FormData();
 
     var token = localStorage.getItem("auth-storage");
@@ -86,23 +88,36 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
         }
       });
 
-      if (response.data.success) {
 
+      console.log(response);
+      
+
+      if (response.status == 200) {
+        setStep("submitted");
+
+        // TODO: make matching dynamic and not hardcoded to simulate
+
+        // Simulate matching process
+        setTimeout(() => {
+          setStep("matched");
+        }, 3000);
       }
     } catch (error: any) {
-
+      // TODO: handle error -> use case 2.2 EX 1
     } finally {
 
     }
 
 
-    if (formData.location && formData.description) {
+    /* if (formData.location && formData.description) {
       setStep("submitted");
       // Simulate matching process
       setTimeout(() => {
         setStep("matched");
       }, 3000);
-    }
+    } */
+
+
   };
 
   if (step === "submitted") {

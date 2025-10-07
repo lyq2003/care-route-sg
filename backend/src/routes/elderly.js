@@ -4,31 +4,20 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const HelpRequest = require('../services/helpRequest');
 const multer = require('multer');
-const path = require('path')
+const path = require('path');
+const fs = require('fs');
 const ElderlyController = require('../controllers/elderlyController');
 
-
-
-
-router.get('/profile', requireAuth, ElderlyController.getProfile);
-router.put('/profile', requireAuth, ElderlyController.updateProfile);
-
-
-/* const upload = multer({
-    dest: './src/services/uploads',
-    fileFilter: (req, file, cb) => {
-        const allowedMimes = ['image/jpeg', 'image/png', 'application/pdf'];
-        if (allowedMimes.includes(file.mimetype)) {
-            cb(null, true); // Accept the file
-        } else {
-            cb(new Error('Error: Only JPEG, PNG, or PDF files are allowed!'), false); // Reject the file
-        }
-    }
-}) */
+// For file upload when creating help request
+// Create uploads folder if it doesn't exist
+const uploadPath = path.join(__dirname, "../services/uploads");
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, './src/services/uploads')
+        cb(null, uploadPath)
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname)) //Appending extension
@@ -36,6 +25,32 @@ var storage = multer.diskStorage({
 })
 
 const upload = multer({ storage: storage });
+
+
+
+router.get('/profile', requireAuth, ElderlyController.getProfile);
+router.put('/profile', requireAuth, ElderlyController.updateProfile);
+
+router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) => {
+
+    try {
+        var userID = req.params.userID;
+        
+        const result = await HelpRequest.getCompletedHelpRequestswithVolunteer(userID);
+
+        console.log(result);
+
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.log(error);
+
+        console.error('Error creating help request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+
+
+});
 
 
 
@@ -58,11 +73,12 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
 
         const result = await HelpRequest.createRequest(userID, "100.1", "109.11", req.body.urgency, uploadedFilename);
 
-        console.log(result);
+        //console.log(result);
+
+        // TODO: Alert neaby volunteers
 
 
-
-        res.status(200).send("Okay");
+        res.status(200).send("success");
 
     } catch (error) {
         console.log(error);
