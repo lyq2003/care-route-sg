@@ -1,5 +1,9 @@
 const { supabase, supabaseAdmin } = require('../config/supabase');
 const User = require('../domain/User');
+const UserStatus = require('../domain/enum/UserStatus');
+const Role = require('../domain/enum/Role');
+const HelpRequestStatus = require('../domain/enum/HelpRequestStatus');
+const ReportStatus = require('../domain/enum/ReportStatus');
 
 class AdminService {
   
@@ -16,13 +20,13 @@ class AdminService {
       // Calculate stats
       const totalUsers = authData.users.length;
       const activeUsers = authData.users.filter(user => 
-        (user.user_metadata?.status || 'active') === 'active'
+        (user.user_metadata?.status || UserStatus.ACTIVE) === UserStatus.ACTIVE
       ).length;
       const suspendedUsers = authData.users.filter(user => 
-        user.user_metadata?.status === 'suspended'
+        user.user_metadata?.status === UserStatus.SUSPENDED
       ).length;
       const deactivatedUsers = authData.users.filter(user => 
-        user.user_metadata?.status === 'deactivated'
+        user.user_metadata?.status === UserStatus.DEACTIVATED
       ).length;
 
       // Get help requests count (if table exists)
@@ -40,7 +44,7 @@ class AdminService {
         const { count: pendingCount, error: pendingError } = await supabaseAdmin
           .from('help_requests')
           .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
+          .eq('status', HelpRequestStatus.PENDING);
         
         if (!pendingError) {
           pendingRequests = pendingCount || 0;
@@ -55,7 +59,7 @@ class AdminService {
         const { count: reportCount, error: reportError } = await supabaseAdmin
           .from('reports')
           .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
+          .eq('status', ReportStatus.PENDING);
         
         if (!reportError) {
           pendingReports = reportCount || 0;
@@ -124,7 +128,7 @@ class AdminService {
           // Combined fields for easier access
           fullname: authUser.user_metadata?.name || authUser.user_metadata?.full_name || profile?.username,
           role: authUser.user_metadata?.role || profile?.role,
-          status: authUser.user_metadata?.status || 'active',
+          status: authUser.user_metadata?.status || UserStatus.ACTIVE,
           avatar_url: authUser.user_metadata?.avatar_url || profile?.avatar_url,
           online: profile?.online || false
         };
@@ -211,7 +215,7 @@ class AdminService {
         phone: authUser.user_metadata?.phone || '',
         email: authUser.email,
         profilePicture: authUser.user_metadata?.avatar_url || profileData?.avatar_url,
-        status: authUser.user_metadata?.status || 'active',
+        status: authUser.user_metadata?.status || UserStatus.ACTIVE,
         createdAt: authUser.created_at,
         updatedAt: authUser.updated_at,
         suspendedAt: authUser.user_metadata?.suspended_at,
@@ -263,7 +267,7 @@ class AdminService {
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
-          status: User.STATUS.SUSPENDED,
+          status: UserStatus.SUSPENDED,
           suspended_at: suspendedAt,
           suspension_reason: reason,
           suspension_duration: duration,
@@ -279,7 +283,7 @@ class AdminService {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update({ 
-          status: User.STATUS.SUSPENDED,
+          status: UserStatus.SUSPENDED,
           updated_at: suspendedAt 
         })
         .eq('user_id', userId);
@@ -323,7 +327,7 @@ class AdminService {
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
-          status: User.STATUS.DEACTIVATED,
+          status: UserStatus.DEACTIVATED,
           deactivated_at: deactivatedAt,
           deactivation_reason: reason
         }
@@ -337,7 +341,7 @@ class AdminService {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update({ 
-          status: User.STATUS.DEACTIVATED,
+          status: UserStatus.DEACTIVATED,
           updated_at: deactivatedAt 
         })
         .eq('user_id', userId);
@@ -381,7 +385,7 @@ class AdminService {
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
-          status: User.STATUS.ACTIVE,
+          status: UserStatus.ACTIVE,
           deactivated_at: null,
           deactivation_reason: null,
           reactivated_at: reactivatedAt,
@@ -398,7 +402,7 @@ class AdminService {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update({ 
-          status: User.STATUS.ACTIVE,
+          status: UserStatus.ACTIVE,
           updated_at: reactivatedAt 
         })
         .eq('user_id', userId);
@@ -438,7 +442,7 @@ class AdminService {
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
-          status: User.STATUS.ACTIVE,
+          status: UserStatus.ACTIVE,
           suspended_at: null,
           suspension_reason: null,
           suspension_duration: null,
@@ -456,7 +460,7 @@ class AdminService {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update({ 
-          status: User.STATUS.ACTIVE,
+          status: UserStatus.ACTIVE,
           updated_at: unsuspendedAt 
         })
         .eq('user_id', userId);
