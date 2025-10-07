@@ -1,4 +1,7 @@
-// User domain model with status constants and validation
+// src/models/User.js
+const UserStatus = require('./enum/UserStatus');
+const Role = require('./enum/Role');
+
 class User {
   constructor({
     userid,
@@ -7,21 +10,23 @@ class User {
     email,
     passwordHash,
     profilePicture,
-    status = 'active',
+    status = UserStatus.ACTIVE,
     role,
-    createdAt,
-    updatedAt,
-    // Additional admin fields for tracking actions
-    suspendedAt,
-    suspensionReason,
-    suspensionDuration,
-    suspensionEndDate,
-    deactivatedAt,
-    deactivationReason,
-    bannedAt,
-    banReason,
+    createdAt = new Date(),
+    updatedAt = new Date(),
+
+    // Admin tracking fields
+    suspendedAt = null,
+    suspensionReason = null,
+    suspensionDuration = 0,   // default 0 days
+    suspensionEndDate = null,
+    deactivatedAt = null,
+    deactivationReason = null,
+    bannedAt = null,
+    banReason = null,
+
     // Profile fields
-    online = false
+    online = false,
   }) {
     this.userid = userid;
     this.fullname = fullname;
@@ -29,10 +34,12 @@ class User {
     this.email = email;
     this.passwordHash = passwordHash;
     this.profilePicture = profilePicture;
-    this.status = status;
-    this.role = role;
+
+    this.status = status;  // expects value from UserStatus enum
+    this.role = role;      // expects value from Role enum
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+
     // Admin tracking fields
     this.suspendedAt = suspendedAt;
     this.suspensionReason = suspensionReason;
@@ -42,97 +49,61 @@ class User {
     this.deactivationReason = deactivationReason;
     this.bannedAt = bannedAt;
     this.banReason = banReason;
-    // Profile fields
+
+    // Profile
     this.online = online;
   }
 
-  // User status constants (UserStatus enum)
-  static STATUS = {
-    ACTIVE: 'active',
-    SUSPENDED: 'suspended', 
-    DEACTIVATED: 'deactivated'
-  };
-
-  // User roles (if needed for admin operations)
-  static ROLES = {
-    ELDERLY: 'elderly',
-    VOLUNTEER: 'volunteer',
-    CAREGIVER: 'caregiver',
-    ADMIN: 'admin'
-  };
-
-  // Check if user can be suspended (Elderly and Volunteers only)
+  // ---- Domain checks ----
   canBeSuspended() {
-    return this.status === User.STATUS.ACTIVE && 
-           (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER);
+    return this.status === UserStatus.ACTIVE &&
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
   }
 
-  // Check if user can be deactivated (Elderly and Volunteers only)
   canBeDeactivated() {
-    return this.status === User.STATUS.ACTIVE && 
-           (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER);
+    return this.status === UserStatus.ACTIVE &&
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
   }
 
-  // Check if user can be reactivated (only deactivated elderly/volunteers for manual admin reactivation)
   canBeReactivated() {
-    return this.status === User.STATUS.DEACTIVATED &&
-           (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER);
+    return this.status === UserStatus.DEACTIVATED &&
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
   }
 
-  // Check if user can be auto-unsuspended (only suspended elderly/volunteers for automatic unsuspension)
   canBeUnsuspended() {
-    return this.status === User.STATUS.SUSPENDED &&
-           (this.role === User.ROLES.ELDERLY || 
-            this.role === User.ROLES.VOLUNTEER);
+    return this.status === UserStatus.SUSPENDED &&
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
   }
 
-  // Check if user is manageable by admin (not an admin themselves)
   isManageableByAdmin() {
-    return this.role !== User.ROLES.ADMIN;
+    return this.role !== Role.ADMIN;
   }
 
-  // Check if user is active
-  isActive() {
-    return this.status === User.STATUS.ACTIVE;
-  }
+  isActive()      { return this.status === UserStatus.ACTIVE; }
+  isSuspended()   { return this.status === UserStatus.SUSPENDED; }
+  isDeactivated() { return this.status === UserStatus.DEACTIVATED; }
 
-  // Check if user is suspended
-  isSuspended() {
-    return this.status === User.STATUS.SUSPENDED;
-  }
-
-  // Check if user is deactivated
-  isDeactivated() {
-    return this.status === User.STATUS.DEACTIVATED;
-  }
-
-  // Validate user data
+  // ---- Validation ----
   static validate(userData) {
     const errors = [];
 
     if (!userData.email) {
       errors.push('Email is required');
     }
-
     if (!userData.fullname || userData.fullname.trim().length < 2) {
       errors.push('Full name is required and must be at least 2 characters');
     }
-
     if (!userData.phone) {
       errors.push('Phone number is required');
     }
-
-    if (userData.status && !Object.values(User.STATUS).includes(userData.status)) {
-      errors.push('Invalid status');
+    if (userData.status && !Object.values(UserStatus).includes(userData.status)) {
+      errors.push(`Invalid status. Must be one of: ${Object.values(UserStatus).join(', ')}`);
+    }
+    if (userData.role && !Object.values(Role).includes(userData.role)) {
+      errors.push(`Invalid role. Must be one of: ${Object.values(Role).join(', ')}`);
     }
 
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+    return { isValid: errors.length === 0, errors };
   }
 }
 

@@ -5,6 +5,13 @@ const { requireAuth } = require('../middleware/auth');
 const HelpRequest = require('../services/helpRequest');
 const multer = require('multer');
 const path = require('path')
+const ElderlyController = require('../controllers/elderlyController');
+
+
+
+
+router.get('/profile', requireAuth, ElderlyController.getProfile);
+router.put('/profile', requireAuth, ElderlyController.updateProfile);
 
 
 /* const upload = multer({
@@ -66,7 +73,6 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
     }
 
 });
-
 
 
 
