@@ -222,7 +222,62 @@ export default function AdminDashboard() {
     }
   ];
   
-  const reviews: Review[] = [];
+  const reviews: Review[] = [
+    {
+      id: "rev-001",
+      reviewerName: "Margaret Chen",
+      revieweeName: "David Wong (Volunteer)",
+      rating: 1,
+      comment: "This volunteer is absolutely terrible! He's a complete idiot and I hate his stupid face. David Wong lives at 123 Main Street and his phone number is 555-0123. Never use him!",
+      timestamp: "2024-10-05 2:30 PM",
+      flagged: true
+    },
+    {
+      id: "rev-002", 
+      reviewerName: "Anonymous User",
+      revieweeName: "Sarah Lim (Elderly)",
+      rating: 2,
+      comment: "I don't like Sarah's political views. She supports the wrong party and talks about politics all the time instead of focusing on the help I need. Also, she's from the LGBT community which I disagree with.",
+      timestamp: "2024-10-04 4:15 PM",
+      flagged: true
+    },
+    {
+      id: "rev-003",
+      reviewerName: "Tom Johnson", 
+      revieweeName: "Alice Tan (Volunteer)",
+      rating: 1,
+      comment: "Alice is a b**** and she smells bad. Her real name is Alice Tan Wei Ling and she works at ABC Company on Orchard Road. Total waste of time and she's ugly too.",
+      timestamp: "2024-10-03 11:45 AM",
+      flagged: true
+    },
+    {
+      id: "rev-004",
+      reviewerName: "Linda Wong",
+      revieweeName: "James Lee (Volunteer)", 
+      rating: 1,
+      comment: "This has nothing to do with the help provided but I wanted to say that I hate the government and think all politicians are corrupt. James was fine but I'm using this review to complain about my neighbor's dog.",
+      timestamp: "2024-10-02 9:20 AM",
+      flagged: true
+    },
+    {
+      id: "rev-005",
+      reviewerName: "Robert Chen",
+      revieweeName: "Mary Ng (Elderly)",
+      rating: 1,
+      comment: "Mary Ng is a horrible person. Her IC number is S1234567A and she lives at Blk 123 Ang Mo Kio Ave 3 #05-67. She has a criminal record and shouldn't be on this platform. Her daughter works at the bank downtown.",
+      timestamp: "2024-10-01 6:00 PM", 
+      flagged: true
+    },
+    {
+      id: "rev-006",
+      reviewerName: "Patricia Lim",
+      revieweeName: "Steven Koh (Volunteer)",
+      rating: 1,
+      comment: "Steven didn't show up on time and was very rude to me. When I asked him to help with groceries, he told me it wasn't his job and left early. Very unprofessional behavior and poor attitude.",
+      timestamp: "2024-09-30 3:45 PM",
+      flagged: false
+    }
+  ];
 
   const filteredUsers = users.filter(user =>
     user.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -494,8 +549,21 @@ export default function AdminDashboard() {
   };
 
   const handleRemoveReview = (reviewId: string) => {
+    const review = reviews.find(r => r.id === reviewId);
+    
+    // In a real implementation, this would call an API
     console.log("Removing review:", reviewId);
-    // Implementation would delete review
+    
+    if (review) {
+      toast({
+        title: "Review Removed",
+        description: `Review by ${review.reviewerName} has been permanently removed from the platform for policy violations.`,
+        variant: "default"
+      });
+      
+      // In a real app, you'd update the state or refetch data here
+      // setReviews(reviews.filter(r => r.id !== reviewId));
+    }
   };
 
   const getRoleStyles = (role: UserRole) => {
@@ -645,33 +713,30 @@ export default function AdminDashboard() {
                   <User className="w-6 h-6 text-muted-foreground" />
                 </div>
                 
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-foreground">{user.fullname}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">{user.fullname}</h3>
                     <div className="flex gap-2">
-                      <Badge className={getRoleStyles(user.role)}>{user.role}</Badge>
-                      <Badge className={getStatusBadgeColor(user.status)}>
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                      </Badge>
+                      <Badge className={`${getRoleStyles(user.role)} text-base px-4 py-2`}>{user.role}</Badge>
                     </div>
                   </div>
                   
-                  <div className="space-y-1 text-sm text-muted-foreground">
+                  <div className="space-y-2 text-base text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
+                      <Phone className="w-5 h-5" />
                       {user.phone}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {user.email}
+                      <Mail className="w-5 h-5" />
+                      {user.email || "Not Provided"}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-5 h-5" />
                       Joined: {new Date(user.createdAt).toLocaleDateString()}
                     </div>
                     {/* Account Status Information */}
                     <div className="flex items-center gap-2 font-medium">
-                      <User className="w-4 h-4" />
+                      <User className="w-5 h-5" />
                       <span className={`${
                         user.status === 'active' ? 'text-green-600' :
                         user.status === 'suspended' ? 'text-yellow-600' :
@@ -682,26 +747,17 @@ export default function AdminDashboard() {
                     </div>
                     {user.status === "suspended" && (
                       <div className="flex items-center gap-2 text-yellow-600">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-5 h-5" />
                         Unsuspends in: {getSuspensionTimeRemaining(user)}
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2 pt-2 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedUser(user)}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Button>
-                    
+                  <div className="flex gap-2 pt-3 flex-wrap">
                     {/* Suspended accounts auto-unsuspend when duration expires */}
                     {user.status === "suspended" && (
-                      <div className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                      <div className="px-3 py-2 text-sm bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
                         Auto-unsuspends: {getSuspensionTimeRemaining(user)}
                       </div>
                     )}
@@ -722,8 +778,8 @@ export default function AdminDashboard() {
                     
                     {/* Caregiver accounts remain permanently active */}
                     {user.role === "caregiver" && (
-                      <div className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-lg flex items-center gap-1">
-                        <UserCheck className="w-3 h-3" />
+                      <div className="px-3 py-2 text-sm bg-blue-100 text-blue-800 rounded-lg flex items-center gap-1">
+                        <UserCheck className="w-4 h-4" />
                         Active
                       </div>
                     )}
@@ -991,33 +1047,70 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">Review Moderation</h2>
       
+      {/* Review Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">{reviews.length}</div>
+          <div className="text-sm text-muted-foreground">Total Reviews</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-orange-600">{reviews.filter(r => r.flagged).length}</div>
+          <div className="text-sm text-muted-foreground">Reported Reviews</div>
+        </Card>
+      </div>
+
+      {/* Policy Notice */}
+      <Card className="p-4 mb-6 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="font-medium text-orange-900 dark:text-orange-100 mb-1">Review Moderation</h4>
+            <p className="text-sm text-orange-800 dark:text-orange-200">
+              Remove reviews that contain inappropriate content, personal information, or are unrelated to the service provided. 
+              Removed reviews will be permanently deleted and will not be visible to any users.
+            </p>
+          </div>
+        </div>
+      </Card>
+      
       <Card className="p-6 shadow-sm border-border/50">
-        <h3 className="text-base font-semibold text-foreground mb-4">Flagged Reviews</h3>
+        <h3 className="text-base font-semibold text-foreground mb-4">All Reviews</h3>
         
         {reviews.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No flagged reviews to moderate.</p>
+            <p className="text-muted-foreground">No reviews to moderate.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {reviews.map((review) => (
-              <Card key={review.id} className="p-5 bg-muted/50 shadow-sm border-border/50">
+              <Card key={review.id} className="p-5 shadow-sm border-border/50 bg-muted/50">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-semibold text-foreground">
                         {review.reviewerName} → {review.revieweeName}
                       </h4>
-                      <div className="flex items-center gap-1 mt-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < review.rating ? "text-warning" : "text-muted"}>★</span>
-                        ))}
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={i < review.rating ? "text-yellow-500" : "text-gray-300"}>★</span>
+                          ))}
+                          <span className="text-sm text-muted-foreground ml-1">({review.rating}/5)</span>
+                        </div>
+                        {review.flagged && (
+                          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Reported
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <p className="text-sm text-foreground">{review.comment}</p>
+                  <div className="bg-background p-3 rounded-lg border">
+                    <p className="text-sm text-foreground">"{review.comment}"</p>
+                  </div>
 
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
@@ -1028,7 +1121,7 @@ export default function AdminDashboard() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-red-600 hover:text-red-700"
                       onClick={() => handleRemoveReview(review.id)}
                     >
                       <XCircle className="w-4 h-4 mr-2" />

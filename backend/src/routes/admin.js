@@ -1,6 +1,7 @@
 const express = require('express');
 const adminController = require('../controllers/adminController');
 const { requireAuth } = require('../middleware/auth');
+const Role = require('../domain/enum/Role');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ const checkAdminRole = (req, res, next) => {
     finalRole: userRole
   });
   
-  if (userRole !== 'admin') {
+  if (userRole !== Role.ADMIN) {
     return res.status(403).json({ 
       error: 'Admin access required',
       debug: {
