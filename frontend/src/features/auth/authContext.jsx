@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from 'react';
 import { axiosInstance } from '../../components/axios';
+
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children })=>{
@@ -13,8 +14,8 @@ export const AuthProvider = ({ children })=>{
         try {
             console.log('AuthContext: Checking authentication status...');
             const res = await axiosInstance.get("/users/profile", { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
+            if (res.status ===200) {
+                const data = await res.data;
                 console.log('AuthContext: User authenticated:', data);
                 setUser(data);
             } else {
@@ -29,12 +30,10 @@ export const AuthProvider = ({ children })=>{
             setInitialized(true);
         }
     };
-
+    // Ensure auth check happen immediately on page load
     useEffect(() => {
-      if (!initialized){
         checkAuthStatus();
-      }
-    }, [initialized]);
+    }, []);
 
     return (
       <AuthContext.Provider value={{ user, setUser, loading, checkAuthStatus, initialized }}>

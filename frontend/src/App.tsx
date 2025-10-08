@@ -39,7 +39,7 @@ const App = () => (
               />
             }
           />
-          <Route path="roles" element={<RolesScreen />} />
+          <Route path="/roles" element={<RolesScreen />} />
           <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 

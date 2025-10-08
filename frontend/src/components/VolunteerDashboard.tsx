@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { 
   Activity,
   HelpCircle, 
@@ -17,6 +16,7 @@ import {
   Shield
 } from "lucide-react";
 import { axiosInstance } from "./axios";
+import useLocation from "../features/location/locationTracking";
 
 export default function VolunteerDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -64,6 +64,23 @@ export default function VolunteerDashboard() {
       requiredSkills: ["Shopping assistance", "Physical assistance"]
     }
   ];
+  const sendLocationToBackend = async (latitude,longitude) =>{
+      try {
+      const response = await axiosInstance.get(
+        "/volunteer/getPendingPosts", 
+        {params: {
+          latitude,  
+          longitude, 
+        },
+        withCredentials: true,
+    });
+      console.log("Location sent to backend:", response.data);
+    } catch (error) {
+      console.error("Error sending location to backend:", error);
+    }
+  };
+
+  const { location, error } = useLocation(sendLocationToBackend);
 
   const onSignOut = async () => {
         try{
