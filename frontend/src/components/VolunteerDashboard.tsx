@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback} from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +17,18 @@ import {
 } from "lucide-react";
 import { axiosInstance } from "./axios";
 import useLocation from "../features/location/locationTracking";
+import getProfile from "@/features/profile/getProfile";
+
+// Max number of posts to be fetched every call
+const LIMIT=10;
 
 export default function VolunteerDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset,setOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [helpRequests, setHelpRequests] = useState([]);
   const [volunteerData] = useState({
     name: "Sarah Volunteer",
     isVerified: true,
@@ -29,59 +37,82 @@ export default function VolunteerDashboard() {
     reviewCount: 38
   });
 
-  const helpRequests = [
-    {
-      id: 1,
-      title: "Help needed at Orchard Road MRT Station",
-      priority: "MEDIUM",
-      matchPercentage: 95,
-      description: "Need help carrying heavy groceries to taxi stand",
-      distance: "0.8 km away",
-      timeEstimate: "20 minutes",
-      requester: "Margaret Chen",
-      requiredSkills: ["Physical assistance", "Mobility support"]
+  // Sending location to fetch posts based on nearest location
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  // getting user live location from useLocation
+  const { location, error: locationError } = useLocation();
+
+  // getting user info from getProfile
+  // used later for passing user to backend when accepting using profile.data
+  const {profile} = getProfile();
+
+  // infinite scrolling setup
+  const lastPostElementRef = useCallback(
+    (node: Element | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      // guard for environments without IntersectionObserver (SSR / old browsers)
+      if (typeof IntersectionObserver === "undefined") return;
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setLoading(true);
+          setOffset((prevOffset) => prevOffset + LIMIT);
+        }
+      });
+
+      if (node) observer.current.observe(node);
     },
-    {
-      id: 2,
-      title: "Assistance with MRT navigation",
-      priority: "LOW",
-      matchPercentage: 88,
-      description: "Need help navigating from Raffles Place to Marina Bay",
-      distance: "1.2 km away",
-      timeEstimate: "15 minutes",
-      requester: "David Lim",
-      requiredSkills: ["Navigation help", "Mobility support"]
-    },
-    {
-      id: 3,
-      title: "Emergency grocery shopping help",
-      priority: "HIGH",
-      matchPercentage: 92,
-      description: "Urgent help needed for grocery shopping and delivery",
-      distance: "0.5 km away",
-      timeEstimate: "30 minutes",
-      requester: "Alice Wong",
-      requiredSkills: ["Shopping assistance", "Physical assistance"]
-    }
-  ];
-  const sendLocationToBackend = async (latitude,longitude) =>{
+    [loading, hasMore]
+  );
+
+  const fetchedOffsets = useRef(new Set());
+  // fetch posts when offset or location changes
+
+  useEffect(() =>{
+    if(!location) return;
+    if (fetchedOffsets.current.has(offset)) return;
+
+    fetchedOffsets.current.add(offset);
+    setLoading(true);
+
+    const fetchRequests = async (latitude,longitude) =>{
       try {
-      const response = await axiosInstance.get(
-        "/volunteer/getPendingPosts", 
-        {params: {
-          latitude,  
-          longitude, 
-        },
-        withCredentials: true,
-    });
-      console.log("Location sent to backend:", response.data);
-    } catch (error) {
-      console.error("Error sending location to backend:", error);
-    }
-  };
+        const response = await axiosInstance.get(
+          "/volunteer/getPendingPosts", 
+          {params: {
+            latitude,  
+            longitude, 
+            limit: LIMIT,
+            offset,
+          },
+          withCredentials: true,
+        });
 
-  const { location, error } = useLocation(sendLocationToBackend);
+        console.log("CHecking response format: ", response.data.data);
+        const newRequests = response.data.data || []; // change according to how backend return 
 
+        setHelpRequests((prevRequests) => {
+          const existingIds = new Set(prevRequests.map((r) => r.id)); // Set of existing request IDs
+          const filteredNew = newRequests.filter((r) => !existingIds.has(r.id)); // Remove duplicates
+          return [...prevRequests, ...filteredNew]; // Append the new unique requests to the existing ones
+        });
+
+        // Determine if there are more requests to load
+        setHasMore(newRequests.length === LIMIT);
+      } catch (error) {
+        console.error("Error to fetch help requests:", error);
+      }
+      setLoading(false);
+    };
+    fetchRequests(location.latitude,location.longitude);
+  },[offset,location]);
+
+
+
+  // Signout button
   const onSignOut = async () => {
         try{
           await axiosInstance.post(`/auth/logout`, {} ,{
@@ -161,11 +192,8 @@ export default function VolunteerDashboard() {
                     <h4 className="text-lg font-semibold text-foreground">{request.title}</h4>
                     
                     <div className="flex gap-2">
-                      <Badge className={getPriorityColor(request.priority)}>
-                        {request.priority} Priority
-                      </Badge>
-                      <Badge className="bg-success text-success-foreground">
-                        {request.matchPercentage}% Match
+                      <Badge className={getPriorityColor(request.urgency)}>
+                        {request.urgency} Priority
                       </Badge>
                     </div>
 
@@ -174,26 +202,18 @@ export default function VolunteerDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{request.distance}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{request.timeEstimate}</span>
+                        <span>{}</span>
+                        {/* TODO: Add distance after calcuating here */}
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <User className="h-4 w-4" />
-                        <span>{request.requester}</span>
+                        <span>{request.user_profiles.username}</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-foreground">Required Skills:</p>
                       <div className="flex flex-wrap gap-2">
-                        {request.requiredSkills.map((skill, index) => (
-                          <Badge key={index} variant="outline" className="bg-muted">
-                            {skill}
-                          </Badge>
-                        ))}
                       </div>
                     </div>
 
