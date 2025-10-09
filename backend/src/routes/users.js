@@ -21,7 +21,7 @@ router.get('/profile', requireAuth, (req, res) => {
   const userProfile = {
     id: req.user.id,
     email: req.user.email,
-    name: req.user.user_metadata?.name || req.user.user_metadata?.full_name,
+    name: req.user.username,
     avatar: req.user.user_metadata?.avatar_url,
     provider: req.user.user_metadata?.provider,
     created_at: req.user.created_at,
