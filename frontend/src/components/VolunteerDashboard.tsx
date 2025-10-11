@@ -9,13 +9,13 @@ import {
   Star,
   LogOut,
   MapPin,
-  Clock,
   Menu,
   Check,
   Navigation,
   Shield
 } from "lucide-react";
 import { axiosInstance } from "./axios";
+import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
 
@@ -23,6 +23,7 @@ import getProfile from "@/features/profile/getProfile";
 const LIMIT=10;
 
 export default function VolunteerDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAvailable, setIsAvailable] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -36,7 +37,7 @@ export default function VolunteerDashboard() {
     averageRating: 4.8,
     reviewCount: 38
   });
-
+  
   // Sending location to fetch posts based on nearest location
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -125,21 +126,22 @@ export default function VolunteerDashboard() {
           }
       }
 
+  // todo
   const handleAcceptRequest = (requestId: number) => {
     console.log("Accepting request:", requestId);
   };
-
+  // todo
   const handleViewRoute = (requestId: number) => {
     console.log("Viewing route for request:", requestId);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH":
+      case "high":
         return "bg-destructive text-destructive-foreground";
-      case "MEDIUM":
+      case "medium":
         return "bg-warning text-warning-foreground";
-      case "LOW":
+      case "low":
         return "bg-success text-success-foreground";
       default:
         return "bg-muted text-muted-foreground";
@@ -182,13 +184,16 @@ export default function VolunteerDashboard() {
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-foreground">Nearby Help Requests</h3>
               
-              <Button variant="secondary" size="lg" className="w-full bg-primary/20 hover:bg-primary/30 text-foreground">
+              <Button 
+              variant="secondary" size="lg" 
+              className="w-full bg-primary/20 hover:bg-primary/30 text-foreground"
+              onClick={() => navigate("/request_filter")}>
                 View All Requests
               </Button>
 
               <div className="space-y-4">
-                {helpRequests.map((request) => (
-                  <Card key={request.id} className="p-6 space-y-4">
+                {helpRequests.map((request, index) => (
+                  <Card key={request.id} className="p-6 space-y-4" ref={helpRequests.length === index + 1 ? lastPostElementRef : null}>
                     <h4 className="text-lg font-semibold text-foreground">{request.title}</h4>
                     
                     <div className="flex gap-2">
