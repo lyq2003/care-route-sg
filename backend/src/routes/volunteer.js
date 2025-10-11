@@ -7,5 +7,5 @@ router.get('/profile', requireAuth, VolunteerController.getProfile);
 router.put('/profile', requireAuth, VolunteerController.updateProfile);
 
 router.get('/getPendingPosts', requireAuth, VolunteerController.getPendingRequest);
-
+router.get('/getFilteredRequests', requireAuth, VolunteerController.getFilteredRequests);
 module.exports = router;

@@ -26,13 +26,13 @@ class VolunteerController {
 
     static async getPendingRequest(req, res) {
         try{
-            const { latitude, longitude } = req.query;
+            const { latitude, longitude, limit, offset } = req.query;
             if (!latitude || !longitude) {
                 return res.status(400).json({ message: 'Location required' });
             }
             
-            const pendingRequests = await VolunteerServices.getPendingRequests(latitude, longitude);
-            console.log("Posts are ", pendingRequests);
+            const pendingRequests = await VolunteerServices.getPendingRequests(latitude, longitude,limit,offset);
+            
             return res.status(200).json({
                 message: 'Pending help requests fetched successfully',
                 data: pendingRequests
@@ -40,6 +40,30 @@ class VolunteerController {
         }catch(err){
             console.error('Error getting pending help requests,',err.message);
             res.status(500).json({error:"Failed to get pending help requests"});
+        }
+    }
+
+    static async getFilteredRequests(req,res) {
+        try{
+            const filters = {
+                urgency : req.query.priority,
+                distance : req.query.distance
+            };
+
+            const filteredPosts = await VolunteerServices.getFilteredRequests(filters);
+
+            res.json({
+                success:true,
+                posts:filteredPosts,
+                count: filteredPosts.length 
+            })
+        }catch (err) {
+            console.error('Filter requests error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to filter requests',
+            details: err.message 
+            });
         }
     }
 }
