@@ -147,6 +147,9 @@ export default function ElderlyDashboard() {
 
   // to do soon enough
   const onRequestHelp = () =>{
+
+    navigate('/request_help');
+    
     
   }
 

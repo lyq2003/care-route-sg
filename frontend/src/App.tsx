@@ -8,7 +8,9 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
 import ElderlyDashboard from "./components/ElderlyDashboard";
+import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerDashboard from "./components/VolunteerDashboard";
+import RequestFileter from "./components/RequestFilter";
 import AdminDashboard from "./components/AdminDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
@@ -38,7 +40,7 @@ const App = () => (
               />
             }
           />
-          <Route path="roles" element={<RolesScreen />} />
+          <Route path="/roles" element={<RolesScreen />} />
           <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 
@@ -49,12 +51,18 @@ const App = () => (
                 <ElderlyDashboard/>
               }
             />
+
             <Route
-              path="/volunteer_dashboard"
+              path="/request_help"
               element={
-                <VolunteerDashboard/>
+                <RequestHelpScreen onBack={function (): void {
+                 
+                } }/>
               }
             />
+
+            <Route path="/volunteer_dashboard"element={<VolunteerDashboard/>}/>
+            <Route path="/request_filter" element={<RequestFileter/>}/>
             <Route
               path="/admin_dashboard"
               element={

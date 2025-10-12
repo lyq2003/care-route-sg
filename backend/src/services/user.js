@@ -105,13 +105,13 @@ class User {
 
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
         id, {
-           email,
-        user_metadata: {
-          ...currentUser.user.user_metadata,
-          name,
-          avatar_url: avatar,
-          full_name: name
-        }
+          email,
+          user_metadata: {
+            ...currentUser.user.user_metadata,
+            name,
+            avatar_url: avatar,
+            full_name: name
+          }
       });
       
       if (error) {
