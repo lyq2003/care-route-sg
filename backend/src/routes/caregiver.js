@@ -1,0 +1,14 @@
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const CaregiverController = require('../controllers/caregiverController');
+
+router.use(auth);
+router.get('/me', CaregiverController.me);
+router.patch('/me', CaregiverController.updateProfile);
+router.post('/link', CaregiverController.linkByPIN);
+router.get('/linked-elderly', CaregiverController.getLinkedElderly);
+router.post('/reports', CaregiverController.submitReport);
+router.get('/history/:elderlyUserId', CaregiverController.requestHistory);
+
+module.exports = router;

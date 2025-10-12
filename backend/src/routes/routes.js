@@ -7,6 +7,7 @@ const adminRoutes = require('./admin');
 const userRoutes = require('./users');
 const elderlyRoutes = require('./elderly')
 const volunteerRoutes = require('./volunteer')
+const caregiverRoutes = require('./caregiver')
 
 router.use('/auth', authRoutes);
 router.use('/profile', profileRoutes);
@@ -14,5 +15,6 @@ router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
 router.use('/elderly', elderlyRoutes);
 router.use('/volunteer', volunteerRoutes);
+router.use('/caregiver',caregiverRoutes)
 
 module.exports= router;
