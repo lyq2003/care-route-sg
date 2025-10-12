@@ -207,12 +207,12 @@ export default function VolunteerDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{}</span>
-                        {/* TODO: Add distance after calcuating here */}
+                        <span>{request.address}</span>
+                        <span className="ml-2">Distance: {Math.round(request.distance_meters)}m</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <User className="h-4 w-4" />
-                        <span>{request.user_profiles.username}</span>
+                        <span>{request.username}</span>
                       </div>
                     </div>
 

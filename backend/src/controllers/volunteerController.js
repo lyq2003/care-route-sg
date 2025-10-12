@@ -33,6 +33,7 @@ class VolunteerController {
             
             const pendingRequests = await VolunteerServices.getPendingRequests(latitude, longitude,limit,offset);
             
+            console.log("Pending request json format check:",pendingRequests);
             return res.status(200).json({
                 message: 'Pending help requests fetched successfully',
                 data: pendingRequests
