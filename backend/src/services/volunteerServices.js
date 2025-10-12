@@ -3,12 +3,13 @@ const { supabase, supabaseAdmin } = require('../config/supabase');
 const router= express.Router();
 
 async function getPendingRequests(latitude,longitude,limit,offset){
-    const { data, error } = await supabaseAdmin
-    .from('help_request')
-    .select('*, user_profiles(username)')
-    .eq('helpRequestStatus', 1)
-    .range(offset,offset+limit-1);
-
+    const { data, error } = await supabaseAdmin.rpc('get_pending_requests_nearby', {
+        lat: latitude,
+        lon: longitude,
+        radius_meters: 2000,
+        limit_count: limit,
+        offset_count: offset
+    });
     if(error) throw error;
     return data;
 }

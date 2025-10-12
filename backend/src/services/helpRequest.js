@@ -6,10 +6,20 @@ const { supabaseAdmin, supabase } = require('../config/supabase');
 
 class HelpRequest {
 
-  static async createRequest(requesterId, longitude, latitude, urgency, image) {
+  static async createRequest(requesterId, longitude, latitude,address,description, urgency, image) {
     const { data, error } = await supabaseAdmin
       .from("help_request")
-      .insert({ requesterId: requesterId, longitude: longitude, latitude: latitude, urgency: urgency, image: image, helpRequestStatus: 1 })
+      .insert({
+        requesterId: requesterId,
+        longitude: longitude,
+        latitude: latitude,
+        address:address,
+        description:description,
+        urgency: urgency,
+        image: image,
+        helpRequestStatus: 1,
+        geom: `SRID=4326;POINT(${longitude} ${latitude})`,
+      })
       .select();
 
     if (error) {
