@@ -36,21 +36,6 @@ const checkAdminRole = (req, res, next) => {
 
 router.use(checkAdminRole);
 
-// Test route for debugging authentication
-// GET /api/admin/test - Test admin authentication
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Admin authentication successful',
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      role: req.user.role,
-      metadata: req.user.user_metadata
-    }
-  });
-});
-
 // Dashboard Routes
 // GET /api/admin/stats - Get dashboard statistics
 router.get('/stats', adminController.getDashboardStats);
