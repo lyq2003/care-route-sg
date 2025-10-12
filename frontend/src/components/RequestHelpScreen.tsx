@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
+import useLocation from "../features/location/locationTracking";
 
 interface RequestHelpScreenProps {
   onBack: () => void;
@@ -22,7 +23,9 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
 
   const [image, setImage] = useState<File | null>(null);
 
-
+  // getting user live location from useLocation
+  const { location, error: locationError } = useLocation();
+  
   const [matchedVolunteer] = useState({
     name: "Sarah Tan",
     phone: "+65 9876 5432",
@@ -76,13 +79,16 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
     submitFormData.append("urgency", formData.urgency);
     submitFormData.append("image", null);
     submitFormData.append("userID", userID);
+    submitFormData.append("longitude", location.longitude);
+    submitFormData.append("latitude", location.latitude);
 
     if (image) {
       submitFormData.append("image", image);
     }
 
     try {
-      const response = await axios.post("/elderly/requestHelp", submitFormData, {
+      const response = await axios.post("/elderly/requestHelp",
+        submitFormData, {
         withCredentials: true, headers: {
           'Content-Type': 'multipart/form-data'
         }
