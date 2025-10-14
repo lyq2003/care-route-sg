@@ -1,4 +1,5 @@
-import { useState,useEffect } from "react";
+import { useState,useEffect, useRef } from "react";
+import { Loader } from "@googlemaps/js-api-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,11 @@ export default function ElderlyDashboard() {
     from: "",
     to: ""
   });
-  const [showRouteResults, setShowRouteResults] = useState(false);
+	const [showRouteResults, setShowRouteResults] = useState(false);
+	const [routeResults, setRouteResults] = useState<any[]>([]);
+	const [googleLoaded, setGoogleLoaded] = useState(false);
+	const fromInputRef = useRef<HTMLInputElement | null>(null);
+	const toInputRef = useRef<HTMLInputElement | null>(null);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -154,14 +159,90 @@ export default function ElderlyDashboard() {
     
   }
 
-  const onSmartRoutes = ()=>{}
+	const onSmartRoutes = ()=>{
+		setActiveTab("routes");
+	}
 
   
-  const handleRouteSearch = () => {
-    if (routeFormData.from && routeFormData.to) {
-      setShowRouteResults(true);
-    }
-  };
+	const handleRouteSearch = async () => {
+		if (!routeFormData.from || !routeFormData.to) return;
+		if (!googleLoaded || !(window as any).google) {
+			setRouteResults(defaultRouteResults);
+			setShowRouteResults(true);
+			return;
+		}
+
+		const google = (window as any).google as typeof window.google;
+		const directionsService = new google.maps.DirectionsService();
+		try {
+			const response = await directionsService.route({
+				origin: routeFormData.from,
+				destination: routeFormData.to,
+				travelMode: google.maps.TravelMode.TRANSIT,
+				provideRouteAlternatives: true
+			});
+			const parsed = (response.routes || []).map((r, idx) => {
+				const leg = r.legs?.[0];
+				const durationText = leg?.duration?.text || "";
+				const summary = r.summary || leg?.steps?.map(s => s.instructions).join(" → ") || "Route";
+				return {
+					id: idx + 1,
+					mode: "Transit",
+					route: summary.replace(/<[^>]*>/g, ""),
+					accessibility: "Public transport options may vary",
+					time: durationText,
+					icon: Train
+				};
+			});
+			setRouteResults(parsed);
+			setShowRouteResults(true);
+		} catch (err) {
+			console.error("Directions error", err);
+			setShowRouteResults(true);
+		}
+	};
+
+	// Load Google Maps JS API and attach Places Autocomplete to inputs
+	useEffect(() => {
+		let cancelled = false;
+		const init = async () => {
+			const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+			if (!apiKey) return;
+			try {
+				const loader = new Loader({
+					apiKey,
+					version: "weekly",
+					libraries: ["places"] as any
+				});
+				await (loader as any).load();
+				if (cancelled) return;
+				setGoogleLoaded(true);
+				const google = (window as any).google as typeof window.google;
+				if (fromInputRef.current) {
+					const ac = new google.maps.places.Autocomplete(fromInputRef.current, {
+						fields: ["formatted_address", "geometry", "place_id"],
+					});
+					ac.addListener("place_changed", () => {
+						const place = ac.getPlace();
+						setRouteFormData(prev => ({ ...prev, from: place.formatted_address || prev.from }));
+					});
+				}
+				if (toInputRef.current) {
+					const ac = new google.maps.places.Autocomplete(toInputRef.current, {
+						fields: ["formatted_address", "geometry", "place_id"],
+					});
+					ac.addListener("place_changed", () => {
+						const place = ac.getPlace();
+						setRouteFormData(prev => ({ ...prev, to: place.formatted_address || prev.to }));
+					});
+				}
+			} catch (err) {
+				console.error("Failed to load Google Maps API", err);
+			}
+		};
+		init();
+		return () => { cancelled = true; };
+	}, []);
 
   const volunteerData = {
     name: "Li Wei",
@@ -170,7 +251,7 @@ export default function ElderlyDashboard() {
     status: "On the way"
   };
 
-  const routeResults = [
+  const defaultRouteResults = [
     {
       id: 1,
       mode: "Bus",
@@ -523,6 +604,7 @@ export default function ElderlyDashboard() {
                     onChange={(e) => setRouteFormData({ ...routeFormData, from: e.target.value })}
                     className="h-14 text-lg"
                     placeholder="Current location or address"
+                    ref={fromInputRef}
                   />
                 </div>
 
@@ -536,6 +618,7 @@ export default function ElderlyDashboard() {
                     onChange={(e) => setRouteFormData({ ...routeFormData, to: e.target.value })}
                     className="h-14 text-lg"
                     placeholder="Destination address"
+                    ref={toInputRef}
                   />
                 </div>
 
