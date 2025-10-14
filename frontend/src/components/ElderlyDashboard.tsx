@@ -1,5 +1,5 @@
 import { useState,useEffect, useRef } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -209,12 +209,8 @@ export default function ElderlyDashboard() {
 			const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 			if (!apiKey) return;
 			try {
-				const loader = new Loader({
-					apiKey,
-					version: "weekly",
-					libraries: ["places"] as any
-				});
-				await (loader as any).load();
+				setOptions({ key: apiKey, v: "weekly", libraries: ["places"] });
+				await importLibrary("places");
 				if (cancelled) return;
 				setGoogleLoaded(true);
 				const google = (window as any).google as typeof window.google;
@@ -224,6 +220,7 @@ export default function ElderlyDashboard() {
 					});
 					ac.addListener("place_changed", () => {
 						const place = ac.getPlace();
+						console.log("[SmartRoute] From selected:", place?.formatted_address, place);
 						setRouteFormData(prev => ({ ...prev, from: place.formatted_address || prev.from }));
 					});
 				}
@@ -233,6 +230,7 @@ export default function ElderlyDashboard() {
 					});
 					ac.addListener("place_changed", () => {
 						const place = ac.getPlace();
+						console.log("[SmartRoute] To selected:", place?.formatted_address, place);
 						setRouteFormData(prev => ({ ...prev, to: place.formatted_address || prev.to }));
 					});
 				}
