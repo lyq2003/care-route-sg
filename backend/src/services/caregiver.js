@@ -13,7 +13,7 @@ const CaregiverServices = {
     if (pinErr || !elderlyProfile) throw new Error('Invalid or expired PIN');
 
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .upsert(
         { caregiver_user_id: caregiverUserId, elderly_user_id: elderlyProfile.user_id },
         { onConflict: 'caregiver_user_id,elderly_user_id' }
