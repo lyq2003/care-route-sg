@@ -8,4 +8,6 @@ router.put('/profile', requireAuth, VolunteerController.updateProfile);
 
 router.get('/getPendingPosts', requireAuth, VolunteerController.getPendingRequest);
 router.get('/getFilteredRequests', requireAuth, VolunteerController.getFilteredRequests);
+router.put('/acceptRequest', requireAuth, VolunteerController.acceptRequest);
+
 module.exports = router;

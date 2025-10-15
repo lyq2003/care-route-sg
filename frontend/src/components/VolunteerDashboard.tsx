@@ -30,23 +30,34 @@ export default function VolunteerDashboard() {
   const [offset,setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [helpRequests, setHelpRequests] = useState([]);
-  const [volunteerData] = useState({
-    name: "Sarah Volunteer",
-    isVerified: true,
-    totalHelped: 42,
-    averageRating: 4.8,
-    reviewCount: 38
+  const [volunteerData, setVolunteerData] = useState({
+    name: "Unknown Volunteer",
+    isVerified: false,
+    totalHelped: 0,
+    averageRating: 0,
+    reviewCount: 0
   });
   
+  // getting user info from getProfile
+  // used later for passing user to backend when accepting using profile.data
+  const {profile} = getProfile();
+
+  useEffect(()=>{
+    if(!profile) return;
+    setVolunteerData({
+      name: profile.data?.name || "Unknown Volunteer", // Fallback to "Unknown Volunteer" if name is undefined
+      isVerified: profile.data?.isVerified ?? false, // Default to false if not available
+      totalHelped: profile.data?.totalHelped || 0, // Default to 0 if not available
+      averageRating: profile.data?.averageRating || 0, // Default to 0 if not available
+      reviewCount: profile.data?.reviewCount || 0 // Default to 0 if not available
+    });
+  }, [profile]);
+
   // Sending location to fetch posts based on nearest location
 
   const observer = useRef<IntersectionObserver | null>(null);
   // getting user live location from useLocation
   const { location, error: locationError } = useLocation();
-
-  // getting user info from getProfile
-  // used later for passing user to backend when accepting using profile.data
-  const {profile} = getProfile();
 
   // infinite scrolling setup
   const lastPostElementRef = useCallback(
@@ -92,8 +103,7 @@ export default function VolunteerDashboard() {
           withCredentials: true,
         });
 
-        console.log("CHecking response format: ", response.data.data);
-        const newRequests = response.data.data || []; // change according to how backend return 
+        const newRequests = response.data.data || []; 
 
         setHelpRequests((prevRequests) => {
           const existingIds = new Set(prevRequests.map((r) => r.id)); // Set of existing request IDs
@@ -112,7 +122,6 @@ export default function VolunteerDashboard() {
   },[offset,location]);
 
 
-
   // Signout button
   const onSignOut = async () => {
         try{
@@ -127,8 +136,32 @@ export default function VolunteerDashboard() {
       }
 
   // todo
-  const handleAcceptRequest = (requestId: number) => {
-    console.log("Accepting request:", requestId);
+  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+      try{
+        const response = await axiosInstance.put("/volunteer/acceptRequest",
+          {params: {
+              requestId,
+              volunteerId,
+            },
+            withCredentials: true
+          }
+         )
+        if (response.data.success) {
+        // Handle success( maybe change to new page see how)
+        setHelpRequests((prevRequests) =>
+          prevRequests.filter((request) => request.id !== requestId)
+        );
+        console.log(`Request ${requestId} accepted successfully.`);
+        // Optionally show a success message to the user
+        alert("Request accepted successfully!");
+      } else {
+        console.error("Failed to accept the request:", response.data.message);
+        alert("Failed to accept the request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      alert("Error accepting request. Please try again.");
+    }
   };
   // todo
   const handleViewRoute = (requestId: number) => {
@@ -224,7 +257,7 @@ export default function VolunteerDashboard() {
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id)}
+                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />
