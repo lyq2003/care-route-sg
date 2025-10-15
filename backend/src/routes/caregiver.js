@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const CaregiverController = require('../controllers/caregiverController');
 
-router.use(auth);
+router.use(requireAuth);
 router.get('/me', CaregiverController.me);
 router.patch('/me', CaregiverController.updateProfile);
 router.post('/link', CaregiverController.linkByPIN);

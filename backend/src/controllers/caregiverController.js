@@ -1,4 +1,4 @@
-const CaregiverServices = require('../services/caregiverServices');
+const CaregiverServices = require('../services/caregiver');
 const Caregiver = require('../domain/caregiver');
 
 class CaregiverController {
