@@ -69,16 +69,37 @@ class VolunteerController {
         }
     }
 
+    static async cancelRequest(req,res) {
+        try{
+            const {requestId} = req.body.params;
+            const volunteerId = req.user.id;
+            const cancelledRequest = await VolunteerServices.cancelRequest(requestId,volunteerId);
+            console.log("Cancelled Request are:",cancelledRequest);
+            return res.status(200).json({
+                success: true,
+                message: 'Cancelled request successfully',
+                data: acceptRequest
+            });
+        }
+        catch (err) {
+            console.error('Cancelling requests error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to cancel requests',
+            details: err.message 
+            });
+        }
+    }
     static async acceptRequest(req,res) {
         try{
             const {requestId, volunteerId} = req.body.params;
 
-            const acceptedRequest = await VolunteerServices.acceptRequest(requestId,volunteerId);
-            console.log("Accepted Request are:",acceptedRequest);
+            const acceptRequest = await VolunteerServices.acceptRequest(requestId,volunteerId);
+            console.log("Accepted Request are:",acceptRequest);
             return res.status(200).json({
                 success: true,
                 message: 'Accepted request successfully',
-                data: acceptedRequest
+                data: acceptRequest
             });
         }
         catch (err) {
@@ -86,6 +107,26 @@ class VolunteerController {
             res.status(500).json({ 
             success: false, 
             error: 'Failed to accept requests',
+            details: err.message 
+            });
+        }
+    }
+
+    static async getAcceptedRequest(req,res) {
+        try{
+            const volunteerId = req.user.id;
+            const acceptedRequest = await VolunteerServices.getAcceptedRequest(volunteerId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Get accepted request successfully',
+                data: acceptedRequest
+            });
+        }catch (err) {
+            console.error('Failed to get Accepted requests:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get accepted requests',
             details: err.message 
             });
         }

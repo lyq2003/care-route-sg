@@ -9,6 +9,7 @@ import { MapPin, Clock, User, Filter, ArrowLeft, Check, Navigation } from "lucid
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import useLocation from "@/features/location/locationTracking";
+import getProfile from "@/features/profile/getProfile";
 
 // Max number of posts to be fetched every call
 const LIMIT=10;
@@ -24,6 +25,9 @@ export default function RequestsFilter() {
     const [error, setError] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [offset,setOffset] = useState(0);
+
+    // getting user info from getProfile
+    const {profile} = getProfile();
 
     // color of the priority
     const getPriorityColor = (priority: string) => {
@@ -196,10 +200,33 @@ export default function RequestsFilter() {
         });
     };
 
-    // todo
-    const handleAcceptRequest = (requestId: number) => {
-        console.log("Accepting request:", requestId);
-    };
+  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+      try{
+        const response = await axiosInstance.put("/volunteer/cancelRequest",
+          {params: {
+              requestId,
+              volunteerId,
+            },
+            withCredentials: true,
+          }
+         )
+        if (response.data.success) {
+        // Handle success( maybe change to new page see how)
+        setRequests((prevRequests) =>
+          prevRequests.filter((request) => request.id !== requestId)
+        );
+        console.log(`Request ${requestId} accepted successfully.`);
+        // Optionally show a success message to the user
+        alert("Request accepted successfully!");
+      } else {
+        console.error("Failed to accept the request:", response.data.message);
+        alert("Failed to accept the request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      alert("Error accepting request. Please try again.");
+    }
+  };
     // todo
     const handleViewRoute = (requestId: number) => {
         console.log("Viewing route for request:", requestId);
@@ -281,8 +308,8 @@ export default function RequestsFilter() {
         {/* Results */}
         <div className="px-6 py-6 space-y-4">
             {requests.length > 0 ? (
-            requests.map((request) => (
-                  <Card key={request.id} className="p-6 space-y-4">
+            requests.map((request, index) => (
+                <Card key={request.id} className="p-6 space-y-4" ref={requests.length === index + 1 ? lastPostElementRef : null}>
                     <h4 className="text-lg font-semibold text-foreground">{request.title}</h4>
                     
                     <div className="flex gap-2">
@@ -296,8 +323,8 @@ export default function RequestsFilter() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{}</span>
-                        {/* TODO: Add distance after calcuating here */}
+                        <span>{request.address}</span>
+                        <span className="ml-2">Distance: {Math.round(request.distance_meters)}m</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <User className="h-4 w-4" />
@@ -313,7 +340,7 @@ export default function RequestsFilter() {
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id)}
+                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />

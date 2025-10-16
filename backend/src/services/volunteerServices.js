@@ -40,7 +40,7 @@ async function getFilteredRequests(latitude,longitude,filters,limit,offset){
 async function acceptRequest(postId,volunteerId){
     const {data,error}= await supabaseAdmin
     .from("help_request")
-    .update({assignedVolunteerId: volunteerId})
+    .update({assignedVolunteerId: volunteerId, helpRequestStatus: "2" })
     .eq('id',postId)
     .select()
     .single();
@@ -49,8 +49,36 @@ async function acceptRequest(postId,volunteerId){
     return data;
 }
 
+async function cancelRequest(postId,volunteerId){
+    const {data,error}= await supabaseAdmin
+    .from("help_request")
+    .update({assignedVolunteerId: null, helpRequestStatus: "1" })
+    .eq('id',postId)
+    .select()
+    .single();
+
+    if(error) throw error;
+    return data;
+}
+
+async function getAcceptedRequest(volunteerId){
+    const {data,error} = await supabaseAdmin
+    .from("help_request")
+    .select('*')
+    .eq("assignedVolunteerId", volunteerId)
+    .eq("helpRequestStatus", "2")
+    .select()
+    .single()
+    
+    if(error) throw error;
+    return data;
+}
+
+
 module.exports = {
     getPendingRequests,
     getFilteredRequests,
     acceptRequest,
+    getAcceptedRequest,
+    cancelRequest,
 }

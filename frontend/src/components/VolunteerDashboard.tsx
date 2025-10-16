@@ -18,6 +18,7 @@ import { axiosInstance } from "./axios";
 import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
+import AcceptedRequest from "./VolunteerAcceptedRequest";
 
 // Max number of posts to be fetched every call
 const LIMIT=10;
@@ -39,7 +40,6 @@ export default function VolunteerDashboard() {
   });
   
   // getting user info from getProfile
-  // used later for passing user to backend when accepting using profile.data
   const {profile} = getProfile();
 
   useEffect(()=>{
@@ -135,7 +135,7 @@ export default function VolunteerDashboard() {
           }
       }
 
-  // todo
+  
   const handleAcceptRequest =async (requestId: number, volunteerId) => {
       try{
         const response = await axiosInstance.put("/volunteer/acceptRequest",
@@ -147,13 +147,14 @@ export default function VolunteerDashboard() {
           }
          )
         if (response.data.success) {
-        // Handle success( maybe change to new page see how)
-        setHelpRequests((prevRequests) =>
-          prevRequests.filter((request) => request.id !== requestId)
-        );
-        console.log(`Request ${requestId} accepted successfully.`);
-        // Optionally show a success message to the user
-        alert("Request accepted successfully!");
+          // Handle success( maybe change to new page see how)
+          navigate("/volunteer_accepted_request")
+          /*setHelpRequests((prevRequests) =>
+            prevRequests.filter((request) => request.id !== requestId)
+          );
+          console.log(`Request ${requestId} accepted successfully.`);
+          // Optionally show a success message to the user
+          alert("Request accepted successfully!");*/
       } else {
         console.error("Failed to accept the request:", response.data.message);
         alert("Failed to accept the request. Please try again.");
@@ -279,13 +280,8 @@ export default function VolunteerDashboard() {
           </div>
         );
 
-      case "help":
-        return (
-          <div className="text-center py-12">
-            <HelpCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-xl text-muted-foreground">Help Center - Coming Soon</p>
-          </div>
-        );
+      case "Accepted_request":
+        return <AcceptedRequest />;
 
       case "profile":
         return (
@@ -374,7 +370,7 @@ export default function VolunteerDashboard() {
         <div className="flex">
           {[
             { id: "dashboard", icon: Activity, label: "Dashboard" },
-            { id: "help", icon: HelpCircle, label: "Help" },
+            { id: "Accepted_request", icon: HelpCircle, label: "Accepted_request" },
             { id: "profile", icon: User, label: "Profile" }
           ].map((tab) => (
             <button
