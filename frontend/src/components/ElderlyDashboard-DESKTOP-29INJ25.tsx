@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import SmartRouteMap from "@/components/ui/SmartRouteMap";
 import { 
   Home, 
   HelpCircle, 
@@ -53,14 +52,29 @@ export default function ElderlyDashboard() {
     from: "",
     to: ""
   });
-  const [showRouteResults, setShowRouteResults] = useState(false);
-  const [routeResults, setRouteResults] = useState<any[]>([]);
-  const [googleLoaded, setGoogleLoaded] = useState(false);
-  const fromInputRef = useRef<HTMLInputElement | null>(null);
-  const toInputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const [fromPredictions, setFromPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
-  const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+	const [showRouteResults, setShowRouteResults] = useState(false);
+	const [routeResults, setRouteResults] = useState<any[]>([]);
+	const [googleLoaded, setGoogleLoaded] = useState(false);
+	const fromInputRef = useRef<HTMLInputElement | null>(null);
+	const toInputRef = useRef<HTMLInputElement | null>(null);
+	const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+	const [fromPredictions, setFromPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+	const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+
+	const logPredictions = (query: string, fieldLabel: string) => {
+		if (!query || !query.trim()) return;
+		const service = autocompleteServiceRef.current;
+		if (!googleLoaded || !(window as any).google || !service) return;
+		service.getPlacePredictions(
+			{ input: query, componentRestrictions: { country: "sg" } as any },
+			(predictions: google.maps.places.AutocompletePrediction[] | null) => {
+				const brief = (predictions || []).map(p => ({ description: p.description, place_id: p.place_id }));
+				if (fieldLabel === "From") setFromPredictions(brief);
+				if (fieldLabel === "To") setToPredictions(brief);
+			}
+		);
+	};
+
   const [profileData, setProfileData] = useState({
     fullName: "",
     email: "",
@@ -142,60 +156,6 @@ export default function ElderlyDashboard() {
     };
     fetchProfile();
     }, []);
-
-  const logPredictions = (query: string, fieldLabel: string) => {
-    if (!query || !query.trim()) return;
-    const service = autocompleteServiceRef.current;
-    if (!googleLoaded || !(window as any).google || !service) return;
-    service.getPlacePredictions(
-      { input: query, componentRestrictions: { country: "sg" } as any },
-      (predictions: google.maps.places.AutocompletePrediction[] | null) => {
-        const brief = (predictions || []).map(p => ({ description: p.description, place_id: p.place_id }));
-        if (fieldLabel === "From") setFromPredictions(brief);
-        if (fieldLabel === "To") setToPredictions(brief);
-      }
-    );
-  };
-
-  // Load Google Maps JS API and attach Places Autocomplete to inputs
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-      if (!apiKey) return;
-      try {
-        setOptions({ key: apiKey, v: "weekly", libraries: ["places"] });
-        await importLibrary("places");
-        if (cancelled) return;
-        setGoogleLoaded(true);
-        const google = (window as any).google as typeof window.google;
-        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-        if (fromInputRef.current) {
-          const ac = new google.maps.places.Autocomplete(fromInputRef.current, {
-            fields: ["formatted_address", "geometry", "place_id"],
-          });
-          ac.addListener("place_changed", () => {
-            const place = ac.getPlace();
-            setRouteFormData(prev => ({ ...prev, from: place.formatted_address || prev.from }));
-          });
-        }
-        if (toInputRef.current) {
-          const ac = new google.maps.places.Autocomplete(toInputRef.current, {
-            fields: ["formatted_address", "geometry", "place_id"],
-          });
-          ac.addListener("place_changed", () => {
-            const place = ac.getPlace();
-            setRouteFormData(prev => ({ ...prev, to: place.formatted_address || prev.to }));
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load Google Maps API", err);
-      }
-    };
-    init();
-    return () => { cancelled = true; };
-  }, []);
-
     const onSignOut = async () => {
       try{
         await axiosInstance.post(`/auth/logout`, {} ,{
@@ -210,29 +170,100 @@ export default function ElderlyDashboard() {
 
   // to do soon enough
   const onRequestHelp = () =>{
+
+    navigate('/request_help');
+    
     
   }
 
-const onSmartRoutes = () => {
-  setActiveTab("routes");
-};
-
+	const onSmartRoutes = ()=>{
+		setActiveTab("routes");
+	}
 
   
-  const handleRouteSearch = async () => {
-    if (routeFormData.from && routeFormData.to) {
-      try {
-        // For now, use the default route results
-        // In a real implementation, you would call an API here
-        setRouteResults(defaultRouteResults);
-        setShowRouteResults(true);
-      } catch (error) {
-        console.error("Error fetching routes:", error);
-        setRouteResults(defaultRouteResults);
-        setShowRouteResults(true);
-      }
-    }
-  };
+	const handleRouteSearch = async () => {
+		console.log("[SmartRoute] Plan Route submitted:", {
+			from: routeFormData.from,
+			to: routeFormData.to
+		});
+		if (!routeFormData.from || !routeFormData.to) return;
+		if (!googleLoaded || !(window as any).google) {
+			setRouteResults(defaultRouteResults);
+			console.log("[SmartRoute] Using fallback routes:", defaultRouteResults);
+			setShowRouteResults(true);
+			return;
+		}
+
+		const google = (window as any).google as typeof window.google;
+		const directionsService = new google.maps.DirectionsService();
+		try {
+			const response = await directionsService.route({
+				origin: routeFormData.from,
+				destination: routeFormData.to,
+				travelMode: google.maps.TravelMode.TRANSIT,
+				provideRouteAlternatives: true
+			});
+			const parsed = (response.routes || []).map((r, idx) => {
+				const leg = r.legs?.[0];
+				const durationText = leg?.duration?.text || "";
+				const summary = r.summary || leg?.steps?.map(s => s.instructions).join(" → ") || "Route";
+				return {
+					id: idx + 1,
+					mode: "Transit",
+					route: summary.replace(/<[^>]*>/g, ""),
+					accessibility: "Public transport options may vary",
+					time: durationText,
+					icon: Train
+				};
+			});
+			setRouteResults(parsed);
+			console.log("[SmartRoute] Directions results:", parsed);
+      console.log("[SmartRoute] Showing route results:", response.routes);
+			setShowRouteResults(true);
+		} catch (err) {
+			console.error("Directions error", err);
+			setShowRouteResults(true);
+		}
+	};
+
+	// Load Google Maps JS API and attach Places Autocomplete to inputs
+	useEffect(() => {
+		let cancelled = false;
+		const init = async () => {
+			const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+			if (!apiKey) return;
+			try {
+				setOptions({ key: apiKey, v: "weekly", libraries: ["places"] });
+				await importLibrary("places");
+				if (cancelled) return;
+				setGoogleLoaded(true);
+				const google = (window as any).google as typeof window.google;
+				autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+				if (fromInputRef.current) {
+					const ac = new google.maps.places.Autocomplete(fromInputRef.current, {
+						fields: ["formatted_address", "geometry", "place_id"],
+					});
+					ac.addListener("place_changed", () => {
+						const place = ac.getPlace();
+						setRouteFormData(prev => ({ ...prev, from: place.formatted_address || prev.from }));
+					});
+				}
+				if (toInputRef.current) {
+					const ac = new google.maps.places.Autocomplete(toInputRef.current, {
+						fields: ["formatted_address", "geometry", "place_id"],
+					});
+					ac.addListener("place_changed", () => {
+						const place = ac.getPlace();
+						setRouteFormData(prev => ({ ...prev, to: place.formatted_address || prev.to }));
+					});
+				}
+			} catch (err) {
+				console.error("Failed to load Google Maps API", err);
+			}
+		};
+		init();
+		return () => { cancelled = true; };
+	}, []);
 
   const volunteerData = {
     name: "Li Wei",
@@ -656,7 +687,7 @@ const onSmartRoutes = () => {
                 <h3 className="text-xl font-semibold text-foreground">Route Options</h3>
                 
                 <div className="space-y-4">
-                  {(routeResults.length > 0 ? routeResults : defaultRouteResults).map((route) => {
+                  {routeResults.map((route) => {
                     const Icon = route.icon;
                     return (
                       <Card key={route.id} className="p-6">

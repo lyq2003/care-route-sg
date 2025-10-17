@@ -1,0 +1,129 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "care-route-sg": {
+      "projectType": "application",
+      "root": "projects/care-route-sg",
+      "sourceRoot": "projects/care-route-sg/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/care-route-sg",
+            "index": "projects/care-route-sg/src/index.html",
+            "main": "projects/care-route-sg/src/main.ts",
+            "polyfills": "projects/care-route-sg/src/polyfills.ts",
+            "tsConfig": "projects/care-route-sg/tsconfig.app.json",
+            "assets": [
+              "projects/care-route-sg/src/favicon.ico",
+              "projects/care-route-sg/src/assets"
+            ],
+            "styles": [
+              "projects/care-route-sg/src/styles.css"
+            ],
+            "scripts": [
+              "https://maps.googleapis.com/maps/api/js?key=AIzaSyADDLMk1MihljfhweXdiNHDX9SFcP0kiWA"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/care-route-sg/src/environments/environment.ts",
+                  "with": "projects/care-route-sg/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2kb",
+                  "maximumError": "5kb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "5kb"
+                }
+              ]
+            },
+            "development": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/care-route-sg/src/environments/environment.ts",
+                  "with": "projects/care-route-sg/src/environments/environment.ts"
+                }
+              ],
+              "optimization": false,
+              "outputHashing": "none",
+              "sourceMap": true,
+              "extractCss": false,
+              "namedChunks": true,
+              "aot": false,
+              "extractLicenses": false,
+              "vendorChunk": true,
+              "buildOptimizer": false
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "care-route-sg:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "care-route-sg:build:production"
+            },
+            "development": {
+              "browserTarget": "care-route-sg:build:development"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/care-route-sg/src/test.ts",
+            "polyfills": "projects/care-route-sg/src/polyfills.ts",
+            "tsConfig": "projects/care-route-sg/tsconfig.spec.json",
+            "karmaConfig": "projects/care-route-sg/karma.conf.js",
+            "assets": [
+              "projects/care-route-sg/src/favicon.ico",
+              "projects/care-route-sg/src/assets"
+            ],
+            "styles": [
+              "projects/care-route-sg/src/styles.css"
+            ],
+            "scripts": [
+              "https://maps.googleapis.com/maps/api/js?key=AIzaSyADDLMk1MihljfhweXdiNHDX9SFcP0kiWA"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/care-route-sg/tsconfig.app.json",
+              "projects/care-route-sg/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "defaultProject": "care-route-sg"
+}
