@@ -18,7 +18,7 @@ export default function RequestsFilter() {
     const navigate = useNavigate();
     const [requests, setRequests] = useState([]);
     const [filters, setFilters] = useState({
-        distance: "1000",
+        distance: "100000",
         priority: "all",
     });
     const [loading, setLoading] = useState(true);

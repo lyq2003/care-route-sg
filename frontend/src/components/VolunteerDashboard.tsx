@@ -18,8 +18,8 @@ import { axiosInstance } from "./axios";
 import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
-import AcceptedRequest from "./VolunteerAcceptedRequest";
-
+import AcceptedRequest from "../features/volunteer/VolunteerAcceptedRequest";
+import VolunteerProfile from "@/features/volunteer/VolunteerProfile";
 // Max number of posts to be fetched every call
 const LIMIT=10;
 
@@ -284,24 +284,7 @@ export default function VolunteerDashboard() {
         return <AcceptedRequest />;
 
       case "profile":
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Profile & Settings</h2>
-              <p className="text-lg text-muted-foreground">Manage your volunteer account</p>
-            </div>
-
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Basic Information</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                  <div className="text-lg text-foreground">{volunteerData.name}</div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        );
+        return <VolunteerProfile />;
 
       default:
         return null;
@@ -394,7 +377,7 @@ export default function VolunteerDashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-foreground">
             {activeTab === "dashboard" ? "Volunteer Dashboard" : 
-             activeTab === "help" ? "Help Center" : 
+             activeTab === "Accepted_request" ? "Help Center" : 
              "Profile & Settings"}
           </h2>
         </div>

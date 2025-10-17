@@ -20,7 +20,9 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    phone_number: "",
     password: "",
+    confirmPassword: "",
   });
   const navigate = useNavigate();
 
@@ -70,7 +72,8 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
             name: formData.fullName,
             email: formData.email,
             password: formData.password,
-            role: selectedRole
+            role: selectedRole,
+            phone_number: formData.phone_number
           },
           { withCredentials: true}
           );
@@ -188,6 +191,21 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
 
         <div className="space-y-2">
           <Label htmlFor="password" className="text-lg font-medium">
+            Phone number
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.phone_number}
+            onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+            className="h-14 text-lg"
+            placeholder="Create a secure password"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-lg font-medium">
             Password
           </Label>
           <Input
@@ -200,6 +218,25 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
             required
           />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword" className="text-lg font-medium">
+            Confirm Password
+          </Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            className="h-14 text-lg"
+            placeholder="Re-enter your password"
+            required
+          />
+          {formData.password !== formData.confirmPassword && formData.confirmPassword !== "" && (
+            <p className="text-red-500 text-sm">Passwords do not match.</p>
+          )}
+        </div>
+
 
         <Button type="submit" size="xl" className="w-full mt-8">
           Create Account

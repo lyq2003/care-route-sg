@@ -22,7 +22,7 @@ router.get('/profile', requireAuth, (req, res) => {
     id: req.user.id,
     email: req.user.email,
     name: req.user.username,
-    avatar: req.user.user_metadata?.avatar_url,
+    phone_number: req.user.user_metadata?.phone_number,
     provider: req.user.user_metadata?.provider,
     created_at: req.user.created_at,
     updated_at: req.user.updated_at
@@ -38,14 +38,14 @@ router.put('/profile', requireAuth, async (req, res) => {
     const updatedUser = await User.update(req.user.id, { 
       name, 
       email, 
-      avatar: req.user.user_metadata?.avatar_url 
+      phone_number: req.user.user_metadata?.phone_number
     });
     
     const userProfile={
       id: updatedUser.id,
       email: updatedUser.email,
       name: updatedUser.user_metadata?.name || updatedUser.user_metadata?.full_name,
-      avatar: updatedUser.user_metadata?.avatar_url,
+      phone_number: updatedUser.user_metadata?.phone_number,
       provider: updatedUser.user_metadata?.provider,
       created_at: updatedUser.created_at,
       updated_at: updatedUser.updated_at
