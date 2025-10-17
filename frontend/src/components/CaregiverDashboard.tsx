@@ -7,754 +7,371 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Heart, 
-  MapPin, 
-  User, 
-  Menu, 
-  Bell, 
+
+import {
+  Menu,
+  Bell,
   LogOut,
+  User,
+  MapPin,
+  Link as LinkIcon,
+  Loader2,
+  Save,
+  XCircle,
+  CheckCircle2,
   Clock,
-  Eye,
-  Phone,
-  Mail as MailIcon,
-  MessageSquare,
-  Settings,
-  Smartphone,
+  Activity,
   AlertTriangle,
-  Loader2
+  Info,
 } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
 
-type TabType = "overview" | "live" | "profile";
+/* -------------------- Types -------------------- */
+type CaregiverInfo = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  notifications?: boolean;
+  verified?: boolean;
+};
 
-interface ElderlyUser {
-  userid: string;
-  fullname: string;
-  phone: string;
-  email: string;
-  status: string;
-  online: boolean;
-  mobilityPreference?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+type ElderlyUser = {
+  userId?: string;        // backend may use this...
+  elderlyUserId?: string; // ...or this...
+  id?: string;            // ...or this
+  name?: string;
+  address?: string;
+  emergencyContact?: string;
+};
 
-interface CaregiverInfo {
-  userid: string;
-  fullname: string;
-  phone: string;
-  email: string;
-  linkedElderly?: ElderlyUser[];
-}
-
-interface ActivityItem {
+type ActivityItem = {
   id: string;
   description: string;
   location: string;
-  volunteer?: string;
+  volunteer: string;
   timestamp: string;
-  status: string;
+  status: "Pending" | "In Progress" | "Completed" | "Failed" | string;
+};
+
+/* -------------------- Small UI helpers -------------------- */
+function StatusBadge({ status }: { status: string }) {
+  const cfg =
+    {
+      Completed: { Icon: CheckCircle2, variant: "default" as const, label: "Completed" },
+      Pending: { Icon: Clock, variant: "secondary" as const, label: "Pending" },
+      "In Progress": { Icon: Activity, variant: "outline" as const, label: "In Progress" },
+      Failed: { Icon: XCircle, variant: "destructive" as const, label: "Failed" },
+    }[status] ?? { Icon: AlertTriangle, variant: "outline" as const, label: status };
+
+  const { Icon, variant, label } = cfg;
+  return (
+    <Badge variant={variant} className="gap-1">
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </Badge>
+  );
 }
 
+/* -------------------- Component -------------------- */
 export default function CaregiverDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "live" | "profile">("overview");
+
+  // Core state
   const [caregiverInfo, setCaregiverInfo] = useState<CaregiverInfo | null>(null);
   const [elderlyUser, setElderlyUser] = useState<ElderlyUser | null>(null);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+
+  // PIN linking
   const [pinInput, setPinInput] = useState("");
   const [isLinking, setIsLinking] = useState(false);
-  
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
-  // Fetch caregiver profile and linked elderly on component mount
+  // Profile editing
+  const [profileDraft, setProfileDraft] = useState<Partial<CaregiverInfo>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Toast (shadcn hook)
+  const { toast } = useToast();
+
+  /* -------------------- Data load -------------------- */
   useEffect(() => {
     fetchCaregiverData();
   }, []);
 
   const fetchCaregiverData = async () => {
     try {
-      setLoading(true);
-      
-      // Get caregiver profile and linked elderly
-      const response = await axios.get('/caregiver/me');
-      const data = response.data;
-      
-      if (data.linkedElderly && data.linkedElderly.length > 0) {
-        setElderlyUser(data.linkedElderly[0]); // Assuming one linked elderly for now
-        
-        // Fetch recent activities for the linked elderly
-        await fetchRecentActivities(data.linkedElderly[0].userid);
+      // 1) Me (caregiver)
+      const { data: me } = await axios.get("/caregiver/me");
+      setCaregiverInfo(me);
+
+      // 2) Linked elderly
+      const { data: linked } = await axios.get("/caregiver/linked-elderly");
+      if (Array.isArray(linked) && linked.length > 0) {
+        const first = linked[0];
+        setElderlyUser(first);
+
+        // 3) History for that elderly
+        const id = first.userId ?? first.elderlyUserId ?? first.id;
+        const { data: history } = await axios.get(`/caregiver/history/${id}`);
+
+        setRecentActivities(
+          (history ?? []).map((h: any) => ({
+            id: String(h.id ?? h.request_id ?? h.report_id ?? crypto.randomUUID?.() ?? Date.now()),
+            description: h.description ?? "Report",
+            location: h.location ?? "",
+            volunteer: h.volunteerName ?? h.volunteer ?? "",
+            timestamp: h.created_at ?? h.timestamp ?? "",
+            status: h.status ?? "Completed",
+          }))
+        );
+      } else {
+        setElderlyUser(null);
+        setRecentActivities([]);
       }
-      
-      // Get caregiver's own profile info
-      const profileResponse = await axios.get('/users/me');
-      setCaregiverInfo(profileResponse.data);
-      
-    } catch (error) {
-      console.error('Error fetching caregiver data:', error);
+    } catch (err: any) {
+      console.error(err);
       toast({
-        title: "Error",
-        description: "Failed to load caregiver data",
-        variant: "destructive"
+        title: "Failed to load caregiver data",
+        description: err?.response?.data?.message ?? err.message,
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const fetchRecentActivities = async (elderlyUserId: string) => {
+  /* -------------------- Link by PIN -------------------- */
+  const linkElderlyByPin = async () => {
+    if (!pinInput) return;
+    setIsLinking(true);
     try {
-      const response = await axios.get(`/caregiver/history/${elderlyUserId}`);
-      setRecentActivities(response.data.activities || []);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    }
-  };
-
-  const handleLinkByPIN = async () => {
-    if (!pinInput.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a PIN",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setIsLinking(true);
-      const response = await axios.post('/caregiver/link', {
-        pin: pinInput.trim()
-      });
-
-      toast({
-        title: "Success",
-        description: "Successfully linked to elderly user",
-        variant: "default"
-      });
-
+      await axios.post("/caregiver/link", { pin: pinInput });
       setPinInput("");
-      // Refresh data
+      toast({ title: "Linked!", description: "Elderly successfully linked." });
       await fetchCaregiverData();
-      
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to link with PIN",
-        variant: "destructive"
+        title: "Failed to link",
+        description: err?.response?.data?.message ?? err.message,
+        variant: "destructive",
       });
     } finally {
       setIsLinking(false);
     }
   };
 
-  const handleUpdateProfile = async (updates: Partial<CaregiverInfo>) => {
+  /* -------------------- Save profile -------------------- */
+  const saveProfile = async (updates: Partial<CaregiverInfo>) => {
     try {
-      await axios.patch('/caregiver/me', updates);
-      
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-        variant: "default"
-      });
-      
-      // Refresh data
+      setSaving(true);
+      await axios.patch("/caregiver/me", updates);
+      toast({ title: "Saved", description: "Profile updated." });
       await fetchCaregiverData();
-      
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to update profile",
-        variant: "destructive"
+        title: "Save failed",
+        description: err?.response?.data?.message ?? err.message,
+        variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSkipForTesting = () => {
-    // Mock elderly user data for testing
-    const mockElderlyUser: ElderlyUser = {
-      userid: "mock-elderly-123",
-      fullname: "Margaret Chen (Test User)",
-      phone: "+65 9123 4567",
-      email: "margaret.test@email.com",
-      status: "active",
-      online: true,
-      mobilityPreference: "wheelchair accessible routes",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Mock recent activities for testing
-    const mockActivities: ActivityItem[] = [
-      {
-        id: "1",
-        description: "Requested help with groceries at Orchard Road",
-        location: "Orchard Road MRT Station",
-        volunteer: "Sarah Volunteer",
-        timestamp: "2024-08-26 16:30",
-        status: "Active"
-      },
-      {
-        id: "2",
-        description: "Planned accessible route to Raffles Hospital",
-        location: "From Home to Raffles Hospital",
-        timestamp: "2024-08-26 14:15",
-        status: "Completed"
-      },
-      {
-        id: "3",
-        description: "Assistance with ticket machine",
-        location: "City Hall MRT Station",
-        volunteer: "John Helper",
-        timestamp: "2024-08-25 18:45",
-        status: "Completed"
-      }
-    ];
-
-    // Set mock data and show testing notification
-    setElderlyUser(mockElderlyUser);
-    setRecentActivities(mockActivities);
-    
-    toast({
-      title: "Testing Mode Activated",
-      description: "Dashboard loaded with mock data. PIN linking stage skipped for testing purposes.",
-      variant: "default"
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading caregiver dashboard...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // If no elderly user is linked, show linking interface
-  if (!elderlyUser) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="bg-accent p-6 text-center">
-          <h1 className="text-3xl font-bold mb-2">Caregiver Dashboard</h1>
-          <p className="text-muted-foreground">Link to an elderly user to start monitoring</p>
-        </header>
-
-        <main className="max-w-4xl mx-auto p-4">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Link to Elderly User</h2>
-            <p className="text-muted-foreground mb-4">
-              Enter the PIN provided by the elderly user to establish a connection.
-            </p>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="pin">Elderly User PIN</Label>
-                <Input 
-                  id="pin"
-                  placeholder="Enter 6-digit PIN"
+  /* -------------------- Renderers -------------------- */
+  const renderOverview = () => (
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-lg">Linked Elderly</div>
+          <div className="flex items-center space-x-2">
+            <div className="flex flex-col">
+              <Label className="text-xs flex items-center gap-1">
+                PIN to Link <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter PIN"
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
-                  maxLength={6}
-                  className="mt-2"
+                  className="w-40"
                 />
-              </div>
-              
-              <Button 
-                onClick={handleLinkByPIN}
-                disabled={isLinking}
-                className="w-full"
-              >
-                {isLinking ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Linking...
-                  </>
-                ) : (
-                  "Link Account"
-                )}
-              </Button>
-
-              {/* Testing Mode Button */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    For Testing Only
-                  </span>
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleSkipForTesting}
-                variant="outline"
-                className="w-full border-dashed border-2 border-warning text-warning hover:bg-warning/10"
-              >
-                Skip PIN Linking (Test Mode)
-              </Button>
-
-              <div className="text-center text-xs text-muted-foreground">
-                ⚠️ Test mode will load mock elderly user data
+                <Button onClick={linkElderlyByPin} disabled={isLinking}>
+                  {isLinking ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Link
+                </Button>
               </div>
             </div>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
-  const currentActivity = {
-    description: "Requested help with groceries at Orchard Road",
-    status: "Live",
-    location: "Orchard Road MRT Station",
-    volunteer: "Sarah Volunteer",
-    timestamp: "2024-08-26 16:30"
-  };
-
-  const locationHistory = [
-    {
-      id: 1,
-      location: "Orchard Road MRT Station",
-      status: "Current location",
-      time: "16:30"
-    },
-    {
-      id: 2,
-      location: "ION Orchard Mall",
-      status: "Previous location",
-      time: "15:45"
-    },
-    {
-      id: 3,
-      location: "Home",
-      status: "Starting point",
-      time: "14:00"
-    }
-  ];
-
-  const navigationTabs = [
-    { id: "overview" as TabType, label: "Overview", icon: Heart },
-    { id: "live" as TabType, label: "Live", icon: MapPin },
-    { id: "profile" as TabType, label: "Profile", icon: User }
-  ];
-
-  const renderOverview = () => (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Care Overview</h1>
-
-      {/* Health Status */}
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Heart className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Health Status</h2>
+          </div>
         </div>
-        <div className="p-4 bg-success/10 border-2 border-success rounded-lg">
-          <p className="text-lg font-medium text-success">{elderlyUser.status === 'active' ? 'Good' : elderlyUser.status}</p>
+
+        <div className="mt-4">
+          {elderlyUser ? (
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5" />
+              <div className="font-medium">{elderlyUser.name ?? "Elderly user"}</div>
+              <Badge variant="secondary">Linked</Badge>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Info className="h-4 w-4" />
+              No elderly linked yet. Link with a PIN to begin.
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Current Location */}
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <MapPin className="h-5 w-5 text-success" />
-          <h2 className="text-xl font-semibold">Current Location</h2>
-        </div>
-        <p className="text-lg mb-2">Location tracking available</p>
-        <p className="text-sm text-muted-foreground">Last updated: {new Date(elderlyUser.updatedAt).toLocaleString()}</p>
-      </Card>
-
-      {/* Last Active */}
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Clock className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Last Active</h2>
-        </div>
-        <p className="text-lg mb-2">{new Date(elderlyUser.updatedAt).toLocaleString()}</p>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-success" />
-          <span className="text-sm text-success">{elderlyUser.online ? 'Online' : 'Offline'}</span>
-        </div>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {recentActivities.map((activity) => (
-            <Card key={activity.id} className="p-4 bg-background">
-              <div className="flex items-start gap-3 mb-2">
-                <Heart className="h-5 w-5 text-muted-foreground mt-1" />
-                <div className="flex-1">
-                  <p className="font-medium mb-2">{activity.description}</p>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{activity.location}</span>
-                    </div>
-                    {activity.volunteer && (
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>Volunteer: {activity.volunteer}</span>
-                      </div>
-                    )}
-                    <p>{activity.timestamp}</p>
-                  </div>
-                  <div className="mt-3">
-                    {activity.status === "Active" ? (
-                      <div className="flex gap-2">
-                        <Badge variant="default" className="bg-accent text-accent-foreground">
-                          {activity.status}
-                        </Badge>
-                        <Button 
-                          size="sm" 
-                          className="bg-info text-info-foreground"
-                          onClick={() => setActiveTab("live")}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Track Live
-                        </Button>
-                      </div>
-                    ) : (
-                      <Badge variant="default" className="bg-success text-success-foreground">
-                        {activity.status}
-                      </Badge>
-                    )}
+      <Card className="p-4">
+        <div className="font-semibold text-lg mb-2">Recent Activities</div>
+        <div className="space-y-3">
+          {recentActivities.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Info className="h-4 w-4" />
+              No activity yet.
+            </div>
+          ) : (
+            recentActivities.map((a) => (
+              <div key={a.id} className="flex items-start justify-between border rounded-lg p-3">
+                <div>
+                  <div className="font-medium">{a.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.location ? (
+                      <>
+                        <MapPin className="inline h-3 w-3 mr-1" />
+                        {a.location} ·{" "}
+                      </>
+                    ) : null}
+                    {a.volunteer ? <>With {a.volunteer} · </> : null}
+                    {a.timestamp}
                   </div>
                 </div>
+                <StatusBadge status={a.status} />
               </div>
-            </Card>
-          ))}
-        </div>
-      </Card>
-
-      {/* Emergency Contact */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Emergency Contact</h2>
-        
-        <div className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <Phone className="h-5 w-5 text-info" />
-              <div>
-                <p className="font-medium">Phone</p>
-                <p className="text-sm">{elderlyUser.phone}</p>
-              </div>
-            </div>
-            <Button className="w-full bg-primary text-primary-foreground">
-              <Phone className="h-4 w-4 mr-2" />
-              Call Now
-            </Button>
-          </div>
-
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <MailIcon className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Email</p>
-                <p className="text-sm">{elderlyUser.email}</p>
-              </div>
-            </div>
-            <Button className="w-full bg-secondary text-secondary-foreground">
-              <MailIcon className="h-4 w-4 mr-2" />
-              Send Email
-            </Button>
-          </div>
+            ))
+          )}
         </div>
       </Card>
     </div>
   );
 
   const renderLive = () => (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Live Tracking</h1>
-
-      {/* Current Activity */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Current Activity</h2>
-        
-        <Card className="p-4 bg-info/10 border-2 border-info">
-          <div className="flex items-start gap-3 mb-3">
-            <Heart className="h-5 w-5 text-muted-foreground mt-1" />
-            <div className="flex-1">
-              <p className="font-medium mb-2">{currentActivity.description}</p>
-              <Badge className="bg-info text-info-foreground mb-3">
-                {currentActivity.status}
-              </Badge>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <MapPin className="h-4 w-4" />
-                <span>{currentActivity.location}</span>
-              </div>
-
-              <Card className="p-4 bg-background mb-3">
-                <p className="font-medium mb-2">Volunteer Assigned</p>
-                <p className="text-sm mb-3">{currentActivity.volunteer}</p>
-                <div className="flex flex-col gap-2">
-                  <Button className="w-full bg-primary text-primary-foreground">
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </Button>
-                  <Button className="w-full bg-secondary text-secondary-foreground">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                </div>
-              </Card>
-
-              <div className="p-4 bg-success/10 border border-success rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Bell className="h-4 w-4 text-success mt-0.5" />
-                  <p className="text-sm text-success">
-                    You will receive real-time updates via SMS and email as the situation progresses.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </Card>
-
-      {/* Location History */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Location History</h2>
-        
-        <div className="space-y-3">
-          {locationHistory.map((item) => (
-            <Card key={item.id} className="p-4 bg-muted">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{item.location}</p>
-                  <p className="text-sm text-muted-foreground">{item.status}</p>
-                </div>
-                <p className="text-sm font-medium">{item.time}</p>
-              </div>
-            </Card>
-          ))}
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="font-semibold text-lg mb-2">Live Status</div>
+        <div className="text-sm text-muted-foreground">
+          (Your live tracking / WebSocket UI goes here.)
         </div>
       </Card>
     </div>
   );
 
   const renderProfile = () => (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Profile Management</h1>
+    <div className="space-y-4">
+      <Card className="p-4 space-y-4">
+        <div className="font-semibold text-lg">Caregiver Profile</div>
 
-      {/* My Information */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">My Information</h2>
-        
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="caregiver-name">Full Name</Label>
-            <Input 
-              id="caregiver-name"
-              defaultValue={caregiverInfo?.fullname || ''}
-              className="mt-2"
+            <Label>Name</Label>
+            <Input
+              value={profileDraft.name ?? caregiverInfo?.name ?? ""}
+              onChange={(e) => setProfileDraft((s) => ({ ...s, name: e.target.value }))}
             />
           </div>
-          
           <div>
-            <Label htmlFor="caregiver-phone">Phone Number</Label>
-            <Input 
-              id="caregiver-phone"
-              defaultValue={caregiverInfo.phone}
-              className="mt-2"
+            <Label>Phone</Label>
+            <Input
+              value={profileDraft.phone ?? caregiverInfo?.phone ?? ""}
+              onChange={(e) => setProfileDraft((s) => ({ ...s, phone: e.target.value }))}
             />
           </div>
-          
           <div>
-            <Label htmlFor="caregiver-email">Email Address</Label>
-            <Input 
-              id="caregiver-email"
-              type="email"
-              defaultValue={caregiverInfo.email}
-              className="mt-2"
+            <Label>Email</Label>
+            <Input
+              value={profileDraft.email ?? caregiverInfo?.email ?? ""}
+              onChange={(e) => setProfileDraft((s) => ({ ...s, email: e.target.value }))}
             />
           </div>
-        </div>
-      </Card>
-
-      {/* Elderly User Information */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Elderly User Information</h2>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="elderly-name">Full Name</Label>
-            <Input 
-              id="elderly-name"
-              defaultValue={elderlyUser.fullname}
-              className="mt-2"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="elderly-phone">Phone Number</Label>
-            <Input 
-              id="elderly-phone"
-              defaultValue={elderlyUser.phone}
-              className="mt-2"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="elderly-email">Email Address</Label>
-            <Input 
-              id="elderly-email"
-              type="email"
-              defaultValue={elderlyUser.email}
-              className="mt-2"
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Mobility Preferences */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Mobility Preferences</h2>
-        
-        <div className="space-y-3">
-          {elderlyUser.mobilityPreference ? (
-            <Card className="p-4 bg-muted">
-              <p>{elderlyUser.mobilityPreference}</p>
-            </Card>
-          ) : (
-            <p className="text-muted-foreground">No mobility preferences set</p>
-          )}
-        </div>
-      </Card>
-
-      {/* Notification Settings */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Notification Settings</h2>
-        
-        <div className="space-y-4">
-          <Card className="p-4 bg-muted">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                <Smartphone className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">SMS Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive updates via text message</p>
-                </div>
-              </div>
-              <Switch defaultChecked />
+          <div className="flex items-center justify-between border rounded-lg p-2 mt-2">
+            <div>
+              <div className="font-medium">Notifications</div>
+              <div className="text-xs text-muted-foreground">Enable alerts for new requests & updates</div>
             </div>
-          </Card>
+            <Switch
+              checked={Boolean(profileDraft.notifications ?? caregiverInfo?.notifications)}
+              onCheckedChange={(val) => setProfileDraft((s) => ({ ...s, notifications: val }))}
+            />
+          </div>
+        </div>
 
-          <Card className="p-4 bg-muted">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                <MailIcon className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive detailed updates via email</p>
-                </div>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-muted">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Emergency Alerts</p>
-                  <p className="text-sm text-muted-foreground">
-                    Immediate notifications for urgent situations
-                  </p>
-                </div>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </Card>
+        <div className="flex gap-2">
+          <Button onClick={() => setProfileDraft({})} variant="outline">
+            <XCircle className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+          <Button onClick={() => saveProfile(profileDraft)} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Save
+          </Button>
         </div>
       </Card>
-
-      {/* Save Button */}
-      <Button 
-        className="w-full bg-primary text-primary-foreground"
-        onClick={() => {
-          // Get form values and update profile
-          const formData = {
-            fullname: (document.getElementById('caregiver-name') as HTMLInputElement)?.value,
-            phone: (document.getElementById('caregiver-phone') as HTMLInputElement)?.value,
-            email: (document.getElementById('caregiver-email') as HTMLInputElement)?.value,
-          };
-          handleUpdateProfile(formData);
-        }}
-      >
-        <Settings className="h-4 w-4 mr-2" />
-        Save All Changes
-      </Button>
     </div>
   );
 
+  /* -------------------- Shell -------------------- */
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-accent p-6 text-center relative">
-        <h1 className="text-3xl font-bold mb-2">Caregiver Dashboard</h1>
-        <p className="text-muted-foreground">Monitoring: {elderlyUser.fullname}</p>
-        
-        {/* Menu Button */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="absolute top-6 right-6 p-2 border-2 border-border rounded-xl bg-card hover:bg-muted transition-colors"
-          aria-label="Menu"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-
-        {/* Dropdown Menu */}
-        {menuOpen && (
-          <Card className="absolute top-20 right-6 p-4 w-64 z-50 space-y-2">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start bg-secondary text-secondary-foreground"
-              onClick={() => setMenuOpen(false)}
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Alerts
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto max-w-5xl flex items-center justify-between p-4">
+          <div className="flex items-center gap-2">
+            <Button size="icon" variant="ghost" onClick={() => setSidebarOpen((s) => !s)}>
+              <Menu className="h-5 w-5" />
             </Button>
-          </Card>
-        )}
+            <div className="font-semibold">Caregiver Dashboard</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="icon" variant="ghost">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={() => navigate("/signin")}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="flex gap-3 p-4 max-w-4xl mx-auto">
-        {navigationTabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-          
+      {/* Sidebar (placeholder) */}
+      {sidebarOpen && (
+        <aside className="border-b md:border-b-0 md:border-r p-4">
+          <div className="text-sm text-muted-foreground">(Sidebar content)</div>
+        </aside>
+      )}
+
+      {/* Tabs */}
+      <div className="max-w-4xl mx-auto p-4 flex gap-2">
+        {[
+          { key: "overview", label: "Overview" },
+          { key: "live", label: "Live" },
+          { key: "profile", label: "Profile" },
+        ].map((tab) => {
+          const active = activeTab === (tab.key as any);
           return (
             <Button
-              key={tab.id}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
               variant={active ? "default" : "outline"}
-              className={`flex-1 justify-start gap-2 ${
-                active 
-                  ? "bg-accent text-accent-foreground border-2 border-accent" 
-                  : "bg-card text-foreground border-2 border-border hover:bg-muted"
-              }`}
-              onClick={() => setActiveTab(tab.id)}
             >
-              <Icon className="h-5 w-5" />
-              <span>{tab.label}</span>
+              {tab.label}
             </Button>
           );
         })}
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="max-w-4xl mx-auto p-4">
         {activeTab === "overview" && renderOverview()}
         {activeTab === "live" && renderLive()}
