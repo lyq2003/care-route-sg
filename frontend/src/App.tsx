@@ -11,8 +11,8 @@ import ElderlyUI from "./components/ElderlyUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
-import AccepetedRequest from "./components/VolunteerAcceptedRequest";
-import AdminUI from "./components/AdminUI";
+import AccepetedRequest from "./features/volunteer/VolunteerAcceptedRequest";
+import AdminDashboard from "./components/AdminDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -64,7 +64,6 @@ const App = () => (
 
             <Route path="/volunteer_dashboard"element={<VolunteerUI/>}/>
             <Route path="/request_filter" element={<RequestFileter/>}/>
-            <Route path="/volunteer_accepted_request" element={<AccepetedRequest/>}/>
             <Route
               path="/admin_dashboard"
               element={
