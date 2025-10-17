@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Clock, User, Filter, ArrowLeft, Check, Navigation, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { axiosInstance } from "./axios";
+import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
 
