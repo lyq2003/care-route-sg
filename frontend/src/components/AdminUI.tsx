@@ -88,7 +88,7 @@ interface Review {
   flagged: boolean;
 }
 
-export default function AdminDashboard() {
+export default function AdminUI() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");

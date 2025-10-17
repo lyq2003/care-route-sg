@@ -38,7 +38,7 @@ import {
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 
-export default function ElderlyDashboard() {
+export default function ElderlyUI() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("home");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
