@@ -6,7 +6,7 @@ async function getPendingRequests(latitude,longitude,limit,offset){
     const { data, error } = await supabaseAdmin.rpc('get_pending_requests_nearby', {
         lat: latitude,
         lon: longitude,
-        radius_meters: 2000,
+        radius_meters: 10000,
         limit_count: limit,
         offset_count: offset
     });
@@ -16,40 +16,69 @@ async function getPendingRequests(latitude,longitude,limit,offset){
 
 // edit the filters.distance after mallvin change table 
 
-async function getFilteredRequests(filters){
-    let query = supabaseAdmin.from('help_request').select('*, user_profiles(username)').eq('helpRequestStatus', 1);
+async function getFilteredRequests(latitude,longitude,filters,limit,offset){
+    //console.log("filters json are: ",filters, "latitude:", latitude, "longitude:",longitude);
+    const { data, error } = await supabaseAdmin.rpc("get_pending_requests_nearby", {
+        lat: latitude,
+        lon: longitude,
+        radius_meters: filters.distance,
+        limit_count: limit,
+        offset_count: offset,
+    });
+    
+    if(error) throw error;
+    let filteredData = data;
 
-    for (const key in filters){
-        const value = filters[key];
-
-        if (value === undefined || value === null || value === '' || (Array.isArray(value) && (value.length === 0 || (value.length === 1 && value[0] === '')))){
-            continue;
-        }
-
-        // Skip the "urgency" filter if the value is "all"
-        if (key === 'urgency' && value === 'all') {
-            continue;
-        }
-
-        // Skip distance for now
-        if(key === 'distance'){
-            continue;
-        }
-
-        if(Array.isArray(value)){
-            query=query.in(key,value);
-        }
-        else{
-            query=query.eq(key,value);
-        }
+    // Apply urgency filter (if not 'all')
+    if (filters.urgency && filters.urgency !== "all") {
+        filteredData = filteredData.filter((item) => item.urgency === filters.urgency);
     }
 
-    const {data,error} =await query.order('createdAt', { ascending: false });
-    if(error) throw error;
-    return data;    
-
+    return filteredData;    
 }
+
+async function acceptRequest(postId,volunteerId){
+    const {data,error}= await supabaseAdmin
+    .from("help_request")
+    .update({assignedVolunteerId: volunteerId, helpRequestStatus: "2" })
+    .eq('id',postId)
+    .select()
+    .single();
+
+    if(error) throw error;
+    return data;
+}
+
+async function cancelRequest(postId,volunteerId){
+    const {data,error}= await supabaseAdmin
+    .from("help_request")
+    .update({assignedVolunteerId: null, helpRequestStatus: "1" })
+    .eq('id',postId)
+    .select()
+    .single();
+
+    if(error) throw error;
+    return data;
+}
+
+async function getAcceptedRequest(volunteerId){
+    const {data,error} = await supabaseAdmin
+    .from("help_request")
+    .select('*')
+    .eq("assignedVolunteerId", volunteerId)
+    .eq("helpRequestStatus", "2")
+    .select()
+    .single()
+    
+    if(error) throw error;
+    return data;
+}
+
+
 module.exports = {
     getPendingRequests,
     getFilteredRequests,
+    acceptRequest,
+    getAcceptedRequest,
+    cancelRequest,
 }

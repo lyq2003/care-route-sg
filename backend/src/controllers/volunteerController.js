@@ -32,8 +32,7 @@ class VolunteerController {
             }
             
             const pendingRequests = await VolunteerServices.getPendingRequests(latitude, longitude,limit,offset);
-            
-            console.log("Pending request json format check:",pendingRequests);
+
             return res.status(200).json({
                 message: 'Pending help requests fetched successfully',
                 data: pendingRequests
@@ -51,18 +50,83 @@ class VolunteerController {
                 distance : req.query.distance
             };
 
-            const filteredPosts = await VolunteerServices.getFilteredRequests(filters);
+            // Extract latitude, longitude, limit, and offset from the query parameters
+            const { latitude, longitude, limit, offset } = req.query;
+            
+            const filteredPosts = await VolunteerServices.getFilteredRequests(latitude, longitude,filters,limit,offset);
 
-            res.json({
-                success:true,
-                posts:filteredPosts,
-                count: filteredPosts.length 
-            })
+            return res.status(200).json({
+                message: 'Pending help requests fetched successfully',
+                data: filteredPosts
+            });
         }catch (err) {
             console.error('Filter requests error:', err.message);
             res.status(500).json({ 
             success: false, 
             error: 'Failed to filter requests',
+            details: err.message 
+            });
+        }
+    }
+
+    static async cancelRequest(req,res) {
+        try{
+            const {requestId} = req.body.params;
+            const volunteerId = req.user.id;
+            const cancelledRequest = await VolunteerServices.cancelRequest(requestId,volunteerId);
+            console.log("Cancelled Request are:",cancelledRequest);
+            return res.status(200).json({
+                success: true,
+                message: 'Cancelled request successfully',
+                data: acceptRequest
+            });
+        }
+        catch (err) {
+            console.error('Cancelling requests error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to cancel requests',
+            details: err.message 
+            });
+        }
+    }
+    static async acceptRequest(req,res) {
+        try{
+            const {requestId, volunteerId} = req.body.params;
+
+            const acceptRequest = await VolunteerServices.acceptRequest(requestId,volunteerId);
+            console.log("Accepted Request are:",acceptRequest);
+            return res.status(200).json({
+                success: true,
+                message: 'Accepted request successfully',
+                data: acceptRequest
+            });
+        }
+        catch (err) {
+            console.error('Accepting requests error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to accept requests',
+            details: err.message 
+            });
+        }
+    }
+
+    static async getAcceptedRequest(req,res) {
+        try{
+            const volunteerId = req.user.id;
+            const acceptedRequest = await VolunteerServices.getAcceptedRequest(volunteerId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Get accepted request successfully',
+                data: acceptedRequest
+            });
+        }catch (err) {
+            console.error('Failed to get Accepted requests:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get accepted requests',
             details: err.message 
             });
         }

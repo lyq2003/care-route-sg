@@ -6,6 +6,7 @@ const passport = require('passport');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const userRoute = require('./src/routes/users');
+const elderlyRoute = require('./src/routes/elderly');
 const mainRoutes= require('./src/routes/routes');
 require('./src/config/passport');
 const app = express();
@@ -17,7 +18,7 @@ const PORT = process.env.PORT || 5173;
 app.use(cookieParser());
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    credentials: true
+    credentials: true,
 }));
 
 
@@ -43,7 +44,8 @@ app.use(passport.session());
 
 // Register all routes
 app.use('/api', mainRoutes);
-app.use('/api/users',userRoute);
+app.use('/api/users', userRoute);
+app.use('/api/elderly', elderlyRoute);
 app.use('/api/admin', require('./src/routes/admin'));
 // Health check
 app.get('/api/health', (req, res) => {

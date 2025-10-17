@@ -1,5 +1,8 @@
 const adminService = require('../services/admin');
-const User = require('../domain/User');
+//const User = require('../domain/User');
+const UserStatus = require('../domain/enum/UserStatus');
+const Role = require('../domain/enum/Role');
+const HelpRequestStatus = require('../domain/enum/HelpRequestStatus');
 
 class AdminController {
   
@@ -50,7 +53,7 @@ class AdminController {
       }
 
       const filters = {};
-      if (status && Object.values(User.STATUS).includes(status)) {
+      if (status && Object.values(UserStatus).includes(status)) {
         filters.status = status;
       }
       if (search) {
@@ -119,7 +122,7 @@ class AdminController {
   async suspendUser(req, res) {
     try {
       const { userId } = req.params;
-      const { reason, duration = 7 } = req.body; // Extract duration with default value
+      const { duration = 7 } = req.body; // Extract duration with default value
       const adminId = req.user.id; // From session via requireAuth middleware
 
       // Debug admin information
@@ -136,13 +139,6 @@ class AdminController {
         return res.status(400).json({
           success: false,
           error: 'User ID is required'
-        });
-      }
-
-      if (!reason || reason.trim().length < 10) {
-        return res.status(400).json({
-          success: false,
-          error: 'Suspension reason must be at least 10 characters'
         });
       }
 
@@ -169,7 +165,7 @@ class AdminController {
         });
       }
 
-      const updatedUser = await adminService.suspendUser(userId, reason.trim(), adminId, duration);
+      const updatedUser = await adminService.suspendUser(userId, 'Administrative action', adminId, duration);
 
       res.status(200).json({
         success: true,
@@ -204,7 +200,6 @@ class AdminController {
   async deactivateUser(req, res) {
     try {
       const { userId } = req.params;
-      const { reason } = req.body;
       const adminId = req.user.id;
 
       // Validation
@@ -212,13 +207,6 @@ class AdminController {
         return res.status(400).json({
           success: false,
           error: 'User ID is required'
-        });
-      }
-
-      if (!reason || reason.trim().length < 10) {
-        return res.status(400).json({
-          success: false,
-          error: 'Deactivation reason must be at least 10 characters'
         });
       }
 
@@ -230,7 +218,7 @@ class AdminController {
         });
       }
 
-      const updatedUser = await adminService.deactivateUser(userId, reason.trim(), adminId);
+      const updatedUser = await adminService.deactivateUser(userId, 'Administrative action', adminId);
 
       res.status(200).json({
         success: true,
@@ -265,7 +253,6 @@ class AdminController {
   async reactivateUser(req, res) {
     try {
       const { userId } = req.params;
-      const { reason } = req.body;
       const adminId = req.user.id;
 
       // Validation
@@ -276,14 +263,7 @@ class AdminController {
         });
       }
 
-      if (!reason || reason.trim().length < 10) {
-        return res.status(400).json({
-          success: false,
-          error: 'Reactivation reason must be at least 10 characters'
-        });
-      }
-
-      const updatedUser = await adminService.reactivateUser(userId, adminId, reason.trim());
+      const updatedUser = await adminService.reactivateUser(userId, adminId, 'Administrative action');
 
       res.status(200).json({
         success: true,

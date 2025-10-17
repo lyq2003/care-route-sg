@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare } from "lucide-react";
+import { axiosInstance as axios } from "./axios";
+import useLocation from "../features/location/locationTracking";
 
 interface RequestHelpScreenProps {
   onBack: () => void;
@@ -16,9 +18,14 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
   const [formData, setFormData] = useState({
     location: "",
     description: "",
-    urgency: "medium" as "low" | "medium" | "high",
+    urgency: "medium" as "low" | "medium" | "high"
   });
 
+  const [image, setImage] = useState<File | null>(null);
+
+  // getting user live location from useLocation
+  const { location, error: locationError } = useLocation();
+  
   const [matchedVolunteer] = useState({
     name: "Sarah Tan",
     phone: "+65 9876 5432",
@@ -27,35 +34,96 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
   });
 
   const urgencyLevels = [
-    { 
-      id: "low", 
-      label: "Low", 
+    {
+      id: "low",
+      label: "Low",
       description: "Can wait 30+ minutes",
       color: "bg-success text-success-foreground"
     },
-    { 
-      id: "medium", 
-      label: "Medium", 
+    {
+      id: "medium",
+      label: "Medium",
       description: "Need help within 15-30 minutes",
       color: "bg-warning text-warning-foreground"
     },
-    { 
-      id: "high", 
-      label: "High", 
+    {
+      id: "high",
+      label: "High",
       description: "Need immediate assistance",
       color: "bg-destructive text-destructive-foreground"
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImage(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.location && formData.description) {
+
+    // TODO: validate location -> use case 2.2 EX 2
+
+    const submitFormData = new FormData();
+
+    var token = localStorage.getItem("auth-storage");
+
+    var tokenJSON = JSON.parse(token);
+
+    var userID = tokenJSON.state.authUser.id;
+
+    submitFormData.append("location", formData.location);
+    submitFormData.append("description", formData.description);
+    submitFormData.append("urgency", formData.urgency);
+    submitFormData.append("image", null);
+    submitFormData.append("userID", userID);
+    submitFormData.append("longitude", location.longitude);
+    submitFormData.append("latitude", location.latitude);
+
+    if (image) {
+      submitFormData.append("image", image);
+    }
+
+    try {
+      const response = await axios.post("/elderly/requestHelp",
+        submitFormData, {
+        withCredentials: true, headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+
+      console.log(response);
+      
+
+      if (response.status == 200) {
+        setStep("submitted");
+
+        // TODO: make matching dynamic and not hardcoded to simulate
+
+        // Simulate matching process
+        setTimeout(() => {
+          setStep("matched");
+        }, 3000);
+      }
+    } catch (error: any) {
+      // TODO: handle error -> use case 2.2 EX 1
+    } finally {
+
+    }
+
+
+    /* if (formData.location && formData.description) {
       setStep("submitted");
       // Simulate matching process
       setTimeout(() => {
         setStep("matched");
       }, 3000);
-    }
+    } */
+
+
   };
 
   if (step === "submitted") {
@@ -159,9 +227,9 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
             </div>
           </Card>
 
-          <Button 
-            variant="outline" 
-            size="lg" 
+          <Button
+            variant="outline"
+            size="lg"
             className="w-full"
             onClick={() => setStep("form")}
           >
@@ -220,11 +288,10 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
             {urgencyLevels.map((level) => (
               <Card
                 key={level.id}
-                className={`p-4 cursor-pointer transition-all duration-200 border-2 ${
-                  formData.urgency === level.id 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border hover:border-primary/50"
-                }`}
+                className={`p-4 cursor-pointer transition-all duration-200 border-2 ${formData.urgency === level.id
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
+                  }`}
                 onClick={() => setFormData({ ...formData, urgency: level.id as any })}
               >
                 <div className="flex items-center justify-between">
@@ -249,10 +316,11 @@ export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
 
         <div className="space-y-2">
           <Label className="text-lg font-medium">Add Photo (Optional)</Label>
-          <Button variant="outline" type="button" className="w-full h-14">
-            <Upload className="h-5 w-5" />
-            Upload Photo
-          </Button>
+          <Input
+            id="image"
+            type="file"
+            onChange={handleFileChange}
+          />
         </div>
 
         <Button type="submit" size="xl" className="w-full mt-8">

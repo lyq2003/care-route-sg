@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback} from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { 
   Activity,
   HelpCircle, 
@@ -10,61 +9,120 @@ import {
   Star,
   LogOut,
   MapPin,
-  Clock,
   Menu,
   Check,
   Navigation,
   Shield
 } from "lucide-react";
 import { axiosInstance } from "./axios";
+import { useNavigate } from "react-router-dom";
+import useLocation from "../features/location/locationTracking";
+import getProfile from "@/features/profile/getProfile";
+import AcceptedRequest from "./VolunteerAcceptedRequest";
 
-export default function VolunteerDashboard() {
+// Max number of posts to be fetched every call
+const LIMIT=10;
+
+export default function VolunteerUI() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAvailable, setIsAvailable] = useState(true);
-  const [volunteerData] = useState({
-    name: "Sarah Volunteer",
-    isVerified: true,
-    totalHelped: 42,
-    averageRating: 4.8,
-    reviewCount: 38
+  const [hasMore, setHasMore] = useState(true);
+  const [offset,setOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [helpRequests, setHelpRequests] = useState([]);
+  const [volunteerData, setVolunteerData] = useState({
+    name: "Unknown Volunteer",
+    isVerified: false,
+    totalHelped: 0,
+    averageRating: 0,
+    reviewCount: 0
   });
+  
+  // getting user info from getProfile
+  const {profile} = getProfile();
 
-  const helpRequests = [
-    {
-      id: 1,
-      title: "Help needed at Orchard Road MRT Station",
-      priority: "MEDIUM",
-      matchPercentage: 95,
-      description: "Need help carrying heavy groceries to taxi stand",
-      distance: "0.8 km away",
-      timeEstimate: "20 minutes",
-      requester: "Margaret Chen",
-      requiredSkills: ["Physical assistance", "Mobility support"]
-    },
-    {
-      id: 2,
-      title: "Assistance with MRT navigation",
-      priority: "LOW",
-      matchPercentage: 88,
-      description: "Need help navigating from Raffles Place to Marina Bay",
-      distance: "1.2 km away",
-      timeEstimate: "15 minutes",
-      requester: "David Lim",
-      requiredSkills: ["Navigation help", "Mobility support"]
-    },
-    {
-      id: 3,
-      title: "Emergency grocery shopping help",
-      priority: "HIGH",
-      matchPercentage: 92,
-      description: "Urgent help needed for grocery shopping and delivery",
-      distance: "0.5 km away",
-      timeEstimate: "30 minutes",
-      requester: "Alice Wong",
-      requiredSkills: ["Shopping assistance", "Physical assistance"]
-    }
-  ];
+  useEffect(()=>{
+    if(!profile) return;
+    setVolunteerData({
+      name: profile.data?.name || "Unknown Volunteer", // Fallback to "Unknown Volunteer" if name is undefined
+      isVerified: profile.data?.isVerified ?? false, // Default to false if not available
+      totalHelped: profile.data?.totalHelped || 0, // Default to 0 if not available
+      averageRating: profile.data?.averageRating || 0, // Default to 0 if not available
+      reviewCount: profile.data?.reviewCount || 0 // Default to 0 if not available
+    });
+  }, [profile]);
 
+  // Sending location to fetch posts based on nearest location
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  // getting user live location from useLocation
+  const { location, error: locationError } = useLocation();
+
+  // infinite scrolling setup
+  const lastPostElementRef = useCallback(
+    (node: Element | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      // guard for environments without IntersectionObserver (SSR / old browsers)
+      if (typeof IntersectionObserver === "undefined") return;
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setLoading(true);
+          setOffset((prevOffset) => prevOffset + LIMIT);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
+
+  const fetchedOffsets = useRef(new Set());
+  // fetch posts when offset or location changes
+
+  useEffect(() =>{
+    if(!location) return;
+    if (fetchedOffsets.current.has(offset)) return;
+
+    fetchedOffsets.current.add(offset);
+    setLoading(true);
+
+    const fetchRequests = async (latitude,longitude) =>{
+      try {
+        const response = await axiosInstance.get(
+          "/volunteer/getPendingPosts", 
+          {params: {
+            latitude,  
+            longitude, 
+            limit: LIMIT,
+            offset,
+          },
+          withCredentials: true,
+        });
+
+        const newRequests = response.data.data || []; 
+
+        setHelpRequests((prevRequests) => {
+          const existingIds = new Set(prevRequests.map((r) => r.id)); // Set of existing request IDs
+          const filteredNew = newRequests.filter((r) => !existingIds.has(r.id)); // Remove duplicates
+          return [...prevRequests, ...filteredNew]; // Append the new unique requests to the existing ones
+        });
+
+        // Determine if there are more requests to load
+        setHasMore(newRequests.length === LIMIT);
+      } catch (error) {
+        console.error("Error to fetch help requests:", error);
+      }
+      setLoading(false);
+    };
+    fetchRequests(location.latitude,location.longitude);
+  },[offset,location]);
+
+
+  // Signout button
   const onSignOut = async () => {
         try{
           await axiosInstance.post(`/auth/logout`, {} ,{
@@ -77,21 +135,47 @@ export default function VolunteerDashboard() {
           }
       }
 
-  const handleAcceptRequest = (requestId: number) => {
-    console.log("Accepting request:", requestId);
+  
+  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+      try{
+        const response = await axiosInstance.put("/volunteer/acceptRequest",
+          {params: {
+              requestId,
+              volunteerId,
+            },
+            withCredentials: true
+          }
+         )
+        if (response.data.success) {
+          // Handle success( maybe change to new page see how)
+          navigate("/volunteer_accepted_request")
+          /*setHelpRequests((prevRequests) =>
+            prevRequests.filter((request) => request.id !== requestId)
+          );
+          console.log(`Request ${requestId} accepted successfully.`);
+          // Optionally show a success message to the user
+          alert("Request accepted successfully!");*/
+      } else {
+        console.error("Failed to accept the request:", response.data.message);
+        alert("Failed to accept the request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      alert("Error accepting request. Please try again.");
+    }
   };
-
+  // todo
   const handleViewRoute = (requestId: number) => {
     console.log("Viewing route for request:", requestId);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH":
+      case "high":
         return "bg-destructive text-destructive-foreground";
-      case "MEDIUM":
+      case "medium":
         return "bg-warning text-warning-foreground";
-      case "LOW":
+      case "low":
         return "bg-success text-success-foreground";
       default:
         return "bg-muted text-muted-foreground";
@@ -134,21 +218,21 @@ export default function VolunteerDashboard() {
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-foreground">Nearby Help Requests</h3>
               
-              <Button variant="secondary" size="lg" className="w-full bg-primary/20 hover:bg-primary/30 text-foreground">
+              <Button 
+              variant="secondary" size="lg" 
+              className="w-full bg-primary/20 hover:bg-primary/30 text-foreground"
+              onClick={() => navigate("/request_filter")}>
                 View All Requests
               </Button>
 
               <div className="space-y-4">
-                {helpRequests.map((request) => (
-                  <Card key={request.id} className="p-6 space-y-4">
+                {helpRequests.map((request, index) => (
+                  <Card key={request.id} className="p-6 space-y-4" ref={helpRequests.length === index + 1 ? lastPostElementRef : null}>
                     <h4 className="text-lg font-semibold text-foreground">{request.title}</h4>
                     
                     <div className="flex gap-2">
-                      <Badge className={getPriorityColor(request.priority)}>
-                        {request.priority} Priority
-                      </Badge>
-                      <Badge className="bg-success text-success-foreground">
-                        {request.matchPercentage}% Match
+                      <Badge className={getPriorityColor(request.urgency)}>
+                        {request.urgency} Priority
                       </Badge>
                     </div>
 
@@ -157,32 +241,24 @@ export default function VolunteerDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{request.distance}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{request.timeEstimate}</span>
+                        <span>{request.address}</span>
+                        <span className="ml-2">Distance: {Math.round(request.distance_meters)}m</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <User className="h-4 w-4" />
-                        <span>{request.requester}</span>
+                        <span>{request.username}</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-foreground">Required Skills:</p>
                       <div className="flex flex-wrap gap-2">
-                        {request.requiredSkills.map((skill, index) => (
-                          <Badge key={index} variant="outline" className="bg-muted">
-                            {skill}
-                          </Badge>
-                        ))}
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id)}
+                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />
@@ -204,13 +280,8 @@ export default function VolunteerDashboard() {
           </div>
         );
 
-      case "help":
-        return (
-          <div className="text-center py-12">
-            <HelpCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-xl text-muted-foreground">Help Center - Coming Soon</p>
-          </div>
-        );
+      case "Accepted_request":
+        return <AcceptedRequest />;
 
       case "profile":
         return (
@@ -299,7 +370,7 @@ export default function VolunteerDashboard() {
         <div className="flex">
           {[
             { id: "dashboard", icon: Activity, label: "Dashboard" },
-            { id: "help", icon: HelpCircle, label: "Help" },
+            { id: "Accepted_request", icon: HelpCircle, label: "Accepted_request" },
             { id: "profile", icon: User, label: "Profile" }
           ].map((tab) => (
             <button

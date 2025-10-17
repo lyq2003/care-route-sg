@@ -1,6 +1,6 @@
 const UserService = require('../services/user');
-const Role = require('../models/enum/Role');
-const User = require('../models/user');
+const Role = require('../domain/enum/Role');
+const User = require('../domain/User');
 
 /**
  * Utility: remove sensitive data before returning to the client

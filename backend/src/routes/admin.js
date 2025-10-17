@@ -1,6 +1,7 @@
 const express = require('express');
 const adminController = require('../controllers/adminController');
 const { requireAuth } = require('../middleware/auth');
+const Role = require('../domain/enum/Role');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ const checkAdminRole = (req, res, next) => {
     finalRole: userRole
   });
   
-  if (userRole !== 'admin') {
+  if (userRole !== Role.ADMIN) {
     return res.status(403).json({ 
       error: 'Admin access required',
       debug: {
@@ -34,21 +35,6 @@ const checkAdminRole = (req, res, next) => {
 };
 
 router.use(checkAdminRole);
-
-// Test route for debugging authentication
-// GET /api/admin/test - Test admin authentication
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Admin authentication successful',
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      role: req.user.role,
-      metadata: req.user.user_metadata
-    }
-  });
-});
 
 // Dashboard Routes
 // GET /api/admin/stats - Get dashboard statistics

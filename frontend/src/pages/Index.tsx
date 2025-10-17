@@ -2,7 +2,7 @@ import { useState } from "react";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import SignInScreen from "@/components/SignInScreen";
 import SignUpScreen from "@/components/SignUpScreen";
-import ElderlyDashboard from "@/components/ElderlyDashboard";
+import ElderlyUI from "@/components/ElderlyUI";
 import RequestHelpScreen from "@/components/RequestHelpScreen";
 import { useToast } from "@/hooks/use-toast";
 
@@ -86,7 +86,7 @@ const Index = () => {
       
       case "dashboard":
         return user ? (
-          <ElderlyDashboard 
+          <ElderlyUI 
             user={user}
             onRequestHelp={() => setCurrentScreen("request-help")}
             onSmartRoutes={() => toast({ title: "Smart Routes", description: "Coming soon!" })}
