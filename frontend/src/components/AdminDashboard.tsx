@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
@@ -27,7 +33,8 @@ import {
   User,
   Menu,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  ChevronDown
 } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
 
@@ -310,32 +317,19 @@ export default function AdminDashboard() {
   };
 
   // Handle user actions
-  const openReasonModal = (action: 'suspend' | 'deactivate' | 'reactivate', userId: string) => {
-    setActionType(action);
-    setTargetUserId(userId);
-    setReasonText("");
-    setShowReasonModal(true);
-  };
-
-  const handleSuspendUser = async () => {
-    if (!targetUserId || !reasonText.trim()) return;
-    
-    setActionLoading(targetUserId);
+  const handleSuspendUser = async (userId: string, duration: 7 | 30 | 90 = 7) => {
+    setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${targetUserId}/suspend`, {
-        reason: reasonText.trim(),
-        duration: suspensionDuration // Add suspension duration to API call
+      const response = await axios.post(`/api/admin/users/${userId}/suspend`, {
+        duration: duration
       });
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
         await fetchStats(); // Refresh stats
-        setShowReasonModal(false);
-        setReasonText("");
-        setSuspensionDuration(7); // Reset to default
         toast({
           title: "Success",
-          description: `User suspended for ${suspensionDuration} days`,
+          description: `User suspended for ${duration} days`,
         });
       }
     } catch (error: any) {
@@ -370,20 +364,14 @@ export default function AdminDashboard() {
    *    SCOPE: Elderly and volunteer users only - caregivers cannot be subject to disciplinary actions
    */
 
-  const handleDeactivateUser = async () => {
-    if (!targetUserId || !reasonText.trim()) return;
-    
-    setActionLoading(targetUserId);
+  const handleDeactivateUser = async (userId: string) => {
+    setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${targetUserId}/deactivate`, {
-        reason: reasonText.trim()
-      });
+      const response = await axios.post(`/api/admin/users/${userId}/deactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
         await fetchStats(); // Refresh stats
-        setShowReasonModal(false);
-        setReasonText("");
         toast({
           title: "Success",
           description: "User deactivated successfully",
@@ -401,20 +389,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleReactivateUser = async () => {
-    if (!targetUserId || !reasonText.trim()) return;
-    
-    setActionLoading(targetUserId);
+  const handleReactivateUser = async (userId: string) => {
+    setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${targetUserId}/reactivate`, {
-        reason: reasonText.trim()
-      });
+      const response = await axios.post(`/api/admin/users/${userId}/reactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
         await fetchStats(); // Refresh stats
-        setShowReasonModal(false);
-        setReasonText("");
         toast({
           title: "Success",
           description: "User reactivated successfully",
@@ -489,47 +471,24 @@ export default function AdminDashboard() {
     }
   };
 
-  const openReportActionModal = (action: 'suspend' | 'deactivate' | 'reject', reportId: string) => {
-    setReportActionType(action);
-    setSelectedReportId(reportId);
-    setReasonText("");
-    setShowReasonModal(true);
-  };
+  const handleReportAction = async (action: 'suspend' | 'deactivate' | 'reject', reportId: string, duration: 7 | 30 | 90 = 7) => {
+    if (!reportId) return;
 
-  const handleReportAction = async () => {
-    if (!selectedReportId || !reportActionType) return;
-    
-    if (reportActionType !== 'reject' && !reasonText.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a reason for this action",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setActionLoading(selectedReportId);
+    setActionLoading(reportId);
     try {
-      const response = await axios.post(`/api/admin/reports/${selectedReportId}/resolve`, {
-        action: reportActionType,
-        reason: reasonText.trim(),
-        duration: reportActionType === 'suspend' ? suspensionDuration : undefined
+      const response = await axios.post(`/api/admin/reports/${reportId}/resolve`, {
+        action: action,
+        duration: action === 'suspend' ? duration : undefined
       });
       
       if (response.data.success) {
-        setShowReasonModal(false);
-        setReasonText("");
-        setSuspensionDuration(7);
-        setReportActionType(null);
-        setSelectedReportId(null);
-        
         // Refresh data
         await fetchUsers();
         await fetchStats();
         
         toast({
           title: "Success",
-          description: `Report resolved with ${reportActionType} action`,
+          description: `Report resolved with ${action} action`,
         });
       }
     } catch (error: any) {
@@ -542,10 +501,6 @@ export default function AdminDashboard() {
     } finally {
       setActionLoading(null);
     }
-  };
-
-  const handleResolveReport = (reportId: string, action: "deactivate" | "reject") => {
-    openReportActionModal(action, reportId);
   };
 
   const handleRemoveReview = (reviewId: string) => {
@@ -768,7 +723,7 @@ export default function AdminDashboard() {
                         variant="outline"
                         size="sm"
                         className="text-green-600 hover:text-green-700"
-                        onClick={() => openReasonModal('reactivate', user.userid)}
+                        onClick={() => handleReactivateUser(user.userid)}
                         disabled={actionLoading === user.userid}
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />
@@ -990,22 +945,46 @@ export default function AdminDashboard() {
                         {/* Disciplinary Actions - Only for elderly and volunteer */}
                         {(report.reportedRole === "elderly" || report.reportedRole === "volunteer") && (
                           <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-yellow-600 hover:text-yellow-700"
-                              onClick={() => openReportActionModal('suspend', report.id)}
-                              disabled={actionLoading === report.id}
-                            >
-                              <UserX className="w-4 h-4 mr-2" />
-                              Suspend User
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-yellow-600 hover:text-yellow-700"
+                                  disabled={actionLoading === report.id}
+                                >
+                                  <UserX className="w-4 h-4 mr-2" />
+                                  Suspend User
+                                  <ChevronDown className="w-4 h-4 ml-2" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 7)}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">7 days (Minor)</span>
+                                    <span className="text-xs text-muted-foreground">For minor or first-time misconduct</span>
+                                  </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 30)}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">30 days (Moderate)</span>
+                                    <span className="text-xs text-muted-foreground">For moderate or repeated misconduct</span>
+                                  </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 90)}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">90 days (Serious)</span>
+                                    <span className="text-xs text-muted-foreground">For serious misconduct</span>
+                                  </div>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             
                             <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:text-red-700"
-                              onClick={() => openReportActionModal('deactivate', report.id)}
+                              onClick={() => handleReportAction('deactivate', report.id)}
                               disabled={actionLoading === report.id}
                             >
                               <UserX className="w-4 h-4 mr-2" />
@@ -1018,7 +997,7 @@ export default function AdminDashboard() {
                           variant="outline"
                           size="sm"
                           className="text-gray-600 hover:text-gray-700"
-                          onClick={() => openReportActionModal('reject', report.id)}
+                          onClick={() => handleReportAction('reject', report.id)}
                           disabled={actionLoading === report.id}
                         >
                           <XCircle className="w-4 h-4 mr-2" />
@@ -1157,132 +1136,7 @@ export default function AdminDashboard() {
         {activeTab === "reviews" && renderReviewModeration()}
       </div>
 
-      {/* Reason Modal - Updated for both user management and report actions */}
-      {showReasonModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {reportActionType ? (
-                reportActionType === 'reject' ? 'Reject Report' :
-                reportActionType === 'suspend' ? 'Suspend User (Report Action)' :
-                'Ban User (Report Action)'
-              ) : (
-                actionType === 'suspend' ? 'Suspend User' : 
-                actionType === 'deactivate' ? 'Deactivate User' :
-                'Reactivate User'
-              )}
-            </h3>
-            
-            {/* Suspension Duration Selection - Only for suspend actions */}
-            {(actionType === 'suspend' || reportActionType === 'suspend') && (
-              <div className="mb-4">
-                <Label className="text-sm font-medium mb-3 block">Suspension Duration:</Label>
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="radio"
-                      id="duration-7"
-                      name="duration"
-                      value="7"
-                      checked={suspensionDuration === 7}
-                      onChange={(e) => setSuspensionDuration(parseInt(e.target.value) as 7 | 30 | 90)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="duration-7" className="font-medium cursor-pointer">7 days (short)</Label>
-                      <p className="text-xs text-muted-foreground">For minor or first-time misconduct</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="radio"
-                      id="duration-30"
-                      name="duration"
-                      value="30"
-                      checked={suspensionDuration === 30}
-                      onChange={(e) => setSuspensionDuration(parseInt(e.target.value) as 7 | 30 | 90)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="duration-30" className="font-medium cursor-pointer">30 days (medium)</Label>
-                      <p className="text-xs text-muted-foreground">For moderate or repeated misconduct</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="radio"
-                      id="duration-90"
-                      name="duration"
-                      value="90"
-                      checked={suspensionDuration === 90}
-                      onChange={(e) => setSuspensionDuration(parseInt(e.target.value) as 7 | 30 | 90)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="duration-90" className="font-medium cursor-pointer">90 days (long)</Label>
-                      <p className="text-xs text-muted-foreground">For serious misconduct that does not yet warrant permanent action</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <p className="text-sm text-muted-foreground mb-4">
-              {reportActionType === 'reject' 
-                ? 'Please provide a reason for rejecting this report:'
-                : actionType === 'reactivate'
-                ? 'Please provide a valid reason for reactivating this account (minimum 10 characters):'
-                : 'Please provide a reason for this action (minimum 10 characters):'}
-            </p>
-            <Textarea
-              value={reasonText}
-              onChange={(e) => setReasonText(e.target.value)}
-              placeholder={reportActionType ? `Enter reason for ${reportActionType}...` : `Enter reason for ${actionType}...`}
-              className="mb-4"
-              rows={3}
-            />
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowReasonModal(false);
-                  setReasonText("");
-                  setSuspensionDuration(7);
-                  setReportActionType(null);
-                  setSelectedReportId(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={reportActionType ? handleReportAction : (
-                  actionType === 'suspend' ? handleSuspendUser : 
-                  actionType === 'deactivate' ? handleDeactivateUser :
-                  handleReactivateUser
-                )}
-                disabled={(reportActionType !== 'reject' && actionType !== 'reactivate' && reasonText.trim().length < 10) || 
-                         (actionType === 'reactivate' && reasonText.trim().length < 10) || 
-                         actionLoading !== null}
-                className={
-                  reportActionType === 'suspend' || actionType === 'suspend' ? 'bg-yellow-600 hover:bg-yellow-700' :
-                  reportActionType === 'deactivate' || actionType === 'deactivate' ? 'bg-red-600 hover:bg-red-700' :
-                  actionType === 'reactivate' ? 'bg-green-600 hover:bg-green-700' :
-                  'bg-gray-600 hover:bg-gray-700'
-                }
-              >
-                {actionLoading ? 'Processing...' : (
-                  reportActionType === 'suspend' || actionType === 'suspend' ? `Suspend User (${suspensionDuration} days)` :
-                  reportActionType === 'deactivate' || actionType === 'deactivate' ? 'Ban User' :
-                  actionType === 'reactivate' ? 'Reactivate Account' :
-                  reportActionType === 'reject' ? 'Reject Report' : 'Confirm'
-                )}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+
 
       {/* Evidence Viewer Modal */}
       {showEvidenceModal && selectedReport && (
@@ -1401,18 +1255,48 @@ export default function AdminDashboard() {
                 
                 {selectedReport.status === "In Progress" && (selectedReport.reportedRole === "elderly" || selectedReport.reportedRole === "volunteer") && (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-yellow-600 hover:text-yellow-700"
-                      onClick={() => {
-                        setShowEvidenceModal(false);
-                        openReportActionModal('suspend', selectedReport.id);
-                      }}
-                    >
-                      <UserX className="w-4 h-4 mr-2" />
-                      Suspend User
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-yellow-600 hover:text-yellow-700"
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          Suspend User
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => {
+                          setShowEvidenceModal(false);
+                          handleReportAction('suspend', selectedReport.id, 7);
+                        }}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">7 days (Minor)</span>
+                            <span className="text-xs text-muted-foreground">For minor or first-time misconduct</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setShowEvidenceModal(false);
+                          handleReportAction('suspend', selectedReport.id, 30);
+                        }}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">30 days (Moderate)</span>
+                            <span className="text-xs text-muted-foreground">For moderate or repeated misconduct</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setShowEvidenceModal(false);
+                          handleReportAction('suspend', selectedReport.id, 90);
+                        }}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">90 days (Serious)</span>
+                            <span className="text-xs text-muted-foreground">For serious misconduct</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     
                     <Button
                       variant="outline"
@@ -1420,7 +1304,7 @@ export default function AdminDashboard() {
                       className="text-red-600 hover:text-red-700"
                       onClick={() => {
                         setShowEvidenceModal(false);
-                        openReportActionModal('deactivate', selectedReport.id);
+                        handleReportAction('deactivate', selectedReport.id);
                       }}
                     >
                       <UserX className="w-4 h-4 mr-2" />
@@ -1433,7 +1317,7 @@ export default function AdminDashboard() {
                       className="text-gray-600 hover:text-gray-700"
                       onClick={() => {
                         setShowEvidenceModal(false);
-                        openReportActionModal('reject', selectedReport.id);
+                        handleReportAction('reject', selectedReport.id);
                       }}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
