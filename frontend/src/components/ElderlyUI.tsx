@@ -57,6 +57,9 @@ export default function ElderlyUI() {
 	const [googleLoaded, setGoogleLoaded] = useState(false);
 	const fromInputRef = useRef<HTMLInputElement | null>(null);
 	const toInputRef = useRef<HTMLInputElement | null>(null);
+	const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+	const [fromPredictions, setFromPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+	const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -163,6 +166,20 @@ export default function ElderlyUI() {
 		setActiveTab("routes");
 	}
 
+	const logPredictions = (query: string, fieldLabel: string) => {
+		if (!query || !query.trim()) return;
+		const service = autocompleteServiceRef.current;
+		if (!googleLoaded || !(window as any).google || !service) return;
+		service.getPlacePredictions(
+			{ input: query, componentRestrictions: { country: "sg" } as any },
+			(predictions: google.maps.places.AutocompletePrediction[] | null) => {
+				const brief = (predictions || []).map(p => ({ description: p.description, place_id: p.place_id }));
+				if (fieldLabel === "From") setFromPredictions(brief);
+				if (fieldLabel === "To") setToPredictions(brief);
+			}
+		);
+	};
+
   
 	const handleRouteSearch = async () => {
 		if (!routeFormData.from || !routeFormData.to) return;
@@ -214,6 +231,7 @@ export default function ElderlyUI() {
 				if (cancelled) return;
 				setGoogleLoaded(true);
 				const google = (window as any).google as typeof window.google;
+				autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
 				if (fromInputRef.current) {
 					const ac = new google.maps.places.Autocomplete(fromInputRef.current, {
 						fields: ["formatted_address", "geometry", "place_id"],
@@ -592,32 +610,66 @@ export default function ElderlyUI() {
 
             {!showRouteResults ? (
               <div className="space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="from" className="text-lg font-medium">
                     From
                   </Label>
                   <Input
                     id="from"
                     value={routeFormData.from}
-                    onChange={(e) => setRouteFormData({ ...routeFormData, from: e.target.value })}
+                    onChange={(e) => { const v = e.target.value; setRouteFormData({ ...routeFormData, from: v }); logPredictions(v, "From"); }}
                     className="h-14 text-lg"
                     placeholder="Current location or address"
                     ref={fromInputRef}
                   />
+                  {fromPredictions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-md max-h-60 overflow-auto">
+                      {fromPredictions.map(p => (
+                        <button
+                          key={p.place_id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent"
+                          onClick={() => {
+                            setRouteFormData(prev => ({ ...prev, from: p.description }));
+                            setFromPredictions([]);
+                          }}
+                        >
+                          {p.description}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="to" className="text-lg font-medium">
                     To
                   </Label>
                   <Input
                     id="to"
                     value={routeFormData.to}
-                    onChange={(e) => setRouteFormData({ ...routeFormData, to: e.target.value })}
+                    onChange={(e) => { const v = e.target.value; setRouteFormData({ ...routeFormData, to: v }); logPredictions(v, "To"); }}
                     className="h-14 text-lg"
                     placeholder="Destination address"
                     ref={toInputRef}
                   />
+                  {toPredictions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-md max-h-60 overflow-auto">
+                      {toPredictions.map(p => (
+                        <button
+                          key={p.place_id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent"
+                          onClick={() => {
+                            setRouteFormData(prev => ({ ...prev, to: p.description }));
+                            setToPredictions([]);
+                          }}
+                        >
+                          {p.description}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <Button onClick={handleRouteSearch} size="xl" className="w-full mt-8">
