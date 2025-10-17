@@ -309,12 +309,14 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
                     </span>
                   </div>
                   
-                  {routeSteps[currentStep] && (
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 rounded-full p-2 mt-1">
-                          <routeSteps[currentStep].icon className="h-5 w-5 text-primary" />
-                        </div>
+                  {routeSteps[currentStep] && (() => {
+                    const IconComponent = routeSteps[currentStep].icon;
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-primary/10 rounded-full p-2 mt-1">
+                            <IconComponent className="h-5 w-5 text-primary" />
+                          </div>
                         <div className="flex-1">
                           <p className="text-sm text-foreground">
                             {routeSteps[currentStep].instruction}
@@ -351,7 +353,8 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
                         </Button>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </Card>
             )}
@@ -360,23 +363,25 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
             <Card className="p-4">
               <h4 className="font-semibold text-foreground mb-3">Route Steps</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {routeSteps.map((step, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-start gap-3 p-2 rounded-lg transition-colors ${
-                      index === currentStep 
-                        ? 'bg-primary/10 border border-primary' 
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => setCurrentStep(index)}
-                  >
-                    <div className={`rounded-full p-1 mt-1 ${
-                      index === currentStep 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    }`}>
-                      <step.icon className="h-4 w-4" />
-                    </div>
+                {routeSteps.map((step, index) => {
+                  const IconComponent = step.icon;
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-start gap-3 p-2 rounded-lg transition-colors ${
+                        index === currentStep 
+                          ? 'bg-primary/10 border border-primary' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setCurrentStep(index)}
+                    >
+                      <div className={`rounded-full p-1 mt-1 ${
+                        index === currentStep 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted'
+                      }`}>
+                        <IconComponent className="h-4 w-4" />
+                      </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground">{step.instruction}</p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
@@ -388,7 +393,8 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
                       <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           </div>
