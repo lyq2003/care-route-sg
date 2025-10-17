@@ -23,7 +23,7 @@ import AcceptedRequest from "./VolunteerAcceptedRequest";
 // Max number of posts to be fetched every call
 const LIMIT=10;
 
-export default function VolunteerDashboard() {
+export default function VolunteerUI() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAvailable, setIsAvailable] = useState(true);
