@@ -33,10 +33,13 @@ import {
   Ear,
   Heart,
   Brain,
-  Accessibility
+  Accessibility,
+  Car,
+  Bike
 } from "lucide-react";
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
+import RouteTracking from "./RouteTracking";
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
@@ -53,13 +56,15 @@ export default function ElderlyUI() {
     to: ""
   });
 	const [showRouteResults, setShowRouteResults] = useState(false);
-	const [routeResults, setRouteResults] = useState<any[]>([]);
-	const [googleLoaded, setGoogleLoaded] = useState(false);
-	const fromInputRef = useRef<HTMLInputElement | null>(null);
-	const toInputRef = useRef<HTMLInputElement | null>(null);
-	const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-	const [fromPredictions, setFromPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
-	const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+  const [routeResults, setRouteResults] = useState<any[]>([]);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+  const fromInputRef = useRef<HTMLInputElement | null>(null);
+  const toInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const [fromPredictions, setFromPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+  const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
+  const [selectedRoute, setSelectedRoute] = useState<any>(null);
+  const [showRouteTracking, setShowRouteTracking] = useState(false);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -166,6 +171,16 @@ export default function ElderlyUI() {
 		setActiveTab("routes");
 	}
 
+	const handleRouteSelection = (route: any) => {
+		setSelectedRoute(route);
+		setShowRouteTracking(true);
+	};
+
+	const handleBackFromTracking = () => {
+		setShowRouteTracking(false);
+		setSelectedRoute(null);
+	};
+
 	const logPredictions = (query: string, fieldLabel: string) => {
 		if (!query || !query.trim()) return;
 		const service = autocompleteServiceRef.current;
@@ -178,6 +193,141 @@ export default function ElderlyUI() {
 				if (fieldLabel === "To") setToPredictions(brief);
 			}
 		);
+	};
+
+	const getTransportMode = (route: google.maps.DirectionsRoute) => {
+		const steps = route.legs?.[0]?.steps || [];
+		const modes = new Set<string>();
+		
+		steps.forEach(step => {
+			const travelMode = step.travel_mode;
+			const instructions = step.instructions?.toLowerCase() || "";
+			
+			if (travelMode === google.maps.TravelMode.TRANSIT) {
+				if (instructions.includes('bus') || instructions.includes('巴士')) {
+					modes.add('Bus');
+				} else if (instructions.includes('mrt') || instructions.includes('地铁') || instructions.includes('train')) {
+					modes.add('MRT');
+				} else if (instructions.includes('taxi') || instructions.includes('grab')) {
+					modes.add('Taxi');
+				} else {
+					modes.add('Transit');
+				}
+			} else if (travelMode === google.maps.TravelMode.WALKING) {
+				modes.add('Walk');
+			} else if (travelMode === google.maps.TravelMode.DRIVING) {
+				modes.add('Drive');
+			} else if (travelMode === google.maps.TravelMode.BICYCLING) {
+				modes.add('Bike');
+			}
+		});
+		
+		// Handle mixed modes
+		const modeArray = Array.from(modes);
+		if (modeArray.length > 1) {
+			// If multiple modes, create a combined description
+			const primaryModes = modeArray.filter(mode => mode !== 'Walk' && mode !== 'Transit');
+			if (primaryModes.length > 0) {
+				return primaryModes.join(' + ');
+			}
+			return modeArray.join(' + ');
+		}
+		
+		// Return the primary mode
+		if (modes.has('MRT')) return 'MRT';
+		if (modes.has('Bus')) return 'Bus';
+		if (modes.has('Transit')) return 'Transit';
+		if (modes.has('Walk')) return 'Walk';
+		if (modes.has('Drive')) return 'Drive';
+		if (modes.has('Bike')) return 'Bike';
+		if (modes.has('Taxi')) return 'Taxi';
+		
+		return 'Transit';
+	};
+
+	const calculateAccessibilityScore = (route: google.maps.DirectionsRoute) => {
+		const steps = route.legs?.[0]?.steps || [];
+		let score = 0;
+		let accessibilityFeatures = [];
+		
+		steps.forEach(step => {
+			const instructions = step.instructions?.toLowerCase() || "";
+			const travelMode = step.travel_mode;
+			
+			// MRT gets highest score for accessibility
+			if (travelMode === google.maps.TravelMode.TRANSIT && 
+				(instructions.includes('mrt') || instructions.includes('地铁') || instructions.includes('train'))) {
+				score += 10;
+				accessibilityFeatures.push('Lift available');
+			}
+			
+			// Bus gets good score
+			if (travelMode === google.maps.TravelMode.TRANSIT && 
+				(instructions.includes('bus') || instructions.includes('巴士'))) {
+				score += 7;
+				accessibilityFeatures.push('Wheelchair accessible');
+			}
+			
+			// Walking gets lower score but check for accessibility features
+			if (travelMode === google.maps.TravelMode.WALKING) {
+				score += 3;
+				if (instructions.includes('covered') || instructions.includes('walkway')) {
+					score += 2;
+					accessibilityFeatures.push('Covered walkway');
+				}
+				if (instructions.includes('lift') || instructions.includes('elevator')) {
+					score += 3;
+					accessibilityFeatures.push('Lift available');
+				}
+			}
+			
+			// Taxi/Drive gets medium score for door-to-door
+			if (travelMode === google.maps.TravelMode.DRIVING || 
+				(travelMode === google.maps.TravelMode.TRANSIT && 
+				(instructions.includes('taxi') || instructions.includes('grab')))) {
+				score += 8;
+				accessibilityFeatures.push('Door-to-door service');
+			}
+			
+			// Check for specific accessibility keywords
+			if (instructions.includes('wheelchair') || instructions.includes('accessible')) {
+				score += 5;
+				accessibilityFeatures.push('Wheelchair friendly');
+			}
+			if (instructions.includes('step-free') || instructions.includes('no stairs')) {
+				score += 4;
+				accessibilityFeatures.push('Step-free access');
+			}
+			if (instructions.includes('rest') || instructions.includes('seating')) {
+				score += 2;
+				accessibilityFeatures.push('Rest points available');
+			}
+		});
+		
+		return { score, features: [...new Set(accessibilityFeatures)] };
+	};
+
+	const parseDurationToMinutes = (durationText: string) => {
+		const match = durationText.match(/(\d+)/);
+		return match ? parseInt(match[1]) : 0;
+	};
+
+	const getModeIcon = (mode: string) => {
+		// Handle mixed modes by returning the primary mode icon
+		if (mode.includes(' + ')) {
+			const primaryMode = mode.split(' + ')[0];
+			return getModeIcon(primaryMode);
+		}
+		
+		switch (mode) {
+			case 'Bus': return Bus;
+			case 'MRT': return Train;
+			case 'Walk': return Navigation;
+			case 'Drive': return Car;
+			case 'Bike': return Bike;
+			case 'Taxi': return Car;
+			default: return Train;
+		}
 	};
 
   
@@ -202,16 +352,50 @@ export default function ElderlyUI() {
 				const leg = r.legs?.[0];
 				const durationText = leg?.duration?.text || "";
 				const summary = r.summary || leg?.steps?.map(s => s.instructions).join(" → ") || "Route";
+				const detectedMode = getTransportMode(r);
+				const modeIcon = getModeIcon(detectedMode);
+				const accessibilityData = calculateAccessibilityScore(r);
+				const durationMinutes = parseDurationToMinutes(durationText);
+				
+				// Generate accessibility info based on detected features
+				let accessibility = accessibilityData.features.length > 0 
+					? accessibilityData.features.join(", ")
+					: "Public transport options may vary";
+				
+				// Add accessibility score for sorting
+				const accessibilityScore = accessibilityData.score;
+				
 				return {
 					id: idx + 1,
-					mode: "Transit",
+					mode: detectedMode,
 					route: summary.replace(/<[^>]*>/g, ""),
-					accessibility: "Public transport options may vary",
+					accessibility: accessibility,
 					time: durationText,
-					icon: Train
+					icon: modeIcon,
+					durationMinutes: durationMinutes,
+					accessibilityScore: accessibilityScore,
+					isRecommended: false // Will be set after sorting
 				};
 			});
-			setRouteResults(parsed);
+			
+			// Sort routes by accessibility score (descending) then by time (ascending)
+			const sortedRoutes = parsed.sort((a, b) => {
+				// First priority: accessibility score (higher is better)
+				if (b.accessibilityScore !== a.accessibilityScore) {
+					return b.accessibilityScore - a.accessibilityScore;
+				}
+				// Second priority: duration (shorter is better)
+				return a.durationMinutes - b.durationMinutes;
+			});
+			
+			// Mark the top 2 routes as recommended
+			sortedRoutes.forEach((route, index) => {
+				if (index < 2) {
+					route.isRecommended = true;
+				}
+			});
+			
+			setRouteResults(sortedRoutes);
 			setShowRouteResults(true);
 		} catch (err) {
 			console.error("Directions error", err);
@@ -224,7 +408,10 @@ export default function ElderlyUI() {
 		let cancelled = false;
 		const init = async () => {
 			const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-			if (!apiKey) return;
+			if (!apiKey) {
+				console.error("[Google Maps] No API key found");
+				return;
+			}
 			try {
 				setOptions({ key: apiKey, v: "weekly", libraries: ["places"] });
 				await importLibrary("places");
@@ -232,26 +419,8 @@ export default function ElderlyUI() {
 				setGoogleLoaded(true);
 				const google = (window as any).google as typeof window.google;
 				autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-				if (fromInputRef.current) {
-					const ac = new google.maps.places.Autocomplete(fromInputRef.current, {
-						fields: ["formatted_address", "geometry", "place_id"],
-					});
-					ac.addListener("place_changed", () => {
-						const place = ac.getPlace();
-						console.log("[SmartRoute] From selected:", place?.formatted_address, place);
-						setRouteFormData(prev => ({ ...prev, from: place.formatted_address || prev.from }));
-					});
-				}
-				if (toInputRef.current) {
-					const ac = new google.maps.places.Autocomplete(toInputRef.current, {
-						fields: ["formatted_address", "geometry", "place_id"],
-					});
-					ac.addListener("place_changed", () => {
-						const place = ac.getPlace();
-						console.log("[SmartRoute] To selected:", place?.formatted_address, place);
-						setRouteFormData(prev => ({ ...prev, to: place.formatted_address || prev.to }));
-					});
-				}
+				// Note: We're not using Google's native Autocomplete widget to avoid default styling
+				// Instead, we use our custom dropdown with the AutocompleteService for suggestions
 			} catch (err) {
 				console.error("Failed to load Google Maps API", err);
 			}
@@ -259,6 +428,7 @@ export default function ElderlyUI() {
 		init();
 		return () => { cancelled = true; };
 	}, []);
+
 
   const volunteerData = {
     name: "Li Wei",
@@ -270,19 +440,25 @@ export default function ElderlyUI() {
   const defaultRouteResults = [
     {
       id: 1,
-      mode: "Bus",
-      route: "Bus 106 → Orchard MRT",
-      accessibility: "Wheelchair accessible, covered walkway",
-      time: "15 minutes",
-      icon: Bus
-    },
-    {
-      id: 2,
       mode: "MRT",
       route: "North-South Line to City Hall",
       accessibility: "Lift available, step-free access",
       time: "22 minutes",
-      icon: Train
+      icon: Train,
+      durationMinutes: 22,
+      accessibilityScore: 10,
+      isRecommended: true
+    },
+    {
+      id: 2,
+      mode: "Bus",
+      route: "Bus 106 → Orchard MRT",
+      accessibility: "Wheelchair accessible, covered walkway",
+      time: "15 minutes",
+      icon: Bus,
+      durationMinutes: 15,
+      accessibilityScore: 7,
+      isRecommended: true
     },
     {
       id: 3,
@@ -290,7 +466,10 @@ export default function ElderlyUI() {
       route: "Covered walkway via Wisma Atria",
       accessibility: "Covered, no stairs, rest points available",
       time: "8 minutes",
-      icon: Navigation
+      icon: Navigation,
+      durationMinutes: 8,
+      accessibilityScore: 5,
+      isRecommended: false
     }
   ];
 
@@ -617,24 +796,32 @@ export default function ElderlyUI() {
                   <Input
                     id="from"
                     value={routeFormData.from}
-                    onChange={(e) => { const v = e.target.value; setRouteFormData({ ...routeFormData, from: v }); logPredictions(v, "From"); }}
+                    onChange={(e) => { 
+                      const v = e.target.value; 
+                      setRouteFormData({ ...routeFormData, from: v }); 
+                      logPredictions(v, "From"); 
+                    }}
                     className="h-14 text-lg"
                     placeholder="Current location or address"
                     ref={fromInputRef}
+                    data-google-autocomplete="true"
                   />
                   {fromPredictions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-md max-h-60 overflow-auto">
+                    <div className="custom-autocomplete-dropdown absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                       {fromPredictions.map(p => (
                         <button
                           key={p.place_id}
                           type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-accent"
+                          className="w-full text-left px-4 py-3 hover:bg-accent hover:text-accent-foreground transition-colors border-b border-border last:border-b-0"
                           onClick={() => {
                             setRouteFormData(prev => ({ ...prev, from: p.description }));
                             setFromPredictions([]);
                           }}
                         >
-                          {p.description}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{p.description}</span>
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -648,24 +835,32 @@ export default function ElderlyUI() {
                   <Input
                     id="to"
                     value={routeFormData.to}
-                    onChange={(e) => { const v = e.target.value; setRouteFormData({ ...routeFormData, to: v }); logPredictions(v, "To"); }}
+                    onChange={(e) => { 
+                      const v = e.target.value; 
+                      setRouteFormData({ ...routeFormData, to: v }); 
+                      logPredictions(v, "To"); 
+                    }}
                     className="h-14 text-lg"
                     placeholder="Destination address"
                     ref={toInputRef}
+                    data-google-autocomplete="true"
                   />
                   {toPredictions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-md max-h-60 overflow-auto">
+                    <div className="custom-autocomplete-dropdown absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                       {toPredictions.map(p => (
                         <button
                           key={p.place_id}
                           type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-accent"
+                          className="w-full text-left px-4 py-3 hover:bg-accent hover:text-accent-foreground transition-colors border-b border-border last:border-b-0"
                           onClick={() => {
                             setRouteFormData(prev => ({ ...prev, to: p.description }));
                             setToPredictions([]);
                           }}
                         >
-                          {p.description}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{p.description}</span>
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -679,29 +874,72 @@ export default function ElderlyUI() {
               </div>
             ) : (
               <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-foreground">Route Options</h3>
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Route Options</h3>
+                  <p className="text-muted-foreground">
+                    Routes are sorted by accessibility and time - best options for elderly and wheelchair users appear first
+                  </p>
+                </div>
                 
                 <div className="space-y-4">
-                  {routeResults.map((route) => {
+                  {routeResults.map((route, index) => {
                     const Icon = route.icon;
+                    const isRecommended = route.isRecommended;
+                    const isFirst = index === 0;
+                    
                     return (
-                      <Card key={route.id} className="p-6">
+                      <Card 
+                        key={route.id} 
+                        className={`p-6 transition-all ${
+                          isRecommended 
+                            ? 'border-2 border-primary bg-primary/5 shadow-lg' 
+                            : 'border border-border'
+                        }`}
+                      >
                         <div className="flex items-start gap-4">
-                          <div className="bg-primary/10 rounded-full p-3">
-                            <Icon className="h-8 w-8 text-primary" />
+                          <div className={`rounded-full p-3 ${
+                            isRecommended 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-primary/10 text-primary'
+                          }`}>
+                            <Icon className="h-8 w-8" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-xl font-semibold text-foreground">{route.mode}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xl font-semibold text-foreground">{route.mode}</h4>
+                                {isRecommended && (
+                                  <Badge variant="default" className="bg-primary text-primary-foreground">
+                                    {isFirst ? 'Best Option' : 'Recommended'}
+                                  </Badge>
+                                )}
+                              </div>
                               <span className="text-lg font-medium text-primary">{route.time}</span>
                             </div>
                             <p className="text-lg text-foreground mb-2">{route.route}</p>
-                            <p className="text-muted-foreground">{route.accessibility}</p>
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground">{route.accessibility}</p>
+                              {isRecommended && (
+                                <div className="flex items-center gap-1 text-sm text-primary">
+                                  <Star className="h-4 w-4 fill-current" />
+                                  <span>Elderly & wheelchair friendly</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        <Button variant="outline" size="lg" className="w-full mt-4">
-                          Select This Route
+                        <Button 
+                          variant={isRecommended ? "default" : "outline"} 
+                          size="lg" 
+                          className={`w-full mt-4 ${
+                            isRecommended 
+                              ? 'bg-primary hover:bg-primary/90' 
+                              : ''
+                          }`}
+                          onClick={() => handleRouteSelection(route)}
+                        >
+                          {isRecommended ? 'Select Best Route' : 'Select This Route'}
                         </Button>
                       </Card>
                     );
@@ -910,6 +1148,18 @@ export default function ElderlyUI() {
         );
     }
   };
+
+  // Show route tracking page if a route is selected
+  if (showRouteTracking && selectedRoute) {
+    return (
+      <RouteTracking
+        selectedRoute={selectedRoute}
+        from={routeFormData.from}
+        to={routeFormData.to}
+        onBack={handleBackFromTracking}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
