@@ -233,9 +233,25 @@ export default function ElderlyUI() {
 		setShowRouteTracking(true);
 	};
 
+	const clearSmartRouteForm = () => {
+		// Clear smart route form
+		setRouteFormData({
+			from: "",
+			to: ""
+		});
+		// Clear route results
+		setRouteResults([]);
+		setShowRouteResults(false);
+		// Clear autocomplete predictions
+		setFromPredictions([]);
+		setToPredictions([]);
+	};
+
 	const handleBackFromTracking = () => {
 		setShowRouteTracking(false);
 		setSelectedRoute(null);
+		// Clear smart route form
+		clearSmartRouteForm();
 		// Refresh route history when returning from route tracking
 		fetchRouteHistory();
 	};
@@ -1068,18 +1084,40 @@ export default function ElderlyUI() {
                   )}
                 </div>
 
-                <Button onClick={handleRouteSearch} size="xl" className="w-full mt-8">
-                  <MapPin className="h-6 w-6" />
-                  Find Accessible Routes
-                </Button>
+                <div className="flex gap-3 mt-8">
+                  <Button onClick={handleRouteSearch} size="xl" className="flex-1">
+                    <MapPin className="h-6 w-6" />
+                    Find Accessible Routes
+                  </Button>
+                  <Button 
+                    onClick={clearSmartRouteForm} 
+                    variant="outline" 
+                    size="xl"
+                    className="px-6"
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Route Options</h3>
-                  <p className="text-muted-foreground">
-                    Routes are sorted by accessibility and time - best options for elderly and wheelchair users appear first
-                  </p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-foreground mb-2">Route Options</h3>
+                      <p className="text-muted-foreground">
+                        Routes are sorted by accessibility and time - best options for elderly and wheelchair users appear first
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={clearSmartRouteForm} 
+                      variant="outline" 
+                      size="sm"
+                      className="ml-4"
+                    >
+                      New Route
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
