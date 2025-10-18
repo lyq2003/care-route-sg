@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
+const RouteHistoryService = require('../services/routeHistory');
 const HelpRequest = require('../services/helpRequest');
 const multer = require('multer');
 const path = require('path');
@@ -97,34 +98,57 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
 // Route history endpoints
 router.post('/route-history', requireAuth, async (req, res) => {
     try {
-        const { from, to, mode, duration, accessibility, completedAt, steps, isRecommended } = req.body;
+        const { 
+            from, 
+            to, 
+            mode, 
+            duration, 
+            accessibility, 
+            completedAt, 
+            steps, 
+            isRecommended,
+            userLocation,
+            locationPermission
+        } = req.body;
         const userId = req.user.id;
 
-        // Save route history to database
-        const routeHistory = {
+        // Validate required fields
+        if (!from || !to || !mode || !duration) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: from, to, mode, duration are required' 
+            });
+        }
+
+        // Prepare route history data
+        const routeHistoryData = {
             userId,
             from,
             to,
             mode,
             duration,
-            accessibility,
+            accessibility: accessibility || 'Standard',
             completedAt: new Date(completedAt),
-            steps,
-            isRecommended
+            steps: steps || 0,
+            isRecommended: isRecommended || false,
+            // Include geolocation data if available
+            userLocation: userLocation || null,
+            locationPermission: locationPermission || null
         };
 
-        // Here you would typically save to your database
-        // For now, we'll just return success
-        console.log('Route history saved:', routeHistory);
+        // Save to Supabase
+        const savedRoute = await RouteHistoryService.saveRouteHistory(routeHistoryData);
         
         res.status(200).json({ 
             message: 'Route history saved successfully',
-            routeHistory 
+            routeHistory: savedRoute
         });
 
     } catch (error) {
         console.error('Error saving route history:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
     }
 });
 
@@ -132,42 +156,87 @@ router.get('/route-history', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
 
-        // Here you would typically fetch from your database
-        // For now, we'll return mock data
-        const mockHistory = [
-            {
-                id: 1,
-                from: "Marina Bay Sands",
-                to: "Changi Airport",
-                mode: "MRT + Bus",
-                duration: "45 mins",
-                accessibility: "Wheelchair accessible",
-                completedAt: new Date().toISOString(),
-                steps: 8,
-                isRecommended: true
-            },
-            {
-                id: 2,
-                from: "Orchard Road",
-                to: "Sentosa Island",
-                mode: "Bus + Walk",
-                duration: "30 mins",
-                accessibility: "Elderly friendly",
-                completedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-                steps: 5,
-                isRecommended: false
-            }
-        ];
+        // Fetch from Supabase
+        const routeHistory = await RouteHistoryService.getRouteHistory(userId, limit, offset);
+        
+        // Transform data to match frontend expectations
+        const transformedHistory = routeHistory.map(route => ({
+            id: route.id,
+            from: route.from_location,
+            to: route.to_location,
+            mode: route.mode,
+            duration: route.duration,
+            accessibility: route.accessibility,
+            completedAt: route.completed_at,
+            steps: route.steps,
+            isRecommended: route.is_recommended
+        }));
 
         res.status(200).json({ 
             message: 'Route history retrieved successfully',
-            history: mockHistory 
+            history: transformedHistory 
         });
 
     } catch (error) {
         console.error('Error fetching route history:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
+    }
+});
+
+// Delete a specific route from history
+router.delete('/route-history/:routeId', requireAuth, async (req, res) => {
+    try {
+        const { routeId } = req.params;
+        const userId = req.user.id;
+
+        if (!routeId) {
+            return res.status(400).json({ error: 'Route ID is required' });
+        }
+
+        const success = await RouteHistoryService.deleteRouteHistory(routeId, userId);
+        
+        if (success) {
+            res.status(200).json({ 
+                message: 'Route deleted successfully' 
+            });
+        } else {
+            res.status(404).json({ 
+                error: 'Route not found or access denied' 
+            });
+        }
+
+    } catch (error) {
+        console.error('Error deleting route history:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
+    }
+});
+
+// Get route statistics for the user
+router.get('/route-history/stats', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const stats = await RouteHistoryService.getRouteStatistics(userId);
+        
+        res.status(200).json({ 
+            message: 'Route statistics retrieved successfully',
+            statistics: stats 
+        });
+
+    } catch (error) {
+        console.error('Error fetching route statistics:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
     }
 });
 

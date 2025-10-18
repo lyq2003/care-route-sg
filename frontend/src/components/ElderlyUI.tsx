@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Home, 
   HelpCircle, 
@@ -43,6 +44,7 @@ import RouteTracking from "./RouteTracking";
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("home");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
@@ -67,7 +69,7 @@ export default function ElderlyUI() {
   const [showRouteTracking, setShowRouteTracking] = useState(false);
   const [routeHistory, setRouteHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [recentActivity, setRecentActivity] = useState([
+  const [recentActivity, setRecentActivity] = useState<any[]>([
     {
       id: 1,
       type: "help_request",
@@ -177,61 +179,127 @@ export default function ElderlyUI() {
 	}
 
 	const fetchRouteHistory = async () => {
+		console.log('🔄 fetchRouteHistory called');
 		setLoadingHistory(true);
 		try {
-			const response = await axiosInstance.get('/api/elderly/route-history');
-			setRouteHistory(response.data.history || []);
+			console.log('📡 Making API call to /elderly/route-history');
+			const response = await axiosInstance.get('/elderly/route-history');
+			console.log('✅ API response received:', response.data);
+			const history = response.data.history || [];
+			console.log('📊 Route history data:', history);
+			setRouteHistory(history);
+			
+			// Update recent activity with route history data
+			console.log('🔄 Updating recent activity with route history');
+			updateRecentActivityFromRouteHistory(history);
 		} catch (error) {
-			console.error('Error fetching route history:', error);
+			console.error('❌ Error fetching route history:', error);
+			console.error('Error details:', error.response?.data);
 		} finally {
 			setLoadingHistory(false);
+		}
+	};
+
+	const updateRecentActivityFromRouteHistory = (routeHistory) => {
+		console.log('🔄 updateRecentActivityFromRouteHistory called with:', routeHistory);
+		
+		// Convert route history to recent activity format
+		const routeActivities = routeHistory.map((route, index) => ({
+			id: `route_${route.id}`,
+			type: "route",
+			description: `Route completed: ${route.from} → ${route.to}`,
+			status: "completed",
+			time: getTimeAgo(route.completedAt),
+			mode: route.mode,
+			duration: route.duration,
+			accessibility: route.accessibility,
+			isRecommended: route.isRecommended
+		}));
+
+		console.log('📋 Converted route activities:', routeActivities);
+
+		// Keep existing non-route activities and add route activities
+		setRecentActivity(prev => {
+			console.log('📋 Previous recent activity:', prev);
+			const nonRouteActivities = prev.filter(activity => activity.type !== "route");
+			const newActivity = [...routeActivities, ...nonRouteActivities].slice(0, 10); // Limit to 10 most recent
+			console.log('📋 New recent activity:', newActivity);
+			return newActivity;
+		});
+	};
+
+	const getTimeAgo = (dateString: string) => {
+		const now = new Date();
+		const date = new Date(dateString);
+		const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+		
+		if (diffInMinutes < 1) return "Just now";
+		if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+		
+		const diffInHours = Math.floor(diffInMinutes / 60);
+		if (diffInHours < 24) return `${diffInHours} hours ago`;
+		
+		const diffInDays = Math.floor(diffInHours / 24);
+		if (diffInDays < 7) return `${diffInDays} days ago`;
+		
+		return date.toLocaleDateString();
+	};
+
+	const handleDeleteRoute = async (routeId: number) => {
+		try {
+			await axiosInstance.delete(`/api/elderly/route-history/${routeId}`);
+			
+			// Update local state
+			setRouteHistory(prev => prev.filter(route => route.id !== routeId));
+			
+			// Update recent activity by removing the deleted route
+			setRecentActivity(prev => prev.filter(activity => activity.id !== `route_${routeId}`));
+			
+			// Show success message
+			toast({
+				title: "Route Deleted",
+				description: "Route has been removed from your history.",
+			});
+		} catch (error) {
+			console.error('Error deleting route:', error);
+			toast({
+				title: "Error",
+				description: "Failed to delete route. Please try again.",
+				variant: "destructive",
+			});
 		}
 	};
 
 	const addRouteCompletionActivity = (route: any) => {
 		console.log('Adding route completion activity:', route);
 		
+		// Add the new route completion activity immediately
+		const newActivity = {
+			id: `route_${Date.now()}`,
+			type: "route",
+			description: `Route completed: ${route.from} → ${route.to}`,
+			status: "completed",
+			time: "Just now",
+			mode: route.mode,
+			duration: route.duration,
+			accessibility: route.accessibility,
+			isRecommended: route.isRecommended
+		};
+		
 		setRecentActivity(prev => {
-			// First, try to update existing active navigation activity
-			const updatedActivities = prev.map(activity => {
-				if (activity.type === "route" && 
-					activity.status === "active" && 
-					activity.description === `Navigating: ${route.from} → ${route.to}`) {
-					console.log('Updating existing active navigation to completed');
-					return {
-						...activity,
-						description: `Route completed: ${route.from} → ${route.to}`,
-						status: "completed",
-						time: "Just now"
-					};
-				}
-				return activity;
-			});
-			
-			// If no active navigation was found, add new completion activity
-			const hasActiveNavigation = prev.some(activity => 
-				activity.type === "route" && 
-				activity.status === "active" && 
-				activity.description === `Navigating: ${route.from} → ${route.to}`
+			// Remove any existing active navigation for this route
+			const filteredActivities = prev.filter(activity => 
+				!(activity.type === "route" && 
+				  activity.status === "active" && 
+				  activity.description === `Navigating: ${route.from} → ${route.to}`)
 			);
 			
-			if (!hasActiveNavigation) {
-				console.log('No active navigation found, adding new completion activity');
-				const newActivity = {
-					id: Date.now(),
-					type: "route",
-					description: `Route completed: ${route.from} → ${route.to}`,
-					status: "completed",
-					time: "Just now",
-					mode: route.mode,
-					duration: route.duration,
-					accessibility: route.accessibility
-				};
-				return [newActivity, ...updatedActivities.slice(0, 9)];
-			}
-			
-			return updatedActivities;
+			// Add the new completion activity at the top
+			return [newActivity, ...filteredActivities].slice(0, 10);
 		});
+		
+		// Refresh route history to get the latest data from database
+		fetchRouteHistory();
 	};
 
 	const addNavigationStartedActivity = (route: any) => {
@@ -567,9 +635,14 @@ export default function ElderlyUI() {
 	// Fetch route history on component mount
 	useEffect(() => {
 		fetchRouteHistory();
-		// Clean up any existing duplicates
-		removeDuplicateActivities();
 	}, []);
+
+	// Clean duplicates when recent activity updates (only once per update)
+	useEffect(() => {
+		if (recentActivity.length > 0) {
+			removeDuplicateActivities();
+		}
+	}, [recentActivity.length]);
 
 	// Debug recent activity changes
 	useEffect(() => {
@@ -808,19 +881,28 @@ export default function ElderlyUI() {
                             Completed {new Date(route.completedAt).toLocaleDateString()}
                           </p>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setRouteFormData({
-                              from: route.from,
-                              to: route.to
-                            });
-                            setActiveTab("routes");
-                          }}
-                        >
-                          Repeat
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setRouteFormData({
+                                from: route.from,
+                                to: route.to
+                              });
+                              setActiveTab("routes");
+                            }}
+                          >
+                            Repeat
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteRoute(route.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -838,14 +920,6 @@ export default function ElderlyUI() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-foreground">Recent Activity</h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={removeDuplicateActivities}
-                  className="text-xs"
-                >
-                  Clean Duplicates
-                </Button>
               </div>
               
               <div className="space-y-3">
