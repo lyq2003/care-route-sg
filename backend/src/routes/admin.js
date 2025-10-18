@@ -59,13 +59,6 @@ router.post('/users/:userId/reactivate', adminController.reactivateUser);
 // POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
 router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
 
-// Request Management Routes
-// GET /api/admin/requests - Get all help requests with pagination and filters
-router.get('/requests', adminController.getAllRequests);
-
-// POST /api/admin/requests/:requestId/reassign - Reassign volunteer to request
-router.post('/requests/:requestId/reassign', adminController.reassignVolunteer);
-
 // Admin Activity Routes
 // GET /api/admin/logs - Get admin activity logs
 router.get('/logs', adminController.getAdminLogs);
