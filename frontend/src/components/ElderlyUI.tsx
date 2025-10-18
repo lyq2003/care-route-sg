@@ -65,6 +65,8 @@ export default function ElderlyUI() {
   const [toPredictions, setToPredictions] = useState<Array<{ description: string; place_id: string }>>([]);
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [showRouteTracking, setShowRouteTracking] = useState(false);
+  const [routeHistory, setRouteHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -171,6 +173,18 @@ export default function ElderlyUI() {
 		setActiveTab("routes");
 	}
 
+	const fetchRouteHistory = async () => {
+		setLoadingHistory(true);
+		try {
+			const response = await axiosInstance.get('/api/elderly/route-history');
+			setRouteHistory(response.data.history || []);
+		} catch (error) {
+			console.error('Error fetching route history:', error);
+		} finally {
+			setLoadingHistory(false);
+		}
+	};
+
 	const handleRouteSelection = (route: any) => {
 		setSelectedRoute(route);
 		setShowRouteTracking(true);
@@ -179,6 +193,8 @@ export default function ElderlyUI() {
 	const handleBackFromTracking = () => {
 		setShowRouteTracking(false);
 		setSelectedRoute(null);
+		// Refresh route history when returning from route tracking
+		fetchRouteHistory();
 	};
 
 	const logPredictions = (query: string, fieldLabel: string) => {
@@ -429,6 +445,11 @@ export default function ElderlyUI() {
 		return () => { cancelled = true; };
 	}, []);
 
+	// Fetch route history on component mount
+	useEffect(() => {
+		fetchRouteHistory();
+	}, []);
+
 
   const volunteerData = {
     name: "Li Wei",
@@ -592,6 +613,85 @@ export default function ElderlyUI() {
                 <MapPin className="h-6 w-6" />
                 Plan Smart Route
               </Button>
+            </div>
+
+            {/* Recent Routes */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-foreground">Recent Routes</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={fetchRouteHistory}
+                  disabled={loadingHistory}
+                >
+                  {loadingHistory ? "Loading..." : "Refresh"}
+                </Button>
+              </div>
+              
+              {loadingHistory ? (
+                <Card className="p-4 text-center">
+                  <p className="text-muted-foreground">Loading route history...</p>
+                </Card>
+              ) : routeHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {routeHistory.slice(0, 3).map((route) => (
+                    <Card key={route.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span className="font-medium text-card-foreground">
+                              {route.from} → {route.to}
+                            </span>
+                            {route.isRecommended && (
+                              <Badge variant="default" className="text-xs">
+                                Recommended
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {route.duration}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Bus className="h-3 w-3" />
+                              {route.mode}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Accessibility className="h-3 w-3" />
+                              {route.accessibility}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Completed {new Date(route.completedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setRouteFormData({
+                              from: route.from,
+                              to: route.to
+                            });
+                            setActiveTab("routes");
+                          }}
+                        >
+                          Repeat
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-4 text-center">
+                  <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground">No recent routes found</p>
+                  <p className="text-sm text-muted-foreground">Complete a route to see it here</p>
+                </Card>
+              )}
             </div>
 
             {/* Recent Activity */}

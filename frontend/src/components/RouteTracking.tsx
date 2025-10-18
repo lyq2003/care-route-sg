@@ -19,6 +19,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { axiosInstance } from "./axios";
 
 interface RouteStep {
   instruction: string;
@@ -171,6 +172,39 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
     setIsNavigating(false);
   };
 
+  const completeRoute = async () => {
+    try {
+      // Save route to history
+      const routeHistory = {
+        from: from,
+        to: to,
+        mode: selectedRoute.mode,
+        duration: selectedRoute.time,
+        accessibility: selectedRoute.accessibility,
+        completedAt: new Date().toISOString(),
+        steps: routeSteps.length,
+        isRecommended: selectedRoute.isRecommended
+      };
+
+      await axiosInstance.post('/api/elderly/route-history', routeHistory);
+      
+      // Show completion message
+      if (voiceEnabled) {
+        speakInstruction("Route completed successfully! Your journey has been saved to your history.");
+      }
+      
+      // Navigate back after a short delay
+      setTimeout(() => {
+        onBack();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error saving route history:', error);
+      // Still navigate back even if saving fails
+      onBack();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -282,18 +316,28 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
             <Card className="p-4">
               <div className="space-y-3">
                 <h4 className="font-semibold text-foreground">Navigation</h4>
-                <div className="flex gap-2">
-                  {!isNavigating ? (
-                    <Button onClick={startNavigation} className="flex-1">
-                      <Navigation className="h-4 w-4 mr-2" />
-                      Start Navigation
-                    </Button>
-                  ) : (
-                    <Button onClick={stopNavigation} variant="destructive" className="flex-1">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      Stop Navigation
-                    </Button>
-                  )}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    {!isNavigating ? (
+                      <Button onClick={startNavigation} className="flex-1">
+                        <Navigation className="h-4 w-4 mr-2" />
+                        Start Navigation
+                      </Button>
+                    ) : (
+                      <Button onClick={stopNavigation} variant="destructive" className="flex-1">
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Stop Navigation
+                      </Button>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={completeRoute} 
+                    variant="default" 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Route
+                  </Button>
                 </div>
               </div>
             </Card>

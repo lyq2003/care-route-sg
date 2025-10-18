@@ -94,6 +94,81 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
 
 });
 
+// Route history endpoints
+router.post('/route-history', requireAuth, async (req, res) => {
+    try {
+        const { from, to, mode, duration, accessibility, completedAt, steps, isRecommended } = req.body;
+        const userId = req.user.id;
 
+        // Save route history to database
+        const routeHistory = {
+            userId,
+            from,
+            to,
+            mode,
+            duration,
+            accessibility,
+            completedAt: new Date(completedAt),
+            steps,
+            isRecommended
+        };
+
+        // Here you would typically save to your database
+        // For now, we'll just return success
+        console.log('Route history saved:', routeHistory);
+        
+        res.status(200).json({ 
+            message: 'Route history saved successfully',
+            routeHistory 
+        });
+
+    } catch (error) {
+        console.error('Error saving route history:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/route-history', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Here you would typically fetch from your database
+        // For now, we'll return mock data
+        const mockHistory = [
+            {
+                id: 1,
+                from: "Marina Bay Sands",
+                to: "Changi Airport",
+                mode: "MRT + Bus",
+                duration: "45 mins",
+                accessibility: "Wheelchair accessible",
+                completedAt: new Date().toISOString(),
+                steps: 8,
+                isRecommended: true
+            },
+            {
+                id: 2,
+                from: "Orchard Road",
+                to: "Sentosa Island",
+                mode: "Bus + Walk",
+                duration: "30 mins",
+                accessibility: "Elderly friendly",
+                completedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+                steps: 5,
+                isRecommended: false
+            }
+        ];
+
+        res.status(200).json({ 
+            message: 'Route history retrieved successfully',
+            history: mockHistory 
+        });
+
+    } catch (error) {
+        console.error('Error fetching route history:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 module.exports = router;
