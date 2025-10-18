@@ -190,19 +190,38 @@ export default function ElderlyUI() {
 
 	const addRouteCompletionActivity = (route: any) => {
 		console.log('Adding route completion activity:', route);
-		const newActivity = {
-			id: Date.now(), // Simple ID generation
-			type: "route",
-			description: `Route completed: ${route.from} → ${route.to}`,
-			status: "completed",
-			time: "Just now",
-			mode: route.mode,
-			duration: route.duration,
-			accessibility: route.accessibility
-		};
-
-		console.log('New activity created:', newActivity);
+		
+		// Create a unique identifier for this route completion
+		const routeId = `${route.from}-${route.to}-${route.completedAt}`;
+		
 		setRecentActivity(prev => {
+			// Check if this route completion already exists (within the last 5 minutes)
+			const now = Date.now();
+			const fiveMinutesAgo = now - (5 * 60 * 1000);
+			
+			const exists = prev.some(activity => 
+				activity.type === "route" && 
+				activity.description === `Route completed: ${route.from} → ${route.to}` &&
+				(activity.time === "Just now" || activity.id > fiveMinutesAgo)
+			);
+			
+			if (exists) {
+				console.log('Route completion activity already exists, skipping duplicate');
+				return prev;
+			}
+			
+			const newActivity = {
+				id: Date.now(), // Simple ID generation
+				type: "route",
+				description: `Route completed: ${route.from} → ${route.to}`,
+				status: "completed",
+				time: "Just now",
+				mode: route.mode,
+				duration: route.duration,
+				accessibility: route.accessibility
+			};
+
+			console.log('New activity created:', newActivity);
 			const updated = [newActivity, ...prev.slice(0, 9)]; // Keep only 10 most recent
 			console.log('Updated recent activity:', updated);
 			return updated;
@@ -472,12 +491,28 @@ export default function ElderlyUI() {
 	// Fetch route history on component mount
 	useEffect(() => {
 		fetchRouteHistory();
+		// Clean up any existing duplicates
+		removeDuplicateActivities();
 	}, []);
 
 	// Debug recent activity changes
 	useEffect(() => {
 		console.log('Recent activity state changed:', recentActivity);
 	}, [recentActivity]);
+
+	// Function to remove duplicate activities
+	const removeDuplicateActivities = () => {
+		setRecentActivity(prev => {
+			const unique = prev.filter((activity, index, self) => 
+				index === self.findIndex(a => 
+					a.type === activity.type && 
+					a.description === activity.description && 
+					a.time === activity.time
+				)
+			);
+			return unique;
+		});
+	};
 
 
   const volunteerData = {
@@ -728,28 +763,16 @@ export default function ElderlyUI() {
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-foreground">Recent Activity</h3>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  onClick={() => {
-                    const testActivity = {
-                      id: Date.now(),
-                      type: "route",
-                      description: "Test route completion",
-                      status: "completed",
-                      time: "Just now",
-                      mode: "Test Mode",
-                      duration: "5 mins",
-                      accessibility: "Test accessibility"
-                    };
-                    setRecentActivity(prev => [testActivity, ...prev.slice(0, 9)]);
-                  }}
+                  onClick={removeDuplicateActivities}
+                  className="text-xs"
                 >
-                  Test Add Activity
+                  Clean Duplicates
                 </Button>
               </div>
               
               <div className="space-y-3">
-                {console.log('Rendering recent activity:', recentActivity)}
                 {recentActivity.map((activity) => (
                   <Card key={activity.id} className="p-4">
                     <div className="flex items-start justify-between">
