@@ -15,23 +15,18 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   Users, 
-  HelpCircle, 
   Flag, 
   MessageSquare,
-  Search,
   Phone,
   Mail,
   Calendar,
   Eye,
   UserX,
-  Edit,
   CheckCircle,
-  Clock,
   AlertCircle,
   XCircle,
-  MapPin,
   User,
-  Menu,
+  Clock,
   RotateCcw,
   UserCheck,
   ChevronDown
@@ -40,9 +35,7 @@ import { axiosInstance as axios } from "./axios";
 
 type UserRole = "elderly" | "volunteer" | "caregiver" | "admin";
 type UserStatus = "active" | "suspended" | "deactivated";
-type RequestStatus = "Pending" | "In Progress" | "Completed" | "Cancelled";
 type ReportStatus = "Pending" | "In Progress" | "Resolved" | "Rejected";
-type UrgencyLevel = "Low" | "Medium" | "High";
 
 interface User {
   userid: string;
@@ -54,17 +47,6 @@ interface User {
   createdAt: string;
   profilePicture?: string;
   online?: boolean;
-}
-
-interface HelpRequest {
-  id: string;
-  elderlyName: string;
-  location: string;
-  description: string;
-  status: RequestStatus;
-  urgency: UrgencyLevel;
-  volunteer?: string;
-  timestamp: string;
 }
 
 interface Report {
@@ -91,9 +73,7 @@ interface Review {
 export default function AdminUI() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState({
@@ -101,8 +81,7 @@ export default function AdminUI() {
     activeUsers: 0,
     suspendedUsers: 0,
     deactivatedUsers: 0,
-    pendingReports: 0,
-    totalRequests: 0
+    pendingReports: 0
   });
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -115,6 +94,13 @@ export default function AdminUI() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isReviewingReport, setIsReviewingReport] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+
+  // Pagination and filtering states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
+  const [dateFilter, setDateFilter] = useState<"newest" | "oldest" | "all">("all");
 
   // Fetch dashboard stats by getting all users and calculating stats
   const fetchStats = async () => {
@@ -141,8 +127,7 @@ export default function AdminUI() {
           activeUsers,
           suspendedUsers,
           deactivatedUsers,
-          pendingReports: 0, // Will be updated when we implement reports
-          totalRequests: 0   // Will be updated when we implement requests
+          pendingReports: 0 // Will be updated when we implement reports
         });
       }
     } catch (error) {
@@ -193,9 +178,7 @@ export default function AdminUI() {
     fetchUsers();
   }, []);
 
-  // Mock data for requests and reports (enhanced for testing)
-  const helpRequests: HelpRequest[] = [];
-  
+  // Mock data for reports (enhanced for testing)
   const reports: Report[] = [
     {
       id: "rpt-001",
@@ -286,11 +269,36 @@ export default function AdminUI() {
     }
   ];
 
-  const filteredUsers = users.filter(user =>
-    user.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Apply all filters
+  const filteredUsers = users.filter(user => {
+    // Role filter
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    
+    // Status filter
+    const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+    
+    return matchesRole && matchesStatus;
+  });
+
+  // Apply date sorting
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (dateFilter === "newest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (dateFilter === "oldest") {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    return 0; // no sorting for "all"
+  });
+
+  // Apply pagination
+  const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
+  const startIndex = (currentPage - 1) * usersPerPage;
+  const paginatedUsers = sortedUsers.slice(startIndex, startIndex + usersPerPage);
+
+  // Reset pagination when filters change
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
 
   // Calculate suspension time remaining
   const getSuspensionTimeRemaining = (user: User): string | null => {
@@ -414,11 +422,6 @@ export default function AdminUI() {
     }
   };
 
-  const handleReassignVolunteer = (requestId: string) => {
-    console.log("Reassigning volunteer for request:", requestId);
-    // Implementation would open volunteer selection
-  };
-
   // Report management functions
   const handleStartReportReview = async (reportId: string) => {
     const report = reports.find(r => r.id === reportId);
@@ -531,10 +534,9 @@ export default function AdminUI() {
     }
   };
 
-  const getStatusBadgeColor = (status: UserStatus | RequestStatus | ReportStatus) => {
+  const getStatusBadgeColor = (status: UserStatus | ReportStatus) => {
     switch (status) {
       case "active":
-      case "Completed":
       case "Resolved":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case "Pending":
@@ -542,21 +544,12 @@ export default function AdminUI() {
       case "In Progress":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       case "suspended":
-      case "Cancelled":
       case "Rejected":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
       case "deactivated":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
-  };
-
-  const getUrgencyBadgeColor = (urgency: UrgencyLevel) => {
-    switch (urgency) {
-      case "Low": return "bg-info text-info-foreground";
-      case "Medium": return "bg-warning text-warning-foreground";
-      case "High": return "bg-destructive text-destructive-foreground";
     }
   };
 
@@ -594,12 +587,6 @@ export default function AdminUI() {
           <div className="text-3xl font-bold text-foreground mb-1">{stats.pendingReports}</div>
           <div className="text-sm text-muted-foreground">Pending Reports</div>
         </Card>
-
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <HelpCircle className="w-8 h-8 mx-auto mb-3 text-indigo-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.totalRequests}</div>
-          <div className="text-sm text-muted-foreground">Total Requests</div>
-        </Card>
       </div>
       
       {/* Quick Actions */}
@@ -625,15 +612,15 @@ export default function AdminUI() {
             <span>Review Reports</span>
             <span className="text-xs text-muted-foreground">{stats.pendingReports} pending</span>
           </Button>
-          
+
           <Button 
             variant="outline" 
             className="p-4 h-auto flex flex-col gap-2"
-            onClick={() => setActiveTab("requests")}
+            onClick={() => setActiveTab("reviews")}
           >
-            <HelpCircle className="w-6 h-6" />
-            <span>Monitor Requests</span>
-            <span className="text-xs text-muted-foreground">{stats.totalRequests} total</span>
+            <MessageSquare className="w-6 h-6" />
+            <span>Moderate Reviews</span>
+            <span className="text-xs text-muted-foreground">{reviews.filter(r => r.flagged).length} flagged</span>
           </Button>
         </div>
       </Card>
@@ -644,15 +631,111 @@ export default function AdminUI() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">User Management</h2>
       
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-        <Input
-          placeholder="Search users..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Role Filter */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">User Type</Label>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value as UserRole | "all");
+                resetPagination();
+              }}
+              className="w-full p-2 border border-input rounded-md bg-background text-sm"
+            >
+              <option value="all">All Roles</option>
+              <option value="elderly">Elderly</option>
+              <option value="volunteer">Volunteer</option>
+              <option value="caregiver">Caregiver</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Account Status</Label>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as UserStatus | "all");
+                resetPagination();
+              }}
+              className="w-full p-2 border border-input rounded-md bg-background text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+          </div>
+
+          {/* Date Filter */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Date Joined</Label>
+            <select
+              value={dateFilter}
+              onChange={(e) => {
+                setDateFilter(e.target.value as "newest" | "oldest" | "all");
+                resetPagination();
+              }}
+              className="w-full p-2 border border-input rounded-md bg-background text-sm"
+            >
+              <option value="all">Default Order</option>
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
+          <div>
+            Showing {startIndex + 1}-{Math.min(startIndex + usersPerPage, sortedUsers.length)} of {sortedUsers.length} users
+            {(roleFilter !== "all" || statusFilter !== "all" || dateFilter !== "all") && (
+              <span className="ml-2">
+                (filtered from {users.length} total)
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {roleFilter !== "all" && (
+              <Badge variant="secondary" className="text-xs">
+                Role: {roleFilter}
+                <button 
+                  onClick={() => {setRoleFilter("all"); resetPagination();}}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {statusFilter !== "all" && (
+              <Badge variant="secondary" className="text-xs">
+                Status: {statusFilter}
+                <button 
+                  onClick={() => {setStatusFilter("all"); resetPagination();}}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {dateFilter !== "all" && (
+              <Badge variant="secondary" className="text-xs">
+                Sort: {dateFilter === "newest" ? "Newest First" : "Oldest First"}
+                <button 
+                  onClick={() => {setDateFilter("all"); resetPagination();}}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+          </div>
+        </div>
+      </Card>
 
       <div className="space-y-4">
         {loading ? (
@@ -660,8 +743,25 @@ export default function AdminUI() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="text-muted-foreground mt-2">Loading users...</p>
           </div>
+        ) : paginatedUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground">No users found matching your criteria.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => {
+                setRoleFilter("all");
+                setStatusFilter("all");
+                setDateFilter("all");
+                resetPagination();
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
         ) : (
-          filteredUsers.map((user) => (
+          paginatedUsers.map((user) => (
             <Card key={user.userid} className="p-6 shadow-sm border-border/50">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
@@ -745,78 +845,95 @@ export default function AdminUI() {
           ))
         )}
       </div>
-    </div>
-  );
 
-  const renderRequestOversight = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-foreground mb-6">Request Oversight</h2>
-      
-      <Card className="p-6 shadow-sm border-border/50">
-        <h3 className="text-base font-semibold text-foreground mb-4">All Help Requests</h3>
-        
-        <div className="space-y-4">
-          {helpRequests.map((request) => (
-            <Card key={request.id} className="p-5 bg-muted/50 shadow-sm border-border/50">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-semibold text-foreground">{request.elderlyName}</h4>
-                    <Badge className={getUrgencyBadgeColor(request.urgency)}>
-                      {request.urgency} Priority
-                    </Badge>
-                  </div>
-                  <Badge className={getStatusBadgeColor(request.status)}>
-                    {request.status}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  {request.location}
-                </div>
-
-                <p className="text-sm text-foreground">{request.description}</p>
-
-                {request.volunteer && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="w-4 h-4" />
-                    Volunteer: {request.volunteer}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  {request.timestamp}
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedRequest(request)}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Details
-                  </Button>
-                  {request.status === "Pending" && (
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3"
+              >
+                First
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3"
+              >
+                Previous
+              </Button>
+              
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let page;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  
+                  return (
                     <Button
-                      variant="outline"
+                      key={page}
+                      variant={page === currentPage ? "default" : "outline"}
                       size="sm"
-                      onClick={() => handleReassignVolunteer(request.id)}
+                      onClick={() => setCurrentPage(page)}
+                      className="w-8 h-8 p-0"
                     >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Reassign Volunteer
+                      {page}
                     </Button>
-                  )}
-                </div>
+                  );
+                })}
               </div>
-            </Card>
-          ))}
-        </div>
-      </Card>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3"
+              >
+                Next
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3"
+              >
+                Last
+              </Button>
+            </div>
+            
+            <div className="text-sm text-muted-foreground">
+              {sortedUsers.length} total users
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
+
+
 
   const renderReportManagement = () => (
     <div className="space-y-6">
@@ -1131,7 +1248,6 @@ export default function AdminUI() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {activeTab === "overview" && renderOverview()}
         {activeTab === "users" && renderUserManagement()}
-        {activeTab === "requests" && renderRequestOversight()}
         {activeTab === "reports" && renderReportManagement()}
         {activeTab === "reviews" && renderReviewModeration()}
       </div>
@@ -1356,18 +1472,6 @@ export default function AdminUI() {
           >
             <Users className="w-6 h-6" />
             <span className="text-xs">Users</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("requests")}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-              activeTab === "requests"
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <HelpCircle className="w-6 h-6" />
-            <span className="text-xs">Requests</span>
           </button>
 
           <button

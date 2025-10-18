@@ -2,7 +2,6 @@ const adminService = require('../services/admin');
 //const User = require('../domain/User');
 const UserStatus = require('../domain/enum/UserStatus');
 const Role = require('../domain/enum/Role');
-const HelpRequestStatus = require('../domain/enum/HelpRequestStatus');
 
 class AdminController {
   
@@ -339,44 +338,7 @@ class AdminController {
     }
   }
 
-  // Get all help requests
-  async getAllRequests(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        status,
-        category
-      } = req.query;
-
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      
-      if (pageNum < 1 || limitNum < 1 || limitNum > 100) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid pagination parameters'
-        });
-      }
-
-      const filters = {};
-      if (status) filters.status = status;
-      if (category) filters.category = category;
-
-      const result = await adminService.getAllRequests(pageNum, limitNum, filters);
-
-      res.status(200).json({
-        success: true,
-        data: result
-      });
-    } catch (error) {
-      console.error('Get all requests error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  }
+  // Get admin activity logs
 
   // Reassign volunteer to request
   async reassignVolunteer(req, res) {
