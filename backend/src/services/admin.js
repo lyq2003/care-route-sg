@@ -2,7 +2,6 @@ const { supabase, supabaseAdmin } = require('../config/supabase');
 const User = require('../domain/User');
 const UserStatus = require('../domain/enum/UserStatus');
 const Role = require('../domain/enum/Role');
-const HelpRequestStatus = require('../domain/enum/HelpRequestStatus');
 const ReportStatus = require('../domain/enum/ReportStatus');
 
 class AdminService {
@@ -29,30 +28,6 @@ class AdminService {
         user.user_metadata?.status === UserStatus.DEACTIVATED
       ).length;
 
-      // Get help requests count (if table exists)
-      let totalRequests = 0;
-      let pendingRequests = 0;
-      try {
-        const { count: requestCount, error: requestError } = await supabaseAdmin
-          .from('help_requests')
-          .select('*', { count: 'exact', head: true });
-        
-        if (!requestError) {
-          totalRequests = requestCount || 0;
-        }
-
-        const { count: pendingCount, error: pendingError } = await supabaseAdmin
-          .from('help_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', HelpRequestStatus.PENDING);
-        
-        if (!pendingError) {
-          pendingRequests = pendingCount || 0;
-        }
-      } catch (error) {
-        console.warn('Help requests table may not exist:', error);
-      }
-
       // Get pending reports count (if table exists)
       let pendingReports = 0;
       try {
@@ -73,8 +48,6 @@ class AdminService {
         activeUsers,
         suspendedUsers,
         deactivatedUsers,
-        totalRequests,
-        pendingRequests,
         pendingReports
       };
     } catch (error) {
@@ -475,73 +448,6 @@ class AdminService {
 
       // Return updated user
       return await this.getUserById(userId);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Get all help requests with pagination
-  async getAllRequests(page = 1, limit = 10, filters = {}) {
-    try {
-      const offset = (page - 1) * limit;
-      let query = supabaseAdmin
-        .from('help_requests')
-        .select(`
-          *,
-          elderly:elderly_id(id, profile),
-          volunteer:volunteer_id(id, profile)
-        `, { count: 'exact' })
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
-
-      // Apply filters
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(`Failed to fetch requests: ${error.message}`);
-      }
-
-      return {
-        requests: data,
-        total: count,
-        page,
-        totalPages: Math.ceil(count / limit)
-      };
-    } catch (error) {
-      throw new Error(`Database error: ${error.message}`);
-    }
-  }
-
-  // Reassign volunteer to a request
-  async reassignVolunteer(requestId, newVolunteerId, adminId) {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('help_requests')
-        .update({
-          volunteer_id: newVolunteerId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestId)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to reassign volunteer: ${error.message}`);
-      }
-
-      // Log admin action
-      await this.logAdminAction(adminId, 'REASSIGN_VOLUNTEER', requestId, { 
-        newVolunteerId 
-      });
-
-      return data;
     } catch (error) {
       throw error;
     }
