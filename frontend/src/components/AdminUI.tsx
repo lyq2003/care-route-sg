@@ -76,12 +76,17 @@ export default function AdminUI() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
     suspendedUsers: 0,
     deactivatedUsers: 0,
-    pendingReports: 0
+    pendingReports: 0,
+    inProgressReports: 0,
+    resolvedReports: 0,
+    rejectedReports: 0
   });
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -127,7 +132,10 @@ export default function AdminUI() {
           activeUsers,
           suspendedUsers,
           deactivatedUsers,
-          pendingReports: 0 // Will be updated when we implement reports
+          pendingReports: 0, // Will be updated when we implement reports
+          inProgressReports: 0,
+          resolvedReports: 0,
+          rejectedReports: 0
         });
       }
     } catch (error) {
@@ -172,102 +180,86 @@ export default function AdminUI() {
     }
   };
 
+  // Fetch reports
+  const fetchReports = async () => {
+    try {
+      const response = await axios.get('/api/admin/reports');
+      if (response.data.success) {
+        // Transform backend data to match frontend interface
+        const transformedReports = response.data.data.reports.map(report => ({
+          id: report.id,
+          reporterName: report.reporter?.user_metadata?.name || report.reporter?.email?.split('@')[0] || 'Unknown User',
+          reportedUser: report.reported?.user_metadata?.name || report.reported?.email?.split('@')[0] || 'Unknown User',
+          reportedRole: report.reported?.user_metadata?.role || 'unknown',
+          reason: report.reason,
+          status: report.status === 'PENDING' ? 'Pending' : 
+                  report.status === 'IN_PROGRESS' ? 'In Progress' :
+                  report.status === 'RESOLVED' ? 'Resolved' : 'Rejected',
+          timestamp: new Date(report.created_at).toLocaleString(),
+          evidence: report.attachments?.length > 0 ? 'Available' : undefined
+        }));
+        setReports(transformedReports);
+        
+        // Update all report status counts in stats
+        const pendingCount = transformedReports.filter(r => r.status === 'Pending').length;
+        const inProgressCount = transformedReports.filter(r => r.status === 'In Progress').length;
+        const resolvedCount = transformedReports.filter(r => r.status === 'Resolved').length;
+        const rejectedCount = transformedReports.filter(r => r.status === 'Rejected').length;
+        
+        setStats(prev => ({ 
+          ...prev, 
+          pendingReports: pendingCount,
+          inProgressReports: inProgressCount,
+          resolvedReports: resolvedCount,
+          rejectedReports: rejectedCount
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load reports",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Fetch reviews
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get('/api/admin/reviews');
+      if (response.data.success) {
+        // Transform backend data to match frontend interface
+        const transformedReviews = response.data.data.reviews.map(review => ({
+          id: review.id,
+          reviewerName: review.author?.user_metadata?.name || review.author?.email?.split('@')[0] || 'Anonymous User',
+          revieweeName: `${review.recipient?.user_metadata?.name || review.recipient?.email?.split('@')[0] || 'Unknown User'} (${review.recipient?.user_metadata?.role || 'User'})`,
+          rating: review.rating,
+          comment: review.text || '',
+          timestamp: new Date(review.created_at).toLocaleString(),
+          flagged: review.flagged || false
+        }));
+        setReviews(transformedReviews);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load reviews",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Load data on component mount
   useEffect(() => {
     fetchStats();
     fetchUsers();
+    fetchReports();
+    fetchReviews();
   }, []);
 
-  // Mock data for reports (enhanced for testing)
-  const reports: Report[] = [
-    {
-      id: "rpt-001",
-      reporterName: "Sarah Chen",
-      reportedUser: "John Smith",
-      reportedRole: "volunteer",
-      reason: "Inappropriate behavior during help session. Volunteer made inappropriate comments and showed unprofessional conduct.",
-      status: "Pending",
-      timestamp: "2024-10-01 10:30 AM",
-      evidence: "Screenshot of messages, witness testimony"
-    },
-    {
-      id: "rpt-002",
-      reporterName: "Mary Johnson",
-      reportedUser: "David Lee",
-      reportedRole: "elderly",
-      reason: "Abusive language and threatening behavior towards volunteer. Multiple incidents reported.",
-      status: "In Progress",
-      timestamp: "2024-09-30 2:15 PM",
-      evidence: "Chat logs, audio recording"
-    },
-    {
-      id: "rpt-003",
-      reporterName: "Admin System",
-      reportedUser: "Alex Wong",
-      reportedRole: "volunteer",
-      reason: "No-show for scheduled help sessions multiple times without notice. Pattern of unreliability.",
-      status: "Pending",
-      timestamp: "2024-09-29 9:00 AM",
-      evidence: "Schedule logs, missed appointment records"
-    }
-  ];
-  
-  const reviews: Review[] = [
-    {
-      id: "rev-001",
-      reviewerName: "Margaret Chen",
-      revieweeName: "David Wong (Volunteer)",
-      rating: 1,
-      comment: "This volunteer is absolutely terrible! He's a complete idiot and I hate his stupid face. David Wong lives at 123 Main Street and his phone number is 555-0123. Never use him!",
-      timestamp: "2024-10-05 2:30 PM",
-      flagged: true
-    },
-    {
-      id: "rev-002", 
-      reviewerName: "Anonymous User",
-      revieweeName: "Sarah Lim (Elderly)",
-      rating: 2,
-      comment: "I don't like Sarah's political views. She supports the wrong party and talks about politics all the time instead of focusing on the help I need. Also, she's from the LGBT community which I disagree with.",
-      timestamp: "2024-10-04 4:15 PM",
-      flagged: true
-    },
-    {
-      id: "rev-003",
-      reviewerName: "Tom Johnson", 
-      revieweeName: "Alice Tan (Volunteer)",
-      rating: 1,
-      comment: "Alice is a b**** and she smells bad. Her real name is Alice Tan Wei Ling and she works at ABC Company on Orchard Road. Total waste of time and she's ugly too.",
-      timestamp: "2024-10-03 11:45 AM",
-      flagged: true
-    },
-    {
-      id: "rev-004",
-      reviewerName: "Linda Wong",
-      revieweeName: "James Lee (Volunteer)", 
-      rating: 1,
-      comment: "This has nothing to do with the help provided but I wanted to say that I hate the government and think all politicians are corrupt. James was fine but I'm using this review to complain about my neighbor's dog.",
-      timestamp: "2024-10-02 9:20 AM",
-      flagged: true
-    },
-    {
-      id: "rev-005",
-      reviewerName: "Robert Chen",
-      revieweeName: "Mary Ng (Elderly)",
-      rating: 1,
-      comment: "Mary Ng is a horrible person. Her IC number is S1234567A and she lives at Blk 123 Ang Mo Kio Ave 3 #05-67. She has a criminal record and shouldn't be on this platform. Her daughter works at the bank downtown.",
-      timestamp: "2024-10-01 6:00 PM", 
-      flagged: true
-    },
-    {
-      id: "rev-006",
-      reviewerName: "Patricia Lim",
-      revieweeName: "Steven Koh (Volunteer)",
-      rating: 1,
-      comment: "Steven didn't show up on time and was very rude to me. When I asked him to help with groceries, he told me it wasn't his job and left early. Very unprofessional behavior and poor attitude.",
-      timestamp: "2024-09-30 3:45 PM",
-      flagged: false
-    }
-  ];
+
 
   // Apply all filters
   const filteredUsers = users.filter(user => {
@@ -444,14 +436,19 @@ export default function AdminUI() {
       const response = await axios.post(`/api/admin/reports/${reportId}/start-review`);
       
       if (response.data.success) {
-        // Find and select the report
-        if (report) {
-          setSelectedReport(report);
-          toast({
-            title: "Report Review Started",
-            description: "Report status updated to In Progress",
-          });
+        // Refresh reports data
+        await fetchReports();
+        
+        // Find and select the updated report
+        const updatedReport = reports.find(r => r.id === reportId);
+        if (updatedReport) {
+          setSelectedReport({...updatedReport, status: "In Progress"});
         }
+        
+        toast({
+          title: "Report Review Started",
+          description: "Report status updated to In Progress",
+        });
       }
     } catch (error: any) {
       console.error('Failed to start report review:', error);
@@ -479,19 +476,31 @@ export default function AdminUI() {
 
     setActionLoading(reportId);
     try {
-      const response = await axios.post(`/api/admin/reports/${reportId}/resolve`, {
-        action: action,
+      const endpoint = action === 'reject' ? 
+        `/api/admin/reports/${reportId}/reject` : 
+        `/api/admin/reports/${reportId}/resolve`;
+      
+      const response = await axios.post(endpoint, {
+        action: action !== 'reject' ? action : undefined,
+        reason: `Admin action: ${action}${duration && action === 'suspend' ? ` for ${duration} days` : ''}`,
         duration: action === 'suspend' ? duration : undefined
       });
       
       if (response.data.success) {
         // Refresh data
+        await fetchReports();
         await fetchUsers();
         await fetchStats();
         
+        // Close modals
+        setShowEvidenceModal(false);
+        setSelectedReport(null);
+        
         toast({
           title: "Success",
-          description: `Report resolved with ${action} action`,
+          description: action === 'reject' ? 
+            "Report rejected successfully" : 
+            `Report resolved with ${action} action`,
         });
       }
     } catch (error: any) {
@@ -506,21 +515,35 @@ export default function AdminUI() {
     }
   };
 
-  const handleRemoveReview = (reviewId: string) => {
+  const handleRemoveReview = async (reviewId: string) => {
     const review = reviews.find(r => r.id === reviewId);
     
-    // In a real implementation, this would call an API
-    console.log("Removing review:", reviewId);
+    if (!review) return;
     
-    if (review) {
-      toast({
-        title: "Review Removed",
-        description: `Review by ${review.reviewerName} has been permanently removed from the platform for policy violations.`,
-        variant: "default"
+    setActionLoading(reviewId);
+    try {
+      const response = await axios.delete(`/api/admin/reviews/${reviewId}`, {
+        data: { reason: 'Review removed for policy violation' }
       });
       
-      // In a real app, you'd update the state or refetch data here
-      // setReviews(reviews.filter(r => r.id !== reviewId));
+      if (response.data.success) {
+        // Refresh reviews data
+        await fetchReviews();
+        
+        toast({
+          title: "Review Removed",
+          description: `Review by ${review.reviewerName} has been permanently removed from the platform for policy violations.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to remove review:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to remove review",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -557,36 +580,64 @@ export default function AdminUI() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">System Overview</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <Users className="w-8 h-8 mx-auto mb-3 text-blue-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.totalUsers}</div>
-          <div className="text-sm text-muted-foreground">Total Users</div>
-        </Card>
+      {/* User Statistics */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">User Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <Users className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.totalUsers}</div>
+            <div className="text-sm text-muted-foreground">Total Users</div>
+          </Card>
 
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.activeUsers}</div>
-          <div className="text-sm text-muted-foreground">Active Users</div>
-        </Card>
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.activeUsers}</div>
+            <div className="text-sm text-muted-foreground">Active Users</div>
+          </Card>
 
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <UserX className="w-8 h-8 mx-auto mb-3 text-yellow-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.suspendedUsers}</div>
-          <div className="text-sm text-muted-foreground">Suspended Users</div>
-        </Card>
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <UserX className="w-8 h-8 mx-auto mb-3 text-yellow-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.suspendedUsers}</div>
+            <div className="text-sm text-muted-foreground">Suspended Users</div>
+          </Card>
 
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <AlertCircle className="w-8 h-8 mx-auto mb-3 text-orange-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.deactivatedUsers}</div>
-          <div className="text-sm text-muted-foreground">Deactivated Users</div>
-        </Card>
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-orange-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.deactivatedUsers}</div>
+            <div className="text-sm text-muted-foreground">Deactivated Users</div>
+          </Card>
+        </div>
+      </div>
 
-        <Card className="p-6 text-center shadow-sm border-border/50">
-          <Flag className="w-8 h-8 mx-auto mb-3 text-purple-600" />
-          <div className="text-3xl font-bold text-foreground mb-1">{stats.pendingReports}</div>
-          <div className="text-sm text-muted-foreground">Pending Reports</div>
-        </Card>
+      {/* Report Statistics */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Report Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <Flag className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.pendingReports}</div>
+            <div className="text-sm text-muted-foreground">Pending</div>
+          </Card>
+
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <Clock className="w-8 h-8 mx-auto mb-3 text-yellow-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.inProgressReports}</div>
+            <div className="text-sm text-muted-foreground">In Progress</div>
+          </Card>
+
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.resolvedReports}</div>
+            <div className="text-sm text-muted-foreground">Resolved</div>
+          </Card>
+
+          <Card className="p-6 text-center shadow-sm border-border/50">
+            <XCircle className="w-8 h-8 mx-auto mb-3 text-red-600" />
+            <div className="text-3xl font-bold text-foreground mb-1">{stats.rejectedReports}</div>
+            <div className="text-sm text-muted-foreground">Rejected</div>
+          </Card>
+        </div>
       </div>
       
       {/* Quick Actions */}
@@ -620,7 +671,7 @@ export default function AdminUI() {
           >
             <MessageSquare className="w-6 h-6" />
             <span>Moderate Reviews</span>
-            <span className="text-xs text-muted-foreground">{reviews.filter(r => r.flagged).length} flagged</span>
+            <span className="text-xs text-muted-foreground">{reviews.filter(r => r.flagged).length} reviews removed</span>
           </Button>
         </div>
       </Card>
@@ -940,18 +991,34 @@ export default function AdminUI() {
       <h2 className="text-xl font-semibold text-foreground mb-6">Report Management</h2>
       
       {/* Report Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">{reports.filter(r => r.status === "Pending").length}</div>
-          <div className="text-sm text-muted-foreground">Pending Reviews</div>
+          <div className="text-sm text-muted-foreground">Pending Reports</div>
+          <Badge variant="secondary" className="mt-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs">
+            Pending
+          </Badge>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-yellow-600">{reports.filter(r => r.status === "In Progress").length}</div>
           <div className="text-sm text-muted-foreground">In Progress</div>
+          <Badge variant="secondary" className="mt-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 text-xs">
+            In Progress
+          </Badge>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-green-600">{reports.filter(r => r.status === "Resolved").length}</div>
           <div className="text-sm text-muted-foreground">Resolved</div>
+          <Badge variant="secondary" className="mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-xs">
+            Resolved
+          </Badge>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="text-2xl font-bold text-red-600">{reports.filter(r => r.status === "Rejected").length}</div>
+          <div className="text-sm text-muted-foreground">Rejected Reports</div>
+          <Badge variant="secondary" className="mt-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 text-xs">
+            Rejected
+          </Badge>
         </Card>
       </div>
 
@@ -1151,7 +1218,7 @@ export default function AdminUI() {
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-orange-600">{reviews.filter(r => r.flagged).length}</div>
-          <div className="text-sm text-muted-foreground">Reported Reviews</div>
+          <div className="text-sm text-muted-foreground">Reviews Removed</div>
         </Card>
       </div>
 
