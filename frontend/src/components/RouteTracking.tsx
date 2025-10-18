@@ -44,9 +44,10 @@ interface RouteTrackingProps {
   from: string;
   to: string;
   onBack: () => void;
+  onRouteCompleted?: (route: any) => void;
 }
 
-export default function RouteTracking({ selectedRoute, from, to, onBack }: RouteTrackingProps) {
+export default function RouteTracking({ selectedRoute, from, to, onBack, onRouteCompleted }: RouteTrackingProps) {
   const navigate = useNavigate();
   const [googleLoaded, setGoogleLoaded] = useState(false);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -187,6 +188,11 @@ export default function RouteTracking({ selectedRoute, from, to, onBack }: Route
       };
 
       await axiosInstance.post('/api/elderly/route-history', routeHistory);
+      
+      // Call the onRouteCompleted callback to update recent activity
+      if (onRouteCompleted) {
+        onRouteCompleted(routeHistory);
+      }
       
       // Show completion message
       if (voiceEnabled) {

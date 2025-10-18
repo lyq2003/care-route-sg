@@ -67,6 +67,34 @@ export default function ElderlyUI() {
   const [showRouteTracking, setShowRouteTracking] = useState(false);
   const [routeHistory, setRouteHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [recentActivity, setRecentActivity] = useState([
+    {
+      id: 1,
+      type: "help_request",
+      description: "Assistance with grocery shopping",
+      status: "completed",
+      time: "2 hours ago",
+      volunteer: "Li Wei"
+    },
+    {
+      id: 2,
+      type: "route",
+      description: "Route to Singapore General Hospital",
+      status: "completed",
+      time: "1 day ago",
+      mode: "MRT + Bus",
+      duration: "25 mins",
+      accessibility: "Wheelchair accessible"
+    },
+    {
+      id: 3,
+      type: "help_request",
+      description: "Help with MRT navigation",
+      status: "active",
+      time: "3 days ago",
+      volunteer: "Sarah Tan"
+    }
+  ]);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -89,31 +117,6 @@ export default function ElderlyUI() {
     caregiversLinked: 2
   };
 
-  const recentActivity = [
-    {
-      id: 1,
-      type: "help_request",
-      description: "Assistance with grocery shopping",
-      status: "completed",
-      time: "2 hours ago",
-      volunteer: "Li Wei"
-    },
-    {
-      id: 2,
-      type: "route",
-      description: "Route to Singapore General Hospital",
-      status: "completed",
-      time: "1 day ago"
-    },
-    {
-      id: 3,
-      type: "help_request",
-      description: "Help with MRT navigation",
-      status: "active",
-      time: "3 days ago",
-      volunteer: "Sarah Tan"
-    }
-  ];
 
   const caregiverPin = "284751";
 
@@ -183,6 +186,21 @@ export default function ElderlyUI() {
 		} finally {
 			setLoadingHistory(false);
 		}
+	};
+
+	const addRouteCompletionActivity = (route: any) => {
+		const newActivity = {
+			id: Date.now(), // Simple ID generation
+			type: "route",
+			description: `Route completed: ${route.from} → ${route.to}`,
+			status: "completed",
+			time: "Just now",
+			mode: route.mode,
+			duration: route.duration,
+			accessibility: route.accessibility
+		};
+
+		setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
 	};
 
 	const handleRouteSelection = (route: any) => {
@@ -703,13 +721,40 @@ export default function ElderlyUI() {
                   <Card key={activity.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-card-foreground mb-1">
-                          {activity.description}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          {activity.type === "route" ? (
+                            <MapPin className="h-4 w-4 text-primary" />
+                          ) : (
+                            <HelpCircle className="h-4 w-4 text-orange-500" />
+                          )}
+                          <p className="font-medium text-card-foreground">
+                            {activity.description}
+                          </p>
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
                           {activity.time}
                         </div>
+                        {activity.type === "route" && activity.mode && (
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Bus className="h-3 w-3" />
+                              {activity.mode}
+                            </span>
+                            {activity.duration && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {activity.duration}
+                              </span>
+                            )}
+                            {activity.accessibility && (
+                              <span className="flex items-center gap-1">
+                                <Accessibility className="h-3 w-3" />
+                                {activity.accessibility}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {activity.volunteer && (
                           <p className="text-sm text-muted-foreground mt-1">
                             Volunteer: {activity.volunteer}
@@ -1257,6 +1302,7 @@ export default function ElderlyUI() {
         from={routeFormData.from}
         to={routeFormData.to}
         onBack={handleBackFromTracking}
+        onRouteCompleted={addRouteCompletionActivity}
       />
     );
   }
