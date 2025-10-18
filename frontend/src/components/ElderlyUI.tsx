@@ -189,6 +189,7 @@ export default function ElderlyUI() {
 	};
 
 	const addRouteCompletionActivity = (route: any) => {
+		console.log('Adding route completion activity:', route);
 		const newActivity = {
 			id: Date.now(), // Simple ID generation
 			type: "route",
@@ -200,7 +201,12 @@ export default function ElderlyUI() {
 			accessibility: route.accessibility
 		};
 
-		setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
+		console.log('New activity created:', newActivity);
+		setRecentActivity(prev => {
+			const updated = [newActivity, ...prev.slice(0, 9)]; // Keep only 10 most recent
+			console.log('Updated recent activity:', updated);
+			return updated;
+		});
 	};
 
 	const handleRouteSelection = (route: any) => {
@@ -468,6 +474,11 @@ export default function ElderlyUI() {
 		fetchRouteHistory();
 	}, []);
 
+	// Debug recent activity changes
+	useEffect(() => {
+		console.log('Recent activity state changed:', recentActivity);
+	}, [recentActivity]);
+
 
   const volunteerData = {
     name: "Li Wei",
@@ -714,9 +725,31 @@ export default function ElderlyUI() {
 
             {/* Recent Activity */}
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-foreground">Recent Activity</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-foreground">Recent Activity</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    const testActivity = {
+                      id: Date.now(),
+                      type: "route",
+                      description: "Test route completion",
+                      status: "completed",
+                      time: "Just now",
+                      mode: "Test Mode",
+                      duration: "5 mins",
+                      accessibility: "Test accessibility"
+                    };
+                    setRecentActivity(prev => [testActivity, ...prev.slice(0, 9)]);
+                  }}
+                >
+                  Test Add Activity
+                </Button>
+              </div>
               
               <div className="space-y-3">
+                {console.log('Rendering recent activity:', recentActivity)}
                 {recentActivity.map((activity) => (
                   <Card key={activity.id} className="p-4">
                     <div className="flex items-start justify-between">

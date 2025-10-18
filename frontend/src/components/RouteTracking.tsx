@@ -187,12 +187,16 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
         isRecommended: selectedRoute.isRecommended
       };
 
-      await axiosInstance.post('/api/elderly/route-history', routeHistory);
-      
-      // Call the onRouteCompleted callback to update recent activity
+      // Call the onRouteCompleted callback to update recent activity FIRST
       if (onRouteCompleted) {
+        console.log('Calling onRouteCompleted callback with:', routeHistory);
         onRouteCompleted(routeHistory);
+      } else {
+        console.log('onRouteCompleted callback not provided');
       }
+
+      // Then save to API
+      await axiosInstance.post('/api/elderly/route-history', routeHistory);
       
       // Show completion message
       if (voiceEnabled) {
@@ -206,6 +210,22 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
       
     } catch (error) {
       console.error('Error saving route history:', error);
+      
+      // Still call the callback even if API fails
+      if (onRouteCompleted) {
+        const routeHistory = {
+          from: from,
+          to: to,
+          mode: selectedRoute.mode,
+          duration: selectedRoute.time,
+          accessibility: selectedRoute.accessibility,
+          completedAt: new Date().toISOString(),
+          steps: routeSteps.length,
+          isRecommended: selectedRoute.isRecommended
+        };
+        onRouteCompleted(routeHistory);
+      }
+      
       // Still navigate back even if saving fails
       onBack();
     }
