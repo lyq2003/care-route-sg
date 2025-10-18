@@ -59,6 +59,26 @@ router.post('/users/:userId/reactivate', adminController.reactivateUser);
 // POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
 router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
 
+// Report Management Routes
+// GET /api/admin/reports - Get all reports for admin review
+router.get('/reports', adminController.getAllReports);
+
+// POST /api/admin/reports/:reportId/start-review - Start reviewing a report
+router.post('/reports/:reportId/start-review', adminController.startReportReview);
+
+// POST /api/admin/reports/:reportId/resolve - Resolve a report with disciplinary action
+router.post('/reports/:reportId/resolve', adminController.resolveReport);
+
+// POST /api/admin/reports/:reportId/reject - Reject a report
+router.post('/reports/:reportId/reject', adminController.rejectReport);
+
+// Review Management Routes
+// GET /api/admin/reviews - Get all reviews for admin moderation
+router.get('/reviews', adminController.getAllReviews);
+
+// DELETE /api/admin/reviews/:reviewId - Remove inappropriate review
+router.delete('/reviews/:reviewId', adminController.removeReview);
+
 // Admin Activity Routes
 // GET /api/admin/logs - Get admin activity logs
 router.get('/logs', adminController.getAdminLogs);

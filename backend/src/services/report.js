@@ -163,6 +163,22 @@ class ReportService {
     if (error) throw error;
     return data;
   }
+
+  // Admin-specific method to get all reports with full user details
+  async getAllReportsForAdmin() {
+    const { data, error } = await supabaseAdmin
+      .from('reports')
+      .select(`
+        *,
+        reporter:auth.users!reporter_user_id(*),
+        reported:auth.users!reported_user_id(*),
+        attachments(*)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  }
 }
 
 module.exports = new ReportService();
