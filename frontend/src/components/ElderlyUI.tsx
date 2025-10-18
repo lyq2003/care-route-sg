@@ -246,11 +246,46 @@ export default function ElderlyUI() {
 			mode: route.mode,
 			duration: route.duration,
 			accessibility: route.accessibility,
-			routeId: `${route.from}-${route.to}-${route.startedAt}` // Unique identifier for this navigation
+			routeId: `${route.from}-${route.to}-${route.startedAt}`, // Unique identifier for this navigation
+			from: route.from,
+			to: route.to,
+			selectedRoute: selectedRoute // Store the selected route for navigation
 		};
 
 		console.log('New navigation activity created:', newActivity);
 		setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
+	};
+
+	const handleActiveNavigationClick = (activity: any) => {
+		console.log('Clicked on active navigation:', activity);
+		
+		// Set the route form data
+		setRouteFormData({
+			from: activity.from,
+			to: activity.to
+		});
+		
+		// Set the selected route if available
+		if (activity.selectedRoute) {
+			setSelectedRoute(activity.selectedRoute);
+		} else {
+			// Create a basic route object if not available
+			const basicRoute = {
+				id: 1,
+				mode: activity.mode || "Transit",
+				route: `${activity.from} to ${activity.to}`,
+				accessibility: activity.accessibility || "Standard",
+				time: activity.duration || "Unknown",
+				icon: Bus, // Default icon
+				durationMinutes: 0,
+				accessibilityScore: 0,
+				isRecommended: false
+			};
+			setSelectedRoute(basicRoute);
+		}
+		
+		// Navigate to route tracking
+		setShowRouteTracking(true);
 	};
 
 	const handleRouteSelection = (route: any) => {
@@ -815,7 +850,19 @@ export default function ElderlyUI() {
               
               <div className="space-y-3">
                 {recentActivity.map((activity) => (
-                  <Card key={activity.id} className="p-4">
+                  <Card 
+                    key={activity.id} 
+                    className={`p-4 ${
+                      activity.type === "route" && activity.status === "active" 
+                        ? "cursor-pointer hover:bg-accent/50 transition-colors" 
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (activity.type === "route" && activity.status === "active") {
+                        handleActiveNavigationClick(activity);
+                      }
+                    }}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -827,6 +874,11 @@ export default function ElderlyUI() {
                           <p className="font-medium text-card-foreground">
                             {activity.description}
                           </p>
+                          {activity.type === "route" && activity.status === "active" && (
+                            <span className="text-xs text-primary font-medium">
+                              (Click to continue)
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
@@ -883,6 +935,23 @@ export default function ElderlyUI() {
                         <Button variant="outline" size="sm" className="flex-1">
                           <MessageSquare className="h-4 w-4" />
                           Message
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {activity.type === "route" && activity.status === "active" && (
+                      <div className="mt-3">
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActiveNavigationClick(activity);
+                          }}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Continue Navigation
                         </Button>
                       </div>
                     )}
