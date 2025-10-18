@@ -225,10 +225,22 @@ export default function AdminUI() {
   // Fetch reviews
   const fetchReviews = async () => {
     try {
+      console.log('Fetching reviews from /api/admin/reviews...');
       const response = await axios.get('/api/admin/reviews');
+      
+      console.log('Reviews response:', response.data);
+      
       if (response.data.success) {
-        // Transform backend data to match frontend interface
-        const transformedReviews = response.data.data.reviews.map(review => ({
+        const reviewsData = response.data.data.reviews || [];
+        console.log(`Found ${reviewsData.length} reviews`);
+        
+        if (reviewsData.length === 0) {
+          setReviews([]);
+          console.log('No reviews found in database');
+          return;
+        }
+        
+        const transformedReviews = reviewsData.map(review => ({
           id: review.id,
           reviewerName: review.author?.user_metadata?.name || review.author?.email?.split('@')[0] || 'Anonymous User',
           revieweeName: `${review.recipient?.user_metadata?.name || review.recipient?.email?.split('@')[0] || 'Unknown User'} (${review.recipient?.user_metadata?.role || 'User'})`,
@@ -238,12 +250,25 @@ export default function AdminUI() {
           flagged: review.flagged || false
         }));
         setReviews(transformedReviews);
+      } else {
+        console.error('API returned success: false', response.data);
+        throw new Error(response.data.error || 'Unknown API error');
       }
     } catch (error) {
       console.error('Failed to fetch reviews:', error);
+      
+      let errorMessage = "Failed to load reviews";
+      if (error.response?.status === 401) {
+        errorMessage = "Authentication required. Please login as admin";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Admin access required";
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to load reviews",
+        description: errorMessage,
         variant: "destructive"
       });
     }
