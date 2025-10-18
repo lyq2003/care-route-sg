@@ -45,9 +45,10 @@ interface RouteTrackingProps {
   to: string;
   onBack: () => void;
   onRouteCompleted?: (route: any) => void;
+  onNavigationStarted?: (route: any) => void;
 }
 
-export default function RouteTracking({ selectedRoute, from, to, onBack, onRouteCompleted }: RouteTrackingProps) {
+export default function RouteTracking({ selectedRoute, from, to, onBack, onRouteCompleted, onNavigationStarted }: RouteTrackingProps) {
   const navigate = useNavigate();
   const [googleLoaded, setGoogleLoaded] = useState(false);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -132,6 +133,23 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
 
   const startNavigation = () => {
     setIsNavigating(true);
+    
+    // Call the onNavigationStarted callback to add active activity
+    if (onNavigationStarted) {
+      const routeData = {
+        from: from,
+        to: to,
+        mode: selectedRoute.mode,
+        duration: selectedRoute.time,
+        accessibility: selectedRoute.accessibility,
+        startedAt: new Date().toISOString(),
+        steps: routeSteps.length,
+        isRecommended: selectedRoute.isRecommended
+      };
+      console.log('Calling onNavigationStarted callback with:', routeData);
+      onNavigationStarted(routeData);
+    }
+    
     if (voiceEnabled) {
       speakInstruction(routeSteps[currentStep]?.instruction || "Starting navigation");
     }
@@ -139,6 +157,9 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
 
   const stopNavigation = () => {
     setIsNavigating(false);
+    
+    // Optionally, we could add a callback here to update the activity status
+    // For now, we'll keep it simple and let completion handle the status update
   };
 
   const nextStep = () => {

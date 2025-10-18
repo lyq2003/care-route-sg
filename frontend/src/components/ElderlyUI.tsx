@@ -191,41 +191,66 @@ export default function ElderlyUI() {
 	const addRouteCompletionActivity = (route: any) => {
 		console.log('Adding route completion activity:', route);
 		
-		// Create a unique identifier for this route completion
-		const routeId = `${route.from}-${route.to}-${route.completedAt}`;
-		
 		setRecentActivity(prev => {
-			// Check if this route completion already exists (within the last 5 minutes)
-			const now = Date.now();
-			const fiveMinutesAgo = now - (5 * 60 * 1000);
+			// First, try to update existing active navigation activity
+			const updatedActivities = prev.map(activity => {
+				if (activity.type === "route" && 
+					activity.status === "active" && 
+					activity.description === `Navigating: ${route.from} → ${route.to}`) {
+					console.log('Updating existing active navigation to completed');
+					return {
+						...activity,
+						description: `Route completed: ${route.from} → ${route.to}`,
+						status: "completed",
+						time: "Just now"
+					};
+				}
+				return activity;
+			});
 			
-			const exists = prev.some(activity => 
+			// If no active navigation was found, add new completion activity
+			const hasActiveNavigation = prev.some(activity => 
 				activity.type === "route" && 
-				activity.description === `Route completed: ${route.from} → ${route.to}` &&
-				(activity.time === "Just now" || activity.id > fiveMinutesAgo)
+				activity.status === "active" && 
+				activity.description === `Navigating: ${route.from} → ${route.to}`
 			);
 			
-			if (exists) {
-				console.log('Route completion activity already exists, skipping duplicate');
-				return prev;
+			if (!hasActiveNavigation) {
+				console.log('No active navigation found, adding new completion activity');
+				const newActivity = {
+					id: Date.now(),
+					type: "route",
+					description: `Route completed: ${route.from} → ${route.to}`,
+					status: "completed",
+					time: "Just now",
+					mode: route.mode,
+					duration: route.duration,
+					accessibility: route.accessibility
+				};
+				return [newActivity, ...updatedActivities.slice(0, 9)];
 			}
 			
-			const newActivity = {
-				id: Date.now(), // Simple ID generation
-				type: "route",
-				description: `Route completed: ${route.from} → ${route.to}`,
-				status: "completed",
-				time: "Just now",
-				mode: route.mode,
-				duration: route.duration,
-				accessibility: route.accessibility
-			};
-
-			console.log('New activity created:', newActivity);
-			const updated = [newActivity, ...prev.slice(0, 9)]; // Keep only 10 most recent
-			console.log('Updated recent activity:', updated);
-			return updated;
+			return updatedActivities;
 		});
+	};
+
+	const addNavigationStartedActivity = (route: any) => {
+		console.log('Adding navigation started activity:', route);
+		
+		const newActivity = {
+			id: Date.now(), // Simple ID generation
+			type: "route",
+			description: `Navigating: ${route.from} → ${route.to}`,
+			status: "active",
+			time: "Just now",
+			mode: route.mode,
+			duration: route.duration,
+			accessibility: route.accessibility,
+			routeId: `${route.from}-${route.to}-${route.startedAt}` // Unique identifier for this navigation
+		};
+
+		console.log('New navigation activity created:', newActivity);
+		setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
 	};
 
 	const handleRouteSelection = (route: any) => {
@@ -1397,6 +1422,7 @@ export default function ElderlyUI() {
         to={routeFormData.to}
         onBack={handleBackFromTracking}
         onRouteCompleted={addRouteCompletionActivity}
+        onNavigationStarted={addNavigationStartedActivity}
       />
     );
   }
