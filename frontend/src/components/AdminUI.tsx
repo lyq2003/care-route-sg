@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
@@ -994,31 +992,19 @@ export default function AdminUI() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">{reports.filter(r => r.status === "Pending").length}</div>
-          <div className="text-sm text-muted-foreground">Pending Reports</div>
-          <Badge variant="secondary" className="mt-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs">
-            Pending
-          </Badge>
+          <div className="text-sm text-muted-foreground">Pending</div>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-yellow-600">{reports.filter(r => r.status === "In Progress").length}</div>
           <div className="text-sm text-muted-foreground">In Progress</div>
-          <Badge variant="secondary" className="mt-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 text-xs">
-            In Progress
-          </Badge>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-green-600">{reports.filter(r => r.status === "Resolved").length}</div>
           <div className="text-sm text-muted-foreground">Resolved</div>
-          <Badge variant="secondary" className="mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-xs">
-            Resolved
-          </Badge>
         </Card>
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold text-red-600">{reports.filter(r => r.status === "Rejected").length}</div>
-          <div className="text-sm text-muted-foreground">Rejected Reports</div>
-          <Badge variant="secondary" className="mt-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 text-xs">
-            Rejected
-          </Badge>
+          <div className="text-sm text-muted-foreground">Rejected</div>
         </Card>
       </div>
 
@@ -1209,18 +1195,6 @@ export default function AdminUI() {
   const renderReviewModeration = () => (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">Review Moderation</h2>
-      
-      {/* Review Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">{reviews.length}</div>
-          <div className="text-sm text-muted-foreground">Total Reviews</div>
-        </Card>
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-orange-600">{reviews.filter(r => r.flagged).length}</div>
-          <div className="text-sm text-muted-foreground">Reviews Removed</div>
-        </Card>
-      </div>
 
       {/* Policy Notice */}
       <Card className="p-4 mb-6 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">

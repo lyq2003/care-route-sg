@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 class ReviewService {
   async submitReview({ authorUserId, recipientUserId, helpRequestId, rating, text }) {
@@ -60,6 +60,21 @@ class ReviewService {
       .select('*')
       .eq('recipient_user_id', userId)
       .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  }
+
+  // Admin-specific method to get all reviews with full user details
+  async getAllReviewsForAdmin() {
+    const { data, error } = await supabaseAdmin
+      .from('reviews')
+      .select(`
+        *,
+        author:auth.users!author_user_id(*),
+        recipient:auth.users!recipient_user_id(*)
+      `)
+      .order('created_at', { ascending: false });
+    
     if (error) throw error;
     return data;
   }

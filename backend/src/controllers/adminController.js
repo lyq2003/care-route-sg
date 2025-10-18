@@ -379,54 +379,28 @@ class AdminController {
   // Get all reports for admin review
   async getAllReports(req, res) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        status
-      } = req.query;
-
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      
-      if (pageNum < 1 || limitNum < 1 || limitNum > 100) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid pagination parameters'
-        });
-      }
-
-      const offset = (pageNum - 1) * limitNum;
-      let query = supabaseAdmin
-        .from('reports')
-        .select(`
-          *,
-          reporter:reporter_user_id(id, email, user_metadata),
-          reported:reported_user_id(id, email, user_metadata),
-          attachments(*)
-        `, { count: 'exact' })
-        .range(offset, offset + limitNum - 1)
-        .order('created_at', { ascending: false });
+      // Use the admin service method to get all reports with full user details
+      const reports = await reportService.getAllReportsForAdmin();
 
       // Apply status filter if provided
+      const { status } = req.query;
+      let filteredReports = reports;
+      
       if (status && Object.values(ReportStatus).includes(status.toUpperCase())) {
-        query = query.eq('status', status.toUpperCase());
-      }
-
-      const { data: reports, error, count } = await query;
-
-      if (error) {
-        throw new Error(`Failed to fetch reports: ${error.message}`);
+        filteredReports = reports.filter(report => 
+          report.status === status.toUpperCase()
+        );
       }
 
       res.status(200).json({
         success: true,
         data: {
-          reports,
+          reports: filteredReports,
           pagination: {
-            total: count,
-            page: pageNum,
-            totalPages: Math.ceil(count / limitNum),
-            limit: limitNum
+            total: filteredReports.length,
+            page: 1,
+            totalPages: 1,
+            limit: filteredReports.length
           }
         }
       });
@@ -580,53 +554,26 @@ class AdminController {
   // Get all reviews for admin moderation
   async getAllReviews(req, res) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        flagged
-      } = req.query;
+      // Use the admin service method to get all reviews with full user details
+      const reviews = await reviewService.getAllReviewsForAdmin();
 
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
+      // Apply flagged filter if provided
+      const { flagged } = req.query;
+      let filteredReviews = reviews;
       
-      if (pageNum < 1 || limitNum < 1 || limitNum > 100) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid pagination parameters'
-        });
-      }
-
-      const offset = (pageNum - 1) * limitNum;
-      let query = supabaseAdmin
-        .from('reviews')
-        .select(`
-          *,
-          author:author_user_id(id, email, user_metadata),
-          recipient:recipient_user_id(id, email, user_metadata)
-        `, { count: 'exact' })
-        .range(offset, offset + limitNum - 1)
-        .order('created_at', { ascending: false });
-
-      // Filter for flagged reviews if requested
       if (flagged === 'true') {
-        query = query.eq('flagged', true);
-      }
-
-      const { data: reviews, error, count } = await query;
-
-      if (error) {
-        throw new Error(`Failed to fetch reviews: ${error.message}`);
+        filteredReviews = reviews.filter(review => review.flagged === true);
       }
 
       res.status(200).json({
         success: true,
         data: {
-          reviews,
+          reviews: filteredReviews,
           pagination: {
-            total: count,
-            page: pageNum,
-            totalPages: Math.ceil(count / limitNum),
-            limit: limitNum
+            total: filteredReviews.length,
+            page: 1,
+            totalPages: 1,
+            limit: filteredReviews.length
           }
         }
       });
