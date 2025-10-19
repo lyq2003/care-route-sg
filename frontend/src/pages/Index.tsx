@@ -1,5 +1,5 @@
 import { useState } from "react";
-import WelcomeScreen from "@/components/WelcomeScreen";
+import WelcomeScreen from "@/components/MainUI";
 import SignInScreen from "@/components/SignInScreen";
 import SignUpScreen from "@/components/SignUpScreen";
 import ElderlyUI from "@/components/ElderlyUI";
