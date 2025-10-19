@@ -7,6 +7,7 @@ import SignupPage from "./components/SignUpScreen";
 import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
+import CaregiverUI from "./components/CaregiverUI";
 import ElderlyUI from "./components/ElderlyUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerUI from "./components/VolunteerUI";
@@ -51,6 +52,13 @@ const App = () => (
               path="/elderly_dashboard"
               element={
                 <ElderlyUI/>
+              }
+            />
+
+            <Route
+              path="/caregiver_dashboard"
+              element={
+                <CaregiverDashboard/>
               }
             />
 

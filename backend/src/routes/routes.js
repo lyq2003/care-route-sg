@@ -7,6 +7,7 @@ const adminRoutes = require('./admin');
 const userRoutes = require('./users');
 const elderlyRoutes = require('./elderly')
 const volunteerRoutes = require('./volunteer')
+const caregiverRoutes = require('./caregiver')
 const reportRoutes = require('./report')
 const reviewRoutes = require('./review')
 
@@ -16,6 +17,7 @@ router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
 router.use('/elderly', elderlyRoutes);
 router.use('/volunteer', volunteerRoutes);
+router.use('/caregiver',caregiverRoutes)
 router.use('/reports', reportRoutes);
 router.use('/reviews', reviewRoutes);
 
