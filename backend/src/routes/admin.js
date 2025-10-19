@@ -36,21 +36,6 @@ const checkAdminRole = (req, res, next) => {
 
 router.use(checkAdminRole);
 
-// Test route for debugging authentication
-// GET /api/admin/test - Test admin authentication
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Admin authentication successful',
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      role: req.user.role,
-      metadata: req.user.user_metadata
-    }
-  });
-});
-
 // Dashboard Routes
 // GET /api/admin/stats - Get dashboard statistics
 router.get('/stats', adminController.getDashboardStats);
@@ -74,12 +59,25 @@ router.post('/users/:userId/reactivate', adminController.reactivateUser);
 // POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
 router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
 
-// Request Management Routes
-// GET /api/admin/requests - Get all help requests with pagination and filters
-router.get('/requests', adminController.getAllRequests);
+// Report Management Routes
+// GET /api/admin/reports - Get all reports for admin review
+router.get('/reports', adminController.getAllReports);
 
-// POST /api/admin/requests/:requestId/reassign - Reassign volunteer to request
-router.post('/requests/:requestId/reassign', adminController.reassignVolunteer);
+// POST /api/admin/reports/:reportId/start-review - Start reviewing a report
+router.post('/reports/:reportId/start-review', adminController.startReportReview);
+
+// POST /api/admin/reports/:reportId/resolve - Resolve a report with disciplinary action
+router.post('/reports/:reportId/resolve', adminController.resolveReport);
+
+// POST /api/admin/reports/:reportId/reject - Reject a report
+router.post('/reports/:reportId/reject', adminController.rejectReport);
+
+// Review Management Routes
+// GET /api/admin/reviews - Get all reviews for admin moderation
+router.get('/reviews', adminController.getAllReviews);
+
+// DELETE /api/admin/reviews/:reviewId - Remove inappropriate review
+router.delete('/reviews/:reviewId', adminController.removeReview);
 
 // Admin Activity Routes
 // GET /api/admin/logs - Get admin activity logs

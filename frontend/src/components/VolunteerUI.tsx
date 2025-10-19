@@ -18,11 +18,12 @@ import { axiosInstance } from "./axios";
 import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
-
+import AcceptedRequest from "../features/volunteer/VolunteerAcceptedRequest";
+import VolunteerProfile from "@/features/volunteer/VolunteerProfile";
 // Max number of posts to be fetched every call
 const LIMIT=10;
 
-export default function VolunteerDashboard() {
+export default function VolunteerUI() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAvailable, setIsAvailable] = useState(true);
@@ -30,23 +31,33 @@ export default function VolunteerDashboard() {
   const [offset,setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [helpRequests, setHelpRequests] = useState([]);
-  const [volunteerData] = useState({
-    name: "Sarah Volunteer",
-    isVerified: true,
-    totalHelped: 42,
-    averageRating: 4.8,
-    reviewCount: 38
+  const [volunteerData, setVolunteerData] = useState({
+    name: "Unknown Volunteer",
+    isVerified: false,
+    totalHelped: 0,
+    averageRating: 0,
+    reviewCount: 0
   });
   
+  // getting user info from getProfile
+  const {profile} = getProfile();
+
+  useEffect(()=>{
+    if(!profile) return;
+    setVolunteerData({
+      name: profile.data?.name || "Unknown Volunteer", // Fallback to "Unknown Volunteer" if name is undefined
+      isVerified: profile.data?.isVerified ?? false, // Default to false if not available
+      totalHelped: profile.data?.totalHelped || 0, // Default to 0 if not available
+      averageRating: profile.data?.averageRating || 0, // Default to 0 if not available
+      reviewCount: profile.data?.reviewCount || 0 // Default to 0 if not available
+    });
+  }, [profile]);
+
   // Sending location to fetch posts based on nearest location
 
   const observer = useRef<IntersectionObserver | null>(null);
   // getting user live location from useLocation
   const { location, error: locationError } = useLocation();
-
-  // getting user info from getProfile
-  // used later for passing user to backend when accepting using profile.data
-  const {profile} = getProfile();
 
   // infinite scrolling setup
   const lastPostElementRef = useCallback(
@@ -92,8 +103,7 @@ export default function VolunteerDashboard() {
           withCredentials: true,
         });
 
-        console.log("CHecking response format: ", response.data.data);
-        const newRequests = response.data.data || []; // change according to how backend return 
+        const newRequests = response.data.data || []; 
 
         setHelpRequests((prevRequests) => {
           const existingIds = new Set(prevRequests.map((r) => r.id)); // Set of existing request IDs
@@ -112,7 +122,6 @@ export default function VolunteerDashboard() {
   },[offset,location]);
 
 
-
   // Signout button
   const onSignOut = async () => {
         try{
@@ -126,9 +135,34 @@ export default function VolunteerDashboard() {
           }
       }
 
-  // todo
-  const handleAcceptRequest = (requestId: number) => {
-    console.log("Accepting request:", requestId);
+  
+  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+      try{
+        const response = await axiosInstance.put("/volunteer/acceptRequest",
+          {params: {
+              requestId,
+              volunteerId,
+            },
+            withCredentials: true
+          }
+         )
+        if (response.data.success) {
+          // Handle success( maybe change to new page see how)
+          navigate("/volunteer_accepted_request")
+          /*setHelpRequests((prevRequests) =>
+            prevRequests.filter((request) => request.id !== requestId)
+          );
+          console.log(`Request ${requestId} accepted successfully.`);
+          // Optionally show a success message to the user
+          alert("Request accepted successfully!");*/
+      } else {
+        console.error("Failed to accept the request:", response.data.message);
+        alert("Failed to accept the request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      alert("Error accepting request. Please try again.");
+    }
   };
   // todo
   const handleViewRoute = (requestId: number) => {
@@ -207,12 +241,12 @@ export default function VolunteerDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{}</span>
-                        {/* TODO: Add distance after calcuating here */}
+                        <span>{request.address}</span>
+                        <span className="ml-2">Distance: {Math.round(request.distance_meters)}m</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <User className="h-4 w-4" />
-                        <span>{request.user_profiles.username}</span>
+                        <span>{request.username}</span>
                       </div>
                     </div>
 
@@ -224,7 +258,7 @@ export default function VolunteerDashboard() {
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id)}
+                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />
@@ -246,33 +280,11 @@ export default function VolunteerDashboard() {
           </div>
         );
 
-      case "help":
-        return (
-          <div className="text-center py-12">
-            <HelpCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-xl text-muted-foreground">Help Center - Coming Soon</p>
-          </div>
-        );
+      case "Accepted_request":
+        return <AcceptedRequest />;
 
       case "profile":
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Profile & Settings</h2>
-              <p className="text-lg text-muted-foreground">Manage your volunteer account</p>
-            </div>
-
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Basic Information</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                  <div className="text-lg text-foreground">{volunteerData.name}</div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        );
+        return <VolunteerProfile />;
 
       default:
         return null;
@@ -341,7 +353,7 @@ export default function VolunteerDashboard() {
         <div className="flex">
           {[
             { id: "dashboard", icon: Activity, label: "Dashboard" },
-            { id: "help", icon: HelpCircle, label: "Help" },
+            { id: "Accepted_request", icon: HelpCircle, label: "Accepted_request" },
             { id: "profile", icon: User, label: "Profile" }
           ].map((tab) => (
             <button
@@ -365,7 +377,7 @@ export default function VolunteerDashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-foreground">
             {activeTab === "dashboard" ? "Volunteer Dashboard" : 
-             activeTab === "help" ? "Help Center" : 
+             activeTab === "Accepted_request" ? "Help Center" : 
              "Profile & Settings"}
           </h2>
         </div>

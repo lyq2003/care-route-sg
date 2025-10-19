@@ -75,8 +75,8 @@ exports.login = async (req,res)=>{
 
 exports.signup = async (req,res) => {
     try {
-        const {name, email, password, role } = req.body
-        if (!name || !email || !password || !role) {
+        const {name, email, password, role, phone_number } = req.body
+        if (!name || !email || !password || !role || !phone_number) {
             return res.status(400).json({ message: "All details are required" });
         }
 
@@ -87,7 +87,8 @@ exports.signup = async (req,res) => {
                 data: {
                     displayName: name,
                     username: name,
-                    role: role
+                    role: role,
+                    phone_number: phone_number
                 },
             },
         })

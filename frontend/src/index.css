@@ -117,3 +117,51 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide Google Maps default autocomplete styling completely */
+.pac-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.pac-item {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.pac-matched {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.pac-logo {
+  display: none !important;
+}
+
+.pac-container:after {
+  display: none !important;
+}
+
+/* Ensure our custom autocomplete dropdown is visible and styled properly */
+.custom-autocomplete-dropdown {
+  display: block !important;
+  z-index: 9999 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Override any Google Maps styling that might leak through */
+input[data-google-autocomplete] {
+  background: inherit !important;
+  border: inherit !important;
+  box-shadow: inherit !important;
+}

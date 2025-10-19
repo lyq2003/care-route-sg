@@ -7,12 +7,14 @@ import SignupPage from "./components/SignUpScreen";
 import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/WelcomeScreen';
-import ElderlyDashboard from "./components/ElderlyDashboard";
-import CaregiverDashboard from "./components/CaregiverUI";
+import CaregiverUI from "./components/CaregiverUI";
+import ElderlyUI from "./components/ElderlyUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
-import VolunteerDashboard from "./components/VolunteerDashboard";
+import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
+import AccepetedRequest from "./features/volunteer/VolunteerAcceptedRequest";
 import AdminDashboard from "./components/AdminDashboard";
+import AdminUI from "./components/AdminUI";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
@@ -49,7 +51,7 @@ const App = () => (
             <Route
               path="/elderly_dashboard"
               element={
-                <ElderlyDashboard/>
+                <ElderlyUI/>
               }
             />
 
@@ -69,12 +71,12 @@ const App = () => (
               }
             />
 
-            <Route path="/volunteer_dashboard"element={<VolunteerDashboard/>}/>
+            <Route path="/volunteer_dashboard"element={<VolunteerUI/>}/>
             <Route path="/request_filter" element={<RequestFileter/>}/>
             <Route
               path="/admin_dashboard"
               element={
-                <AdminDashboard/>
+                <AdminUI/>
               }
             />
             <Route path="roles" element={<RolesScreen />} />

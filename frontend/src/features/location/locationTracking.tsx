@@ -14,6 +14,9 @@ const useLocation = () => {
         },
         (err) => {
           setError(err.message);
+        },
+        {
+          maximumAge: 1000 * 60 * 5, // use cached GPS data up to 5 mins old
         }
       );
     } else {
