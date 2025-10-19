@@ -56,8 +56,14 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
   const [isNavigating, setIsNavigating] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [routeSteps, setRouteSteps] = useState<RouteStep[]>([]);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'info' | 'success' | 'warning' | 'error', timestamp: Date}>>([]);
   const mapRef = useRef<google.maps.Map | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   // Load Google Maps API
   useEffect(() => {
@@ -117,6 +123,153 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
     getDirections();
   }, [googleLoaded, from, to]);
 
+  // Request geolocation permission and start tracking
+  useEffect(() => {
+    if (!isNavigating) return;
+
+    const requestLocationPermission = async () => {
+      if (!navigator.geolocation) {
+        setLocationError('Geolocation is not supported by this browser');
+        return;
+      }
+
+      try {
+        // Check current permission status
+        if (navigator.permissions) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          setLocationPermission(permission.state);
+          
+          permission.onchange = () => {
+            setLocationPermission(permission.state);
+          };
+        }
+
+        // Request current position
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            setLocationPermission('granted');
+            setLocationError(null);
+            console.log('📍 Current location:', { lat: latitude, lng: longitude });
+          },
+          (error) => {
+            console.error('❌ Geolocation error:', error);
+            setLocationError(error.message);
+            setLocationPermission('denied');
+            addNotification(`Location error: ${error.message}`, 'error');
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
+
+        // Start watching position for continuous updates
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            console.log('📍 Location updated:', { lat: latitude, lng: longitude });
+            
+            // Add notification for location update (only occasionally to avoid spam)
+            if (Math.random() < 0.1) { // 10% chance to show notification
+              addNotification('Location updated successfully', 'info');
+            }
+          },
+          (error) => {
+            console.error('❌ Watch position error:', error);
+            setLocationError(error.message);
+            addNotification(`Location tracking error: ${error.message}`, 'warning');
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 30000
+          }
+        );
+
+        watchIdRef.current = watchId;
+
+      } catch (error) {
+        console.error('❌ Permission request error:', error);
+        setLocationError('Failed to request location permission');
+      }
+    };
+
+    requestLocationPermission();
+
+    // Cleanup function
+    return () => {
+      if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [isNavigating]);
+
+  // Stop location tracking when navigation ends
+  useEffect(() => {
+    if (!isNavigating && watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, [isNavigating]);
+
+  // Request notification permission on component mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then((permission) => {
+          setNotificationPermission(permission);
+        });
+      }
+    }
+  }, []);
+
+  // Notification functions
+  const addNotification = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    const id = Date.now().toString();
+    const notification = {
+      id,
+      message,
+      type,
+      timestamp: new Date()
+    };
+    
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]); // Keep only last 5 notifications
+    
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const showBrowserNotification = (title: string, message: string, icon?: string) => {
+    if ('Notification' in window && notificationPermission === 'granted') {
+      const notification = new Notification(title, {
+        body: message,
+        icon: icon || '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'route-navigation',
+        requireInteraction: false,
+        silent: false
+      });
+      
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
+    }
+  };
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   const getStepIcon = (travelMode: google.maps.TravelMode, instructions: string) => {
     const instructionText = instructions.toLowerCase();
     
@@ -133,6 +286,14 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
 
   const startNavigation = () => {
     setIsNavigating(true);
+    
+    // Add notifications
+    addNotification('Navigation started! Follow the route instructions.', 'success');
+    showBrowserNotification(
+      'Route Navigation Started',
+      `Navigating from ${from} to ${to} via ${selectedRoute.mode}`,
+      '/favicon.ico'
+    );
     
     // Call the onNavigationStarted callback to add active activity
     if (onNavigationStarted) {
@@ -165,8 +326,13 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
   const nextStep = () => {
     if (currentStep < routeSteps.length - 1) {
       setCurrentStep(currentStep + 1);
+      
+      // Add notification for step change
+      const nextInstruction = routeSteps[currentStep + 1]?.instruction || "Navigation complete";
+      addNotification(`Next: ${nextInstruction}`, 'info');
+      
       if (voiceEnabled) {
-        speakInstruction(routeSteps[currentStep + 1]?.instruction || "Navigation complete");
+        speakInstruction(nextInstruction);
       }
     }
   };
@@ -196,7 +362,10 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
 
   const completeRoute = async () => {
     try {
-      // Save route to history
+      // Check if user is authenticated
+      console.log('🔐 Checking user authentication before route completion...');
+      
+      // Save route to history with location data
       const routeHistory = {
         from: from,
         to: to,
@@ -205,19 +374,56 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
         accessibility: selectedRoute.accessibility,
         completedAt: new Date().toISOString(),
         steps: routeSteps.length,
-        isRecommended: selectedRoute.isRecommended
+        isRecommended: selectedRoute.isRecommended,
+        // Include location data if available
+        userLocation: userLocation ? {
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          accuracy: 'high' // We're using enableHighAccuracy
+        } : null,
+        locationPermission: locationPermission
       };
+
+      console.log('🔄 Route completion started');
+      console.log('📊 Route data to save:', routeHistory);
+
+      // Add notifications
+      addNotification('Route completed successfully! Great job!', 'success');
+      showBrowserNotification(
+        'Route Completed',
+        `You have successfully completed your journey from ${from} to ${to}`,
+        '/favicon.ico'
+      );
 
       // Call the onRouteCompleted callback to update recent activity FIRST
       if (onRouteCompleted) {
-        console.log('Calling onRouteCompleted callback with:', routeHistory);
+        console.log('✅ Calling onRouteCompleted callback with:', routeHistory);
         onRouteCompleted(routeHistory);
       } else {
-        console.log('onRouteCompleted callback not provided');
+        console.log('⚠️ onRouteCompleted callback not provided');
       }
 
       // Then save to API
-      await axiosInstance.post('/api/elderly/route-history', routeHistory);
+      console.log('📡 Saving route to API...');
+      console.log('🔐 Checking authentication...');
+      console.log('🌐 Base URL:', axiosInstance.defaults.baseURL);
+      console.log('📊 Route data being sent:', JSON.stringify(routeHistory, null, 2));
+      
+      try {
+        const response = await axiosInstance.post('/elderly/route-history', routeHistory);
+        console.log('✅ Route saved to API successfully:', response.data);
+      } catch (apiError) {
+        console.error('❌ API Error details:', apiError);
+        console.error('❌ API Error response:', apiError.response?.data);
+        console.error('❌ API Error status:', apiError.response?.status);
+        
+        if (apiError.response?.status === 401) {
+          addNotification('Authentication required to save route. Please log in again.', 'error');
+        } else {
+          addNotification(`Failed to save route: ${apiError.response?.data?.error || apiError.message}`, 'error');
+        }
+        throw apiError; // Re-throw to trigger the catch block below
+      }
       
       // Show completion message
       if (voiceEnabled) {
@@ -230,7 +436,9 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
       }, 2000);
       
     } catch (error) {
-      console.error('Error saving route history:', error);
+      console.error('❌ Error saving route history:', error);
+      console.error('❌ Error details:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
       
       // Still call the callback even if API fails
       if (onRouteCompleted) {
@@ -244,6 +452,7 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
           steps: routeSteps.length,
           isRecommended: selectedRoute.isRecommended
         };
+        console.log('⚠️ Calling onRouteCompleted callback despite API error');
         onRouteCompleted(routeHistory);
       }
       
@@ -325,8 +534,33 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium">Navigating</span>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground mb-2">
                 Step {currentStep + 1} of {routeSteps.length}
+              </div>
+              
+              {/* Location Status */}
+              <div className="flex items-center gap-2 text-xs">
+                {locationPermission === 'granted' && userLocation ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-600">Location tracking active</span>
+                  </>
+                ) : locationPermission === 'denied' ? (
+                  <>
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-red-600">Location denied</span>
+                  </>
+                ) : locationError ? (
+                  <>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-yellow-600">Location error</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-600">Requesting location...</span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -490,6 +724,37 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
             </Card>
           </div>
         </div>
+      </div>
+
+      {/* Notification Overlay */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`flex items-center gap-3 p-3 rounded-lg shadow-lg backdrop-blur-sm border max-w-sm ${
+              notification.type === 'success' 
+                ? 'bg-green-500/90 text-white border-green-400' 
+                : notification.type === 'error'
+                ? 'bg-red-500/90 text-white border-red-400'
+                : notification.type === 'warning'
+                ? 'bg-yellow-500/90 text-white border-yellow-400'
+                : 'bg-blue-500/90 text-white border-blue-400'
+            }`}
+          >
+            <div className="flex-1">
+              <p className="text-sm font-medium">{notification.message}</p>
+              <p className="text-xs opacity-80">
+                {notification.timestamp.toLocaleTimeString()}
+              </p>
+            </div>
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

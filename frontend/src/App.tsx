@@ -55,6 +55,13 @@ const App = () => (
             />
 
             <Route
+              path="/caregiver_dashboard"
+              element={
+                <CaregiverDashboard/>
+              }
+            />
+
+            <Route
               path="/request_help"
               element={
                 <RequestHelpScreen onBack={function (): void {
