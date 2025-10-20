@@ -13,7 +13,7 @@ import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
-import AdminDashboard from "./components/AdminDashboard";
+import AdminUI from "./components/AdminUI";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
