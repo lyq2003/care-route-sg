@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import SignupPage from "./components/SignUpScreen";
 import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
@@ -11,18 +12,58 @@ import ElderlyDashboard from "./components/ElderlyDashboard";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerDashboard from "./components/VolunteerDashboard";
 import RequestFileter from "./components/RequestFilter";
-import AccepetedRequest from "./features/volunteer/VolunteerAcceptedRequest";
 import AdminDashboard from "./components/AdminDashboard";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
+import { useAuthStore } from './store/useAuthStore';
+import { useNotificationStore }from './store/useNotificationStore';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  const { authUser, checkAuth, connectSocket, disconnectSocket, socket, isCheckingAuth } = useAuthStore();
+  const { initNotificationListener } = useNotificationStore();
+
+  useEffect(() => {
+    // Only check auth on initial load
+    if (isCheckingAuth) {
+      checkAuth();
+    }
+  }, []); // Empty dependency array for initial load only
+
+  useEffect(() => {
+    // Handle socket connection based on auth state
+    if (authUser && authUser.user && authUser.user.id) {
+      // User is authenticated, ensure socket is connected
+      if (!socket?.connected) {
+        console.log('App: User authenticated, connecting socket');
+        connectSocket();
+      }
+    } else if (!authUser && socket?.connected) {
+      // User is not authenticated but socket is connected, disconnect
+      console.log('App: User not authenticated, disconnecting socket');
+      disconnectSocket();
+    }
+  }, [authUser, socket?.connected]); // Only depend on authUser and socket connection state
+
+  useEffect(() => {
+    // Ensure the listener is initialized only when socket is connected
+    if (socket?.connected) {
+      initNotificationListener();
+    }
+  }, [socket?.connected]); // Only re-run if socket state changes
+  // Cleanup socket on unmount
+  useEffect(() => {
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+  
+  return (
+    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -77,7 +118,8 @@ const App = () => (
       </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+};
 
 export default App;

@@ -5,12 +5,11 @@ const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { app,server,io } =require("./src/middleware/socket");
 const userRoute = require('./src/routes/users');
 const elderlyRoute = require('./src/routes/elderly');
 const mainRoutes= require('./src/routes/routes');
 require('./src/config/passport');
-const app = express();
-const server=http.createServer(app);
 
 const PORT = process.env.PORT || 5173;
 

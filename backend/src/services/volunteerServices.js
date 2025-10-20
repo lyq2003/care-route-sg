@@ -54,6 +54,7 @@ async function cancelRequest(postId,volunteerId){
     .from("help_request")
     .update({assignedVolunteerId: null, helpRequestStatus: "1" })
     .eq('id',postId)
+    .eq('assignedVolunteerId',volunteerId)
     .select()
     .single();
 
@@ -61,16 +62,18 @@ async function cancelRequest(postId,volunteerId){
     return data;
 }
 
-async function getAcceptedRequest(volunteerId){
-    const {data,error} = await supabaseAdmin
-    .from("help_request")
-    .select('*')
-    .eq("assignedVolunteerId", volunteerId)
-    .eq("helpRequestStatus", "2")
-    .select()
-    .single()
+async function getAcceptedRequest(latitude,longitude,volunteerId){
+    const { data, error } = await supabaseAdmin.rpc("get_accepted_requests",{
+        lat: latitude,
+        lon: longitude,
+        volunteer_id: volunteerId
+    })
     
     if(error) throw error;
+
+    if (!data || data.length === 0) {
+        return null;
+    }
     return data;
 }
 

@@ -104,7 +104,7 @@ export default function VolunteerDashboard() {
         });
 
         const newRequests = response.data.data || []; 
-
+        
         setHelpRequests((prevRequests) => {
           const existingIds = new Set(prevRequests.map((r) => r.id)); // Set of existing request IDs
           const filteredNew = newRequests.filter((r) => !existingIds.has(r.id)); // Remove duplicates
@@ -136,25 +136,18 @@ export default function VolunteerDashboard() {
       }
 
   
-  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+  const handleAcceptRequest =async (requestId: number, elderlyId) => {
       try{
         const response = await axiosInstance.put("/volunteer/acceptRequest",
           {params: {
               requestId,
-              volunteerId,
+              elderlyId,
             },
             withCredentials: true
           }
          )
         if (response.data.success) {
-          // Handle success( maybe change to new page see how)
-          navigate("/volunteer_accepted_request")
-          /*setHelpRequests((prevRequests) =>
-            prevRequests.filter((request) => request.id !== requestId)
-          );
-          console.log(`Request ${requestId} accepted successfully.`);
-          // Optionally show a success message to the user
-          alert("Request accepted successfully!");*/
+          setActiveTab("Accepted_request");
       } else {
         console.error("Failed to accept the request:", response.data.message);
         alert("Failed to accept the request. Please try again.");
@@ -258,7 +251,7 @@ export default function VolunteerDashboard() {
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
+                        onClick={() => handleAcceptRequest(request.id, request.requesterid)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />
@@ -281,7 +274,7 @@ export default function VolunteerDashboard() {
         );
 
       case "Accepted_request":
-        return <AcceptedRequest />;
+        return <AcceptedRequest setActiveTab={setActiveTab}/>;
 
       case "profile":
         return <VolunteerProfile />;
