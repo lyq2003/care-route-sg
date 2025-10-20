@@ -8,11 +8,10 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/MainUI';
 import ElderlyUI from "./components/ElderlyUI";
+import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
-import AccepetedRequest from "./features/volunteer/VolunteerAcceptedRequest";
-import AdminDashboard from "./components/AdminDashboard";
 import AdminUI from "./components/AdminUI";
 import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
@@ -57,7 +56,7 @@ const App = () => (
             <Route
               path="/caregiver_dashboard"
               element={
-                <CaregiverDashboard/>
+                <CaregiverUI/>
               }
             />
 
