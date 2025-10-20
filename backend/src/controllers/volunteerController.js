@@ -1,5 +1,7 @@
+const { supabase } = require('../config/supabase');
 const UserService = require('../services/user');
 const VolunteerServices = require('../services/volunteerServices');
+const {getReceiverSocketId, io} = require('../middleware/socket.js')
 
 class VolunteerController {
     static async getProfile(req, res) {
@@ -71,14 +73,30 @@ class VolunteerController {
 
     static async cancelRequest(req,res) {
         try{
-            const {requestId} = req.body.params;
+            const {requestId, elderlyId} = req.body.params;
             const volunteerId = req.user.id;
+            const volunteerName = req.user.username;
             const cancelledRequest = await VolunteerServices.cancelRequest(requestId,volunteerId);
-            console.log("Cancelled Request are:",cancelledRequest);
+            //console.log("Cancelled Request are:",cancelledRequest);
+            
+            const message = `${volunteerName} has cancelled your help request!`;
+            
+            await supabase.from("notifications").insert([
+                {
+                elderly_id: elderlyId,
+                volunteer_id: volunteerId,
+                message,
+                },
+            ]);
+            const elderlySocketId = getReceiverSocketId(elderlyId);
+            console.log("Elderly socket is:", elderlySocketId);
+            if (elderlySocketId) {
+                io.to(elderlySocketId).emit("notify", { message });
+            }
             return res.status(200).json({
                 success: true,
                 message: 'Cancelled request successfully',
-                data: acceptRequest
+                data: cancelledRequest
             });
         }
         catch (err) {
@@ -92,10 +110,30 @@ class VolunteerController {
     }
     static async acceptRequest(req,res) {
         try{
-            const {requestId, volunteerId} = req.body.params;
-
+            const {requestId, elderlyId} = req.body.params;
+            const volunteerId = req.user.id;
+            console.log("user info is:",req.user);
+            const volunteerName = req.user.username;
             const acceptRequest = await VolunteerServices.acceptRequest(requestId,volunteerId);
-            console.log("Accepted Request are:",acceptRequest);
+            //console.log("Accepted Request are:",acceptRequest);
+
+            const message = `${volunteerName} has accepted your help request!`;
+            
+            await supabase.from("notifications").insert([
+                {
+                elderly_id: elderlyId,
+                volunteer_id: volunteerId,
+                message,
+                },
+            ]);
+        
+            const elderlySocketId = getReceiverSocketId(elderlyId);
+            console.log("Elderly id is:", elderlyId);
+            console.log("Elderly socket is:", elderlySocketId);
+            if (elderlySocketId) {
+                io.to(elderlySocketId).emit("notify", { message });
+            }
+
             return res.status(200).json({
                 success: true,
                 message: 'Accepted request successfully',
@@ -115,7 +153,16 @@ class VolunteerController {
     static async getAcceptedRequest(req,res) {
         try{
             const volunteerId = req.user.id;
-            const acceptedRequest = await VolunteerServices.getAcceptedRequest(volunteerId);
+            const { latitude, longitude } = req.query;
+            const acceptedRequest = await VolunteerServices.getAcceptedRequest(latitude,longitude,volunteerId);
+
+            if (acceptedRequest === null) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'No accepted requests found.',
+                    data: null
+                });
+            }
 
             return res.status(200).json({
                 success: true,

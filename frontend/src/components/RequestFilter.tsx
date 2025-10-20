@@ -200,12 +200,12 @@ export default function RequestsFilter() {
         });
     };
 
-  const handleAcceptRequest =async (requestId: number, volunteerId) => {
+  const handleAcceptRequest =async (requestId: number, elderlyId) => {
       try{
         const response = await axiosInstance.put("/volunteer/cancelRequest",
           {params: {
               requestId,
-              volunteerId,
+              elderlyId,
             },
             withCredentials: true,
           }
@@ -340,7 +340,7 @@ export default function RequestsFilter() {
 
                     <div className="flex gap-3 pt-2">
                       <Button 
-                        onClick={() => handleAcceptRequest(request.id, profile.data.id)}
+                        onClick={() => handleAcceptRequest(request.id, request.requesterid)}
                         className="flex-1 bg-success hover:bg-success/90"
                       >
                         <Check className="h-5 w-5 mr-2" />

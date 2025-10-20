@@ -10,7 +10,8 @@ function AuthSuccess(){
     const [searchParams] = useSearchParams();
     const isNewUser=searchParams.get('newUser') === 'true';
     const role=searchParams.get('role');
-    const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+
+    const { authUser, checkAuth, onlineUsers, isCheckingAuth } = useAuthStore();
     const [isReady,setIsReady] = useState(false);
 
     useEffect(() => {
@@ -40,21 +41,22 @@ function AuthSuccess(){
 
     console.log('AuthSuccess: Checking state...');
     console.log('authUser:', authUser);
+    console.log('onlineUsers:', onlineUsers);
     console.log('isCheckingAuth:', isCheckingAuth);
 
     if (!isCheckingAuth && authUser){
       console.log('AuthSuccess: authUser:', authUser);
-
+      console.log('AuthSuccess: onlineUsers:', onlineUsers);
 
       setIsReady(true);
     }
-  }, [authUser, isCheckingAuth]);
+  }, [authUser, onlineUsers, isCheckingAuth]);
 
   useEffect(() =>{
     if(isReady){
         console.log({ authUser })
+        console.log({ onlineUsers });
 
-        // Change the /roles after the page is created?
         // Use a small delay to ensure state is updated before navigation
         setTimeout(() => {
             console.log('AuthSuccess: Navigating to /home');
@@ -68,7 +70,7 @@ function AuthSuccess(){
             }
         }, 100);
     }
-  },[isReady, authUser, isNewUser, navigate])
+  },[isReady, authUser, onlineUsers, isNewUser, navigate])
   
     
     return (

@@ -11,7 +11,7 @@ import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
 
-export default function AccepetedRequest() {
+export default function AccepetedRequest({ setActiveTab }) {
     const navigate = useNavigate();
     const [request, setRequests] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -37,15 +37,15 @@ export default function AccepetedRequest() {
     // getting user live location from useLocation
     const { location, error: locationError } = useLocation();
 
-    const handleCancelRequest =async (requestId: number) => {
+    const handleCancelRequest =async (requestId: number, elderlyId) => {
         try{
-            const response = await axiosInstance.put("/volunteer/acceptRequest",
-            {params: {requestId}},
+            const response = await axiosInstance.put("/volunteer/cancelRequest",
+            {params: {requestId, elderlyId}},
             {withCredentials: true,}
             )
             console.log("response is:",response);
             if (response.data.success) {
-                navigate("/volunteer_dashboard")
+                setActiveTab("dashboard");
         } else {
             console.error("Failed to accept the request:", response.data.message);
             alert("Failed to accept the request. Please try again.");
@@ -61,10 +61,11 @@ export default function AccepetedRequest() {
         console.log("Viewing route for request:", requestId);
     };
 
-    const fetchAcceptedRequest = async () =>{
+    const fetchAcceptedRequest = async (latitude,longitude) =>{
         try{
             const response = await axiosInstance.get("/volunteer/getAcceptedRequest",
                 {
+                    params:{latitude,longitude},
                     withCredentials: true,
                 }
             )
@@ -72,44 +73,46 @@ export default function AccepetedRequest() {
             if(response.data.success){
                 setRequests(response.data.data || null)
             }
-
-            console.log("Accepted request fetched:", request);
+;
         } catch(error){
             console.error("Error getting accpted request:", error);
         }
     }
     useEffect(() =>{
-        fetchAcceptedRequest();
-    }, []);
+        if(!location) return;
+
+        fetchAcceptedRequest(location.latitude,location.longitude);
+    }, [location]);
 
     if (error) return <p>Error loading accepted request.</p>;
+    console.log(request);
     if (!request) return <p>No accepted request at the moment.</p>;
 
     return (
-        <Card key={request.id} className="p-6 space-y-4">
-        <h4 className="text-lg font-semibold text-foreground">{request.title}</h4>
+        <Card key={request[0].id} className="p-6 space-y-4">
+        <h4 className="text-lg font-semibold text-foreground">{request[0].title}</h4>
 
         <div className="flex gap-2">
-            <Badge className={getPriorityColor(request.urgency)}>
+            <Badge className={getPriorityColor(request[0].urgency)}>
             {request.urgency} Priority
             </Badge>
         </div>
 
-        <p className="text-foreground">{request.description}</p>
+        <p className="text-foreground">{request[0].description}</p>
 
         <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="h-4 w-4" />
-            <span>{request.address}</span>
-            {request.distance_meters && (
+            <span>{request[0].address}</span>
+            {request[0].distance_meters && (
                 <span className="ml-2">
-                Distance: {Math.round(request.distance_meters)}m
+                Distance: {Math.round(request[0].distance_meters)}m
                 </span>
             )}
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
             <User className="h-4 w-4" />
-            <span>{request.username}</span>
+            <span>{request[0].username}</span>
             </div>
         </div>
 
@@ -120,7 +123,7 @@ export default function AccepetedRequest() {
 
         <div className="flex gap-3 pt-2">
             <Button
-            onClick={() => handleCancelRequest(request.id)}
+            onClick={() => handleCancelRequest(request[0].id, request[0].requesterid)}
             className="flex-1 bg-success hover:bg-success/90"
             >
             <Check className="h-5 w-5 mr-2" />
@@ -128,7 +131,7 @@ export default function AccepetedRequest() {
             </Button>
             <Button
             variant="outline"
-            onClick={() => navigate(`/route/${request.id}`)}
+            onClick={() => navigate(`/route/${request[0].id}`)}
             className="flex-1 text-primary border-primary/50"
             >
             <Navigation className="h-5 w-5 mr-2" />

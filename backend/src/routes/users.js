@@ -23,7 +23,7 @@ router.get('/profile', requireAuth, (req, res) => {
     email: req.user.email,
     name: req.user.username,
     phone_number: req.user.user_metadata?.phone_number,
-    provider: req.user.user_metadata?.provider,
+    role: req.user.user_metadata?.role,
     created_at: req.user.created_at,
     updated_at: req.user.updated_at
   };
