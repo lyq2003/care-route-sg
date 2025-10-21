@@ -1,6 +1,7 @@
 const { supabase } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus'); // keep if you have it
+const NotificationService = require('./notificationService');
 
 const CaregiverServices = {
   async linkToElderlyByPIN(caregiverUserId, pin) {
@@ -12,6 +13,15 @@ const CaregiverServices = {
       .single();
     if (pinErr || !elderlyProfile) throw new Error('Invalid or expired PIN');
 
+    // Get caregiver name for notification
+    const { data: caregiverProfile, error: caregiverErr } = await supabase
+      .from('user_profiles')
+      .select('username, full_name')
+      .eq('user_id', caregiverUserId)
+      .single();
+    
+    const caregiverName = caregiverProfile?.full_name || caregiverProfile?.username || 'Your caregiver';
+
     const { data: link, error: linkErr } = await supabase
       .from('caregiver_link')
       .upsert(
@@ -21,6 +31,32 @@ const CaregiverServices = {
       .select('*')
       .single();
     if (linkErr) throw linkErr;
+
+    // Get elderly name for caregiver notification
+    const { data: elderlyProfileData, error: elderlyNameErr } = await supabase
+      .from('user_profiles')
+      .select('username, full_name')
+      .eq('user_id', elderlyProfile.user_id)
+      .single();
+    
+    const elderlyName = elderlyProfileData?.full_name || elderlyProfileData?.username || 'Elderly user';
+
+    // Send notification to elderly user
+    try {
+      await NotificationService.notifyCaregiverLinked(elderlyProfile.user_id, caregiverName);
+    } catch (notifError) {
+      console.error('Error sending caregiver linked notification:', notifError);
+      // Don't fail the link if notification fails
+    }
+
+    // Send notification to caregiver about successful linking
+    try {
+      await NotificationService.notifyCaregiverElderlyLinked(caregiverUserId, elderlyName);
+    } catch (notifError) {
+      console.error('Error sending elderly linked notification to caregiver:', notifError);
+      // Don't fail the link if notification fails
+    }
+
     return link;
   },
 

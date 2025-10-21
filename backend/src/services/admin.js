@@ -3,6 +3,7 @@ const User = require('../domain/User');
 const UserStatus = require('../domain/enum/UserStatus');
 const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus');
+const NotificationService = require('./notificationService');
 
 class AdminService {
   
@@ -269,6 +270,21 @@ class AdminService {
       // Log admin action
       await this.logAdminAction(adminId, 'SUSPEND_USER', userId, { reason });
 
+      // Send notification to user based on their role
+      try {
+        const updatedUser = await this.getUserById(userId);
+        if (updatedUser.role === Role.ELDERLY || updatedUser.role === 'ELDERLY') {
+          await NotificationService.notifyAccountSuspended(userId, duration, reason);
+        } else if (updatedUser.role === Role.CAREGIVER || updatedUser.role === 'CAREGIVER') {
+          await NotificationService.notifyCaregiverAccountSuspended(userId, duration, reason);
+        } else if (updatedUser.role === Role.VOLUNTEER || updatedUser.role === 'VOLUNTEER') {
+          await NotificationService.notifyVolunteerAccountSuspended(userId, duration, reason);
+        }
+      } catch (notifError) {
+        console.error('Error sending suspension notification:', notifError);
+        // Don't fail the suspension if notification fails
+      }
+
       // Return updated user
       return await this.getUserById(userId);
     } catch (error) {
@@ -326,6 +342,21 @@ class AdminService {
 
       // Log admin action
       await this.logAdminAction(adminId, 'DEACTIVATE_USER', userId, { reason });
+
+      // Send notification to user based on their role
+      try {
+        const updatedUser = await this.getUserById(userId);
+        if (updatedUser.role === Role.ELDERLY || updatedUser.role === 'ELDERLY') {
+          await NotificationService.notifyAccountDeactivated(userId, reason);
+        } else if (updatedUser.role === Role.CAREGIVER || updatedUser.role === 'CAREGIVER') {
+          await NotificationService.notifyCaregiverAccountDeactivated(userId, reason);
+        } else if (updatedUser.role === Role.VOLUNTEER || updatedUser.role === 'VOLUNTEER') {
+          await NotificationService.notifyVolunteerAccountDeactivated(userId, reason);
+        }
+      } catch (notifError) {
+        console.error('Error sending deactivation notification:', notifError);
+        // Don't fail the deactivation if notification fails
+      }
 
       // Return updated user
       return await this.getUserById(userId);
@@ -445,6 +476,21 @@ class AdminService {
 
       // Log system action (no adminId for automatic actions)
       await this.logAdminAction('SYSTEM', 'AUTO_UNSUSPEND_USER', userId, { reason });
+
+      // Send notification to user based on their role
+      try {
+        const updatedUser = await this.getUserById(userId);
+        if (updatedUser.role === Role.ELDERLY || updatedUser.role === 'ELDERLY') {
+          await NotificationService.notifyAccountUnsuspended(userId);
+        } else if (updatedUser.role === Role.CAREGIVER || updatedUser.role === 'CAREGIVER') {
+          await NotificationService.notifyCaregiverAccountUnsuspended(userId);
+        } else if (updatedUser.role === Role.VOLUNTEER || updatedUser.role === 'VOLUNTEER') {
+          await NotificationService.notifyVolunteerAccountUnsuspended(userId);
+        }
+      } catch (notifError) {
+        console.error('Error sending unsuspension notification:', notifError);
+        // Don't fail the unsuspension if notification fails
+      }
 
       // Return updated user
       return await this.getUserById(userId);

@@ -1,7 +1,8 @@
 const { supabase } = require('../config/supabase');
 const UserService = require('../services/user');
 const VolunteerServices = require('../services/volunteerServices');
-const {getReceiverSocketId, io} = require('../middleware/socket.js')
+const {getReceiverSocketId, io} = require('../middleware/socket.js');
+const NotificationService = require('../services/notificationService');
 
 class VolunteerController {
     static async getProfile(req, res) {
@@ -79,8 +80,17 @@ class VolunteerController {
             const cancelledRequest = await VolunteerServices.cancelRequest(requestId,volunteerId);
             //console.log("Cancelled Request are:",cancelledRequest);
             
-            const message = `${volunteerName} has cancelled your help request!`;
+            // Get elderly name for volunteer notification
+            const { data: elderlyProfile } = await supabase
+                .from('user_profiles')
+                .select('username, full_name')
+                .eq('user_id', elderlyId)
+                .single();
             
+            const elderlyName = elderlyProfile?.full_name || elderlyProfile?.username || 'Elderly user';
+
+            // Send notification to elderly (kept from original implementation)
+            const message = `${volunteerName} has cancelled your help request!`;
             await supabase.from("notifications").insert([
                 {
                 elderly_id: elderlyId,
@@ -93,6 +103,18 @@ class VolunteerController {
             if (elderlySocketId) {
                 io.to(elderlySocketId).emit("notify", { message });
             }
+
+            // Notify the volunteer about the cancellation
+            try {
+                await NotificationService.notifyVolunteerRequestCancelled(
+                    volunteerId,
+                    elderlyName,
+                    requestId
+                );
+            } catch (notifError) {
+                console.error('Error sending volunteer cancel notification:', notifError);
+            }
+
             return res.status(200).json({
                 success: true,
                 message: 'Cancelled request successfully',
@@ -117,21 +139,46 @@ class VolunteerController {
             const acceptRequest = await VolunteerServices.acceptRequest(requestId,volunteerId);
             //console.log("Accepted Request are:",acceptRequest);
 
-            const message = `${volunteerName} has accepted your help request!`;
-            
-            await supabase.from("notifications").insert([
-                {
-                elderly_id: elderlyId,
-                volunteer_id: volunteerId,
-                message,
-                },
-            ]);
-        
-            const elderlySocketId = getReceiverSocketId(elderlyId);
-            console.log("Elderly id is:", elderlyId);
-            console.log("Elderly socket is:", elderlySocketId);
-            if (elderlySocketId) {
-                io.to(elderlySocketId).emit("notify", { message });
+            // Send notification using the notification service
+            try {
+                await NotificationService.notifyHelpRequestMatched(elderlyId, volunteerId, volunteerName);
+                
+                // Also notify caregivers linked to this elderly user
+                const { data: elderlyProfile } = await supabase
+                    .from('user_profiles')
+                    .select('username, full_name')
+                    .eq('user_id', elderlyId)
+                    .single();
+                
+                const elderlyName = elderlyProfile?.full_name || elderlyProfile?.username || 'Elderly user';
+
+                // Get all linked caregivers
+                const { data: caregiverLinks } = await supabase
+                    .from('caregiver_link')
+                    .select('caregiver_user_id')
+                    .eq('elderly_user_id', elderlyId);
+
+                // Notify each caregiver
+                if (caregiverLinks && caregiverLinks.length > 0) {
+                    for (const link of caregiverLinks) {
+                        await NotificationService.notifyCaregiverHelpRequestMatched(
+                            link.caregiver_user_id,
+                            elderlyName,
+                            volunteerName,
+                            requestId
+                        );
+                    }
+                }
+
+                // Notify the volunteer about being assigned
+                await NotificationService.notifyVolunteerRequestAssigned(
+                    volunteerId,
+                    elderlyName,
+                    requestId
+                );
+            } catch (notifError) {
+                console.error('Error sending help request matched notification:', notifError);
+                // Don't fail the accept if notification fails
             }
 
             return res.status(200).json({
@@ -174,6 +221,81 @@ class VolunteerController {
             res.status(500).json({ 
             success: false, 
             error: 'Failed to get accepted requests',
+            details: err.message 
+            });
+        }
+    }
+
+    static async completeRequest(req,res) {
+        try{
+            const {requestId, elderlyId} = req.body.params;
+            const volunteerId = req.user.id;
+            const completedRequest = await VolunteerServices.completeRequest(requestId, volunteerId, elderlyId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Completed request successfully',
+                data: completedRequest
+            });
+        } catch (err) {
+            console.error('Completing requests error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to complete requests',
+            details: err.message 
+            });
+        }
+    }
+
+    static async sendProgressUpdate(req,res) {
+        try{
+            const {elderlyId, location, estimatedArrival} = req.body;
+            const volunteerId = req.user.id;
+
+            if (!elderlyId || !location) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'elderlyId and location are required'
+                });
+            }
+
+            // Get elderly user info
+            const { data: elderlyProfile } = await supabase
+                .from('user_profiles')
+                .select('username, full_name')
+                .eq('user_id', elderlyId)
+                .single();
+            
+            const elderlyName = elderlyProfile?.full_name || elderlyProfile?.username || 'Elderly user';
+
+            // Get all linked caregivers
+            const { data: caregiverLinks } = await supabase
+                .from('caregiver_link')
+                .select('caregiver_user_id')
+                .eq('elderly_user_id', elderlyId);
+
+            // Send progress update to each caregiver
+            if (caregiverLinks && caregiverLinks.length > 0) {
+                for (const link of caregiverLinks) {
+                    await NotificationService.notifyCaregiverProgressUpdate(
+                        link.caregiver_user_id,
+                        elderlyName,
+                        location,
+                        estimatedArrival
+                    );
+                }
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Progress update sent to caregivers',
+                notifiedCaregivers: caregiverLinks?.length || 0
+            });
+        } catch (err) {
+            console.error('Sending progress update error:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to send progress update',
             details: err.message 
             });
         }

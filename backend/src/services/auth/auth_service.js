@@ -1,5 +1,7 @@
 const profiles = require('../profiles');
 const { supabase }=require('../../config/supabase');
+const NotificationService = require('../notificationService');
+const Role = require('../../domain/enum/Role');
 
 // Login
 exports.login = async (req,res)=>{
@@ -80,6 +82,12 @@ exports.signup = async (req,res) => {
             return res.status(400).json({ message: "All details are required" });
         }
 
+        // Generate linking PIN for elderly users
+        let linkingPin = null;
+        if (role === Role.ELDERLY || role === 'ELDERLY') {
+            linkingPin = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password,
@@ -98,9 +106,39 @@ exports.signup = async (req,res) => {
             return res.status(401).json({ message: error.message });
         }
 
+        // If elderly user, update profile with linking PIN and send welcome notification
+        if (linkingPin && data.user) {
+            try {
+                // Update user profile with linking PIN
+                await supabase
+                    .from('user_profiles')
+                    .update({ linking_pin: linkingPin })
+                    .eq('user_id', data.user.id);
+
+                // Send welcome notification with PIN
+                await NotificationService.notifyAccountCreated(data.user.id, linkingPin);
+            } catch (notifError) {
+                console.error("Error setting up elderly account:", notifError);
+                // Don't fail signup if notification fails
+            }
+        }
+
+        // Notify admins about new user registration
+        try {
+            await NotificationService.notifyAdminNewUserRegistered(
+                name,
+                role,
+                data.user.id
+            );
+        } catch (adminNotifError) {
+            console.error("Error sending admin notification:", adminNotifError);
+            // Don't fail signup if admin notification fails
+        }
+
         res.status(201).json({
         message: "Signup successful",
         user: data.user,
+        linkingPin: linkingPin // Include PIN in response for elderly users
         });
     } catch (err) {
         console.error("Signup error:", err);

@@ -76,11 +76,24 @@ router.post('/reports/:reportId/reject', adminController.rejectReport);
 // GET /api/admin/reviews - Get all reviews for admin moderation
 router.get('/reviews', adminController.getAllReviews);
 
+// POST /api/admin/reviews/:reviewId/flag - Flag review for removal
+router.post('/reviews/:reviewId/flag', adminController.flagReview);
+
 // DELETE /api/admin/reviews/:reviewId - Remove inappropriate review
 router.delete('/reviews/:reviewId', adminController.removeReview);
 
 // Admin Activity Routes
 // GET /api/admin/logs - Get admin activity logs
 router.get('/logs', adminController.getAdminLogs);
+
+// System-Wide Notification Routes
+// POST /api/admin/notifications/service-outage - Announce service outage
+router.post('/notifications/service-outage', adminController.announceServiceOutage);
+
+// POST /api/admin/notifications/feature-update - Announce feature update
+router.post('/notifications/feature-update', adminController.announceFeatureUpdate);
+
+// POST /api/admin/notifications/scheduled-maintenance - Announce scheduled maintenance
+router.post('/notifications/scheduled-maintenance', adminController.announceScheduledMaintenance);
 
 module.exports = router;

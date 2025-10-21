@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabase, supabaseAdmin } = require('../config/supabase');
 const router= express.Router();
+const NotificationService = require('./notificationService');
 
 async function getPendingRequests(latitude,longitude,limit,offset){
     const { data, error } = await supabaseAdmin.rpc('get_pending_requests_nearby', {
@@ -77,6 +78,74 @@ async function getAcceptedRequest(latitude,longitude,volunteerId){
     return data;
 }
 
+async function completeRequest(postId, volunteerId, elderlyId) {
+    // Update request status to completed
+    const {data, error} = await supabaseAdmin
+        .from("help_request")
+        .update({helpRequestStatus: "4"}) // 4 = COMPLETED
+        .eq('id', postId)
+        .eq('assignedVolunteerId', volunteerId)
+        .select()
+        .single();
+
+    if(error) throw error;
+
+    // Get volunteer name for notification
+    const { data: volunteerProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('username, full_name')
+        .eq('user_id', volunteerId)
+        .single();
+    
+    const volunteerName = volunteerProfile?.full_name || volunteerProfile?.username || 'Your volunteer';
+
+    // Send completion notification
+    try {
+        await NotificationService.notifyHelpRequestCompleted(elderlyId, postId, volunteerName);
+        
+        // Send review reminder after a short delay (or immediately)
+        await NotificationService.notifyReviewReminder(elderlyId, postId, volunteerName);
+
+        // Also notify caregivers linked to this elderly user
+        const { data: elderlyProfile } = await supabaseAdmin
+            .from('user_profiles')
+            .select('username, full_name')
+            .eq('user_id', elderlyId)
+            .single();
+        
+        const elderlyName = elderlyProfile?.full_name || elderlyProfile?.username || 'Elderly user';
+
+        // Get all linked caregivers
+        const { data: caregiverLinks } = await supabaseAdmin
+            .from('caregiver_link')
+            .select('caregiver_user_id')
+            .eq('elderly_user_id', elderlyId);
+
+        // Notify each caregiver
+        if (caregiverLinks && caregiverLinks.length > 0) {
+            for (const link of caregiverLinks) {
+                await NotificationService.notifyCaregiverHelpRequestCompleted(
+                    link.caregiver_user_id,
+                    elderlyName,
+                    postId
+                );
+            }
+        }
+
+        // Notify the volunteer about successful completion
+        await NotificationService.notifyVolunteerRequestCompleted(
+            volunteerId,
+            elderlyName,
+            postId
+        );
+    } catch (notifError) {
+        console.error('Error sending completion notifications:', notifError);
+        // Don't fail the complete if notification fails
+    }
+
+    return data;
+}
+
 
 module.exports = {
     getPendingRequests,
@@ -84,4 +153,5 @@ module.exports = {
     acceptRequest,
     getAcceptedRequest,
     cancelRequest,
+    completeRequest,
 }
