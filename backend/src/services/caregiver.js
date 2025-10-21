@@ -5,13 +5,25 @@ const NotificationService = require('./notificationService');
 
 const CaregiverServices = {
   async linkToElderlyByPIN(caregiverUserId, pin) {
+    console.log('Attempting to link with PIN:', pin);
+    
     const { data: elderlyProfile, error: pinErr } = await supabase
       .from('user_profiles')
       .select('user_id, role, linking_pin')
       .eq('linking_pin', pin)
       .eq('role', Role.ELDERLY)
       .single();
-    if (pinErr || !elderlyProfile) throw new Error('Invalid or expired PIN');
+    
+    console.log('PIN lookup result:', { elderlyProfile, pinErr });
+    
+    if (pinErr) {
+      console.error('PIN lookup error:', pinErr);
+      throw new Error('Invalid or expired PIN');
+    }
+    
+    if (!elderlyProfile) {
+      throw new Error('No elderly user found with this PIN');
+    }
 
     // Get caregiver name for notification
     const { data: caregiverProfile, error: caregiverErr } = await supabase
@@ -23,7 +35,7 @@ const CaregiverServices = {
     const caregiverName = caregiverProfile?.full_name || caregiverProfile?.username || 'Your caregiver';
 
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_link')
+      .from('caregiver_links')
       .upsert(
         { caregiver_user_id: caregiverUserId, elderly_user_id: elderlyProfile.user_id },
         { onConflict: 'caregiver_user_id,elderly_user_id' }

@@ -32,6 +32,11 @@ const upload = multer({ storage: storage });
 router.get('/profile', requireAuth, ElderlyController.getProfile);
 router.put('/profile', requireAuth, ElderlyController.updateProfile);
 
+// PIN Management routes
+router.get('/linking-pin', requireAuth, ElderlyController.getLinkingPIN);
+router.post('/linking-pin/regenerate', requireAuth, ElderlyController.regenerateLinkingPIN);
+router.get('/linked-caregivers', requireAuth, ElderlyController.getLinkedCaregivers);
+
 router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) => {
 
     try {
