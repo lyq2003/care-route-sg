@@ -143,6 +143,25 @@ const CaregiverServices = {
     if (error) throw error;
     return data;
   },
+
+  async updateElderlyProfile(elderlyUserId, updates = {}) {
+    const allowed = {};
+    if ('full_name' in updates) allowed.full_name = updates.full_name;
+    if ('email' in updates) allowed.email = updates.email;
+    if ('phone' in updates) allowed.phone = updates.phone;
+    if ('mobility_preference' in updates) allowed.mobility_preference = updates.mobility_preference;
+    if ('avatar_url' in updates) allowed.avatar_url = updates.avatar_url;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(allowed)
+      .eq('user_id', elderlyUserId)
+      .eq('role', Role.ELDERLY)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 module.exports = CaregiverServices;

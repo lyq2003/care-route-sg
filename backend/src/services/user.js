@@ -124,7 +124,7 @@ class User {
   
   static async update(id, userData) {
     try {
-      const { email, name, avatar } = userData;
+      const { email, name, avatar, phone_number } = userData;
       
       // get current user data
       const { data:currentUser }= await supabaseAdmin.auth.admin.getUserById(id);
@@ -136,7 +136,8 @@ class User {
             ...currentUser.user.user_metadata,
             name,
             avatar_url: avatar,
-            full_name: name
+            full_name: name,
+            phone_number
           }
       });
       

@@ -34,11 +34,11 @@ router.get('/profile', requireAuth, (req, res) => {
 // Update current user profile
 router.put('/profile', requireAuth, async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, phone_number } = req.body;
     const updatedUser = await User.update(req.user.id, { 
       name, 
       email, 
-      phone_number: req.user.user_metadata?.phone_number
+      phone_number: phone_number || req.user.user_metadata?.phone_number
     });
     
     const userProfile={
