@@ -8,7 +8,6 @@ router.get('/me', CaregiverController.me);
 router.patch('/me', CaregiverController.updateProfile);
 router.post('/link', CaregiverController.linkByPIN);
 router.get('/linked-elderly', CaregiverController.getLinkedElderly);
-router.patch('/elderly/:elderlyUserId', CaregiverController.updateElderlyProfile);
 router.post('/reports', CaregiverController.submitReport);
 router.get('/history/:elderlyUserId', CaregiverController.requestHistory);
 
