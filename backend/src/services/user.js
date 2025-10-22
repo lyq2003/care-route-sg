@@ -3,15 +3,41 @@ const { supabaseAdmin } = require('../config/supabase');
 class User {
     static async getAll() {
       try {
-        const { data, error } = await supabaseAdmin
-        .from('user_profiles')
-        .select('*');
+        // Get all users from Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
         
-        if (error) {
-          throw error;
+        if (authError) {
+          throw authError;
         }
         
-        return data;
+        // Get user profiles from database
+        const { data: profilesData, error: profilesError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('*');
+        
+        if (profilesError) {
+          console.warn('Error fetching user profiles:', profilesError);
+        }
+        
+        // Merge auth data with profile data
+        const users = authData.users.map(user => {
+          const profile = profilesData?.find(p => p.user_id === user.id);
+          
+          return {
+            ...user,
+            // Merge profile data if it exists, otherwise use user_metadata
+            user_metadata: {
+              ...user.user_metadata,
+              role: profile?.role || user.user_metadata?.role,
+              phone: profile?.phone_number || user.user_metadata?.phone_number,
+              status: profile?.status || user.user_metadata?.status || 'active',
+              online: profile?.online || false,
+              linking_pin: profile?.linking_pin
+            }
+          };
+        });
+        
+        return users;
         
       } catch (error) {
         console.error('Error getting all users:', error);

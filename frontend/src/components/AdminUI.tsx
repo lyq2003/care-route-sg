@@ -155,14 +155,14 @@ export default function AdminUI() {
         // Transform the user data to match our interface
         const transformedUsers = response.data.map(user => ({
           userid: user.id,
-          fullname: user.name || user.email?.split('@')[0] || 'Unknown User',
+          fullname: user.user_metadata?.displayName || user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown User',
           email: user.email,
-          phone: user.phone || 'Not provided',
-          role: user.role || 'elderly', // Default to elderly if no role
-          status: user.status || 'active', // Default to active if no status
+          phone: user.user_metadata?.phone_number || user.user_metadata?.phone || 'Not provided',
+          role: user.user_metadata?.role || 'elderly', // Default to elderly if no role
+          status: user.user_metadata?.status || 'active', // Default to active if no status
           createdAt: user.created_at || new Date().toISOString(),
-          profilePicture: user.avatar,
-          online: user.online || false
+          profilePicture: user.user_metadata?.avatar_url || user.user_metadata?.avatar,
+          online: user.user_metadata?.online || false
         }));
         setUsers(transformedUsers);
       }
