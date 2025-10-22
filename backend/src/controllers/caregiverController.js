@@ -1,37 +1,16 @@
 const CaregiverServices = require('../services/caregiver');
 const Caregiver = require('../domain/caregiver');
-const { supabase } = require('../config/supabase');
+const {supabase} = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 
 class CaregiverController {
   static async me(req, res) {
     try {
-      // Get caregiver's own profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id, username, full_name, email, phone, avatar_url, role')
-        .eq('user_id', req.user.id)
-        .eq('role', Role.CAREGIVER)
-        .single();
-      
-      if (profileError) throw profileError;
-      
-      // Format profile data
-      const caregiverProfile = {
-        id: profile.user_id,
-        name: profile.full_name || profile.username || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        avatar: profile.avatar_url || '',
-        role: profile.role
-      };
-      
-      // Get linked elderly data
+      // Get linked elderly data - using consistent naming with frontend
       const linkedElderly = await CaregiverServices.getLinkedElderly(req.user.id);
       
       res.json({ 
-        profile: caregiverProfile,
-        linkedElderly: linkedElderly 
+        linked_elderly: linkedElderly 
       });
     } catch (e) { 
       console.error('Error in caregiver/me:', e);

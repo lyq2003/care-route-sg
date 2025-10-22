@@ -89,7 +89,12 @@ export default function CaregiverUI() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "live" | "profile">("dashboard");
   
   // Profile state
-  const [profile, setProfile] = useState<CaregiverProfile | null>(null);
+  const [profileData, setProfileData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+  });
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [linkedElderly, setLinkedElderly] = useState<ElderlyUser[]>([]);
   const [selectedElderly, setSelectedElderly] = useState<ElderlyUser | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -125,6 +130,14 @@ export default function CaregiverUI() {
   }, []);
 
   useEffect(() => {
+    // Update profile form when profileData changes
+    setProfileForm({
+      name: profileData.fullName,
+      phone: profileData.phone,
+    });
+  }, [profileData]);
+
+  useEffect(() => {
     if (selectedElderly) {
       fetchHistory(selectedElderly.user_id);
     }
@@ -132,23 +145,39 @@ export default function CaregiverUI() {
 
   const fetchCaregiverProfile = async () => {
     try {
+      setIsLoadingProfile(true);
       console.log('Fetching caregiver profile...');
-      const { data } = await axios.get("/caregiver/me");
-      console.log('Caregiver profile response:', data);
       
-      // Set caregiver's own profile
-      setProfile(data.profile);
-      setProfileForm({
-        name: data.profile?.name || "",
-        phone: data.profile?.phone || "",
+      // Fetch basic user profile data (following ElderlyUI pattern)
+      const response = await axios.get('/users/profile',
+        { withCredentials: true }
+      );
+      const data = response.data;
+      console.log('User profile response:', data);
+      
+      // Set profile data from user profile endpoint
+      setProfileData({
+        fullName: data.name || data.username || "",
+        email: data.email || "",
+        phone: data.phone_number || "",
       });
       
-      // Set linked elderly data
-      setLinkedElderly(data.linkedElderly || []);
-      if (data.linkedElderly && data.linkedElderly.length > 0) {
-        setSelectedElderly(data.linkedElderly[0]);
+      console.log('Profile data set:', {
+        fullName: data.name || data.username || "",
+        email: data.email || "",
+        phone: data.phone_number || "",
+      });
+      
+      // Fetch caregiver-specific data (linked elderly)
+      const caregiverResponse = await axios.get("/caregiver/me");
+      console.log('Caregiver response:', caregiverResponse.data);
+      
+      // Set linked elderly data from caregiver endpoint
+      setLinkedElderly(caregiverResponse.data.linked_elderly || []);
+      if (caregiverResponse.data.linked_elderly && caregiverResponse.data.linked_elderly.length > 0) {
+        setSelectedElderly(caregiverResponse.data.linked_elderly[0]);
         // Set elderly profile form for editing
-        const elderly = data.linkedElderly[0];
+        const elderly = caregiverResponse.data.linked_elderly[0];
         setElderlyProfileForm({
           full_name: elderly.full_name || "",
           phone: elderly.phone || "",
@@ -162,6 +191,8 @@ export default function CaregiverUI() {
         description: "Failed to load caregiver profile",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingProfile(false);
     }
   };
 
@@ -213,10 +244,15 @@ export default function CaregiverUI() {
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
-      await axios.patch("/caregiver/me", {
-        full_name: profileForm.name,
-        phone: profileForm.phone,
-      });
+      // Update user profile using the same endpoint as VolunteerUI
+      const response = await axios.put("/users/profile", {
+        name: profileForm.name,
+        email: profileData.email, // Keep existing email
+        phone_number: profileForm.phone,
+      }, { withCredentials: true });
+      
+      console.log('Profile update response:', response.data);
+      
       toast({
         title: "Profile Updated",
         description: "Your profile has been saved successfully",
@@ -224,6 +260,7 @@ export default function CaregiverUI() {
       setIsEditingProfile(false);
       await fetchCaregiverProfile();
     } catch (err: any) {
+      console.error('Profile update error:', err);
       toast({
         title: "Update Failed",
         description: err?.response?.data?.error || "Failed to update profile",
@@ -231,33 +268,6 @@ export default function CaregiverUI() {
       });
     } finally {
       setIsSavingProfile(false);
-    }
-  };
-
-  const handleSaveElderlyProfile = async () => {
-    if (!selectedElderly) return;
-    
-    setIsSavingElderlyProfile(true);
-    try {
-      await axios.patch(`/caregiver/elderly/${selectedElderly.user_id}`, {
-        full_name: elderlyProfileForm.full_name,
-        phone: elderlyProfileForm.phone,
-        mobility_preference: elderlyProfileForm.mobility_preference,
-      });
-      toast({
-        title: "Elderly Profile Updated",
-        description: "The elderly user's profile has been saved successfully",
-      });
-      setIsEditingElderlyProfile(false);
-      await fetchCaregiverProfile();
-    } catch (err: any) {
-      toast({
-        title: "Update Failed",
-        description: err?.response?.data?.error || "Failed to update elderly profile",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingElderlyProfile(false);
     }
   };
 
@@ -624,8 +634,8 @@ export default function CaregiverUI() {
                 onClick={() => {
                   setIsEditingProfile(false);
                   setProfileForm({
-                    name: profile?.name || "",
-                    phone: profile?.phone || "",
+                    name: profileData.fullName || "",
+                    phone: profileData.phone || "",
                   });
                 }}
               >
@@ -647,12 +657,12 @@ export default function CaregiverUI() {
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-              <div className="text-lg text-foreground">{profile?.name || "Not set"}</div>
+              <div className="text-lg text-foreground">{profileData.fullName || "Not set"}</div>
             </div>
 
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-              <div className="text-lg text-foreground">{profile?.phone || "Not set"}</div>
+              <div className="text-lg text-foreground">{profileData.phone || "Not set"}</div>
             </div>
           </div>
         )}
@@ -661,114 +671,32 @@ export default function CaregiverUI() {
       {/* Elderly User Information */}
       {selectedElderly && (
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-red-500" />
-              <h3 className="text-lg font-semibold">Elderly User Information</h3>
-            </div>
-            {!isEditingElderlyProfile && (
-              <Button variant="outline" onClick={() => setIsEditingElderlyProfile(true)}>
-                Edit Information
-              </Button>
-            )}
+          <div className="flex items-center gap-2 mb-6">
+            <Heart className="h-5 w-5 text-red-500" />
+            <h3 className="text-lg font-semibold">Elderly User Information</h3>
           </div>
 
-          {isEditingElderlyProfile ? (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="elderly-name">Full Name</Label>
-                <Input
-                  id="elderly-name"
-                  value={elderlyProfileForm.full_name}
-                  onChange={(e) =>
-                    setElderlyProfileForm({ ...elderlyProfileForm, full_name: e.target.value })
-                  }
-                  placeholder="Enter elderly user's full name"
-                  className="h-12 text-lg"
-                />
-              </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+              <div className="text-lg text-foreground">{selectedElderly.full_name || "Not set"}</div>
+            </div>
 
-              <div>
-                <Label htmlFor="elderly-phone">Phone Number</Label>
-                <Input
-                  id="elderly-phone"
-                  value={elderlyProfileForm.phone}
-                  onChange={(e) =>
-                    setElderlyProfileForm({ ...elderlyProfileForm, phone: e.target.value })
-                  }
-                  placeholder="+65 XXXX XXXX"
-                  className="h-12 text-lg"
-                />
-              </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
+              <div className="text-lg text-foreground">{selectedElderly.phone || "Not set"}</div>
+            </div>
 
-              <div>
-                <Label htmlFor="mobility-preference">Mobility Preference</Label>
-                <select
-                  id="mobility-preference"
-                  value={elderlyProfileForm.mobility_preference}
-                  onChange={(e) =>
-                    setElderlyProfileForm({ ...elderlyProfileForm, mobility_preference: e.target.value })
-                  }
-                  className="w-full h-12 text-lg px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                >
-                  <option value="">Select mobility preference</option>
-                  <option value="walking">Walking</option>
-                  <option value="wheelchair">Wheelchair</option>
-                  <option value="walking_aid">Walking Aid (cane, walker)</option>
-                  <option value="limited_mobility">Limited Mobility</option>
-                  <option value="public_transport">Public Transport Only</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditingElderlyProfile(false);
-                    setElderlyProfileForm({
-                      full_name: selectedElderly.full_name || "",
-                      phone: selectedElderly.phone || "",
-                      mobility_preference: selectedElderly.mobility_preference || "",
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveElderlyProfile} disabled={isSavingElderlyProfile}>
-                  {isSavingElderlyProfile ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Mobility Preference</Label>
+              <div className="text-lg text-foreground">
+                {selectedElderly.mobility_preference ? 
+                  selectedElderly.mobility_preference.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                  : "Not set"
+                }
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-                <div className="text-lg text-foreground">{selectedElderly.full_name || "Not set"}</div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-                <div className="text-lg text-foreground">{selectedElderly.phone || "Not set"}</div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Mobility Preference</Label>
-                <div className="text-lg text-foreground">
-                  {selectedElderly.mobility_preference ? 
-                    selectedElderly.mobility_preference.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
-                    : "Not set"
-                  }
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </Card>
       )}
 
@@ -805,7 +733,12 @@ export default function CaregiverUI() {
         <div className="space-y-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Welcome, {profile?.name || "Caregiver"}
+              Welcome, {isLoadingProfile ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading...
+                </span>
+              ) : (profileData.fullName || "Caregiver")}
             </h1>
             <p className="text-muted-foreground">
               Caregiver • {linkedElderly.length} linked elderly user{linkedElderly.length !== 1 ? 's' : ''}
