@@ -27,7 +27,8 @@ import {
   Clock,
   RotateCcw,
   UserCheck,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
 
@@ -1303,8 +1304,33 @@ export default function AdminUI() {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="bg-card border-b border-border p-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Shield className="w-8 h-8 text-primary" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-center gap-2 flex-1">
+            <Shield className="w-8 h-8 text-primary" />
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="gap-2"
+            onClick={async () => {
+              try {
+                await axios.post('/auth/logout', {}, {
+                  withCredentials: true,
+                });
+                window.location.href = '/login';
+              } catch (err) {
+                console.error('Logout failed:', err);
+                toast({
+                  title: "Error",
+                  description: "Logout failed. Please try again.",
+                  variant: "destructive"
+                });
+              }
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
         </div>
         <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
         <p className="text-sm text-muted-foreground">System Administration & Management</p>
