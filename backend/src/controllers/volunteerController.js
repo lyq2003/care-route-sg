@@ -100,16 +100,14 @@ class VolunteerController {
             ]);
             const elderlySocketId = getReceiverSocketId(elderlyId);
             console.log("Elderly socket is:", elderlySocketId);
-            if (elderlySocketId) {
-                io.to(elderlySocketId).emit("notify", { message });
-            }
 
-            // Notify the volunteer about the cancellation
+
+            // Notify the elderly about the cancellation
             try {
-                await NotificationService.notifyVolunteerRequestCancelled(
+                await NotificationService.notifyHelpRequestCancelled(
+                    elderlyId,
                     volunteerId,
-                    elderlyName,
-                    requestId
+                    volunteerName
                 );
             } catch (notifError) {
                 console.error('Error sending volunteer cancel notification:', notifError);

@@ -105,10 +105,22 @@ class NotificationService {
   }
 
   /**
-   * 4. Help request matched - Volunteer accepted request
+   * 4.1. Help request matched - Volunteer accepted request
    */
   async notifyHelpRequestMatched(elderlyId, volunteerId, volunteerName) {
     const message = `A volunteer (${volunteerName}) has accepted your help request.`;
+    await this.sendNotification(elderlyId, message, {
+      type: 'HELP_REQUEST_MATCHED',
+      volunteerId,
+      volunteerName
+    });
+  }
+
+  /**
+   * 4.2. Help request cancelled - Volunteer cancelled request
+   */
+  async notifyHelpRequestCancelled(elderlyId, volunteerId, volunteerName) {
+    const message = `A volunteer (${volunteerName}) has cancelled your help request.`;
     await this.sendNotification(elderlyId, message, {
       type: 'HELP_REQUEST_MATCHED',
       volunteerId,
