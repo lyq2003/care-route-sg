@@ -1,12 +1,21 @@
 const CaregiverServices = require('../services/caregiver');
 const Caregiver = require('../domain/caregiver');
+const {supabase} = require('../config/supabase');
+const Role = require('../domain/enum/Role');
 
 class CaregiverController {
   static async me(req, res) {
     try {
-      const linked = await CaregiverServices.getLinkedElderly(req.user.id);
-      res.json({ linkedElderly: linked });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+      // Get linked elderly data - using consistent naming with frontend
+      const linkedElderly = await CaregiverServices.getLinkedElderly(req.user.id);
+      
+      res.json({ 
+        linked_elderly: linkedElderly 
+      });
+    } catch (e) { 
+      console.error('Error in caregiver/me:', e);
+      res.status(500).json({ error: e.message }); 
+    }
   }
 
   static async updateProfile(req, res) {
@@ -20,6 +29,27 @@ class CaregiverController {
       const updated = await CaregiverServices.updateProfile(req.user.id, updates);
       res.json({ message: 'Profile updated', profile: updated });
     } catch (e) { res.status(400).json({ error: e.message }); }
+  }
+
+  static async updateElderlyProfile(req, res) {
+    try {
+      const { elderlyUserId } = req.params;
+      const updates = req.body || {};
+      
+      // Verify the elderly user is linked to this caregiver
+      const linkedElderly = await CaregiverServices.getLinkedElderly(req.user.id);
+      const isLinked = linkedElderly.some(elderly => elderly.user_id === elderlyUserId);
+      
+      if (!isLinked) {
+        return res.status(403).json({ error: 'Not authorized to update this elderly user profile' });
+      }
+      
+      const updated = await CaregiverServices.updateElderlyProfile(elderlyUserId, updates);
+      res.json({ message: 'Elderly profile updated', profile: updated });
+    } catch (e) { 
+      console.error('Error updating elderly profile:', e);
+      res.status(400).json({ error: e.message }); 
+    }
   }
 
   static async linkByPIN(req, res) {

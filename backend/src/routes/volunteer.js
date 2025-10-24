@@ -10,6 +10,8 @@ router.get('/getPendingPosts', requireAuth, VolunteerController.getPendingReques
 router.get('/getFilteredRequests', requireAuth, VolunteerController.getFilteredRequests);
 router.put('/acceptRequest', requireAuth, VolunteerController.acceptRequest);
 router.put('/cancelRequest', requireAuth, VolunteerController.cancelRequest);
+router.put('/completeRequest', requireAuth, VolunteerController.completeRequest);
+router.post('/sendProgressUpdate', requireAuth, VolunteerController.sendProgressUpdate);
 router.get('/getAcceptedRequest', requireAuth, VolunteerController.getAcceptedRequest);
 
 module.exports = router;

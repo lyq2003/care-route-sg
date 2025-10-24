@@ -4,6 +4,7 @@ const multer = require('multer');
 const { supabase, supabaseAdmin } = require('../config/supabase');
 const ReportStatus = require('../domain/enum/ReportStatus');
 const AttachmentParentType = require('../domain/enum/AttachmentParentType');
+const NotificationService = require('./notificationService');
 
 // Local disk storage for uploaded evidence (dev only)
 const uploadPath = path.join(__dirname, './uploads');
@@ -53,6 +54,27 @@ class ReportService {
         admin_note: null,
       },
     ]);
+
+    // Notify admins about new report submission
+    try {
+      const { data: reporterProfile } = await supabase
+        .from('user_profiles')
+        .select('username, full_name, role')
+        .eq('user_id', reporterUserId)
+        .single();
+      
+      const reporterName = reporterProfile?.full_name || reporterProfile?.username || 'User';
+      const reporterRole = reporterProfile?.role || 'User';
+
+      await NotificationService.notifyAdminNewReportSubmitted(
+        reporterName,
+        reporterRole,
+        data.id
+      );
+    } catch (notifError) {
+      console.error('Error sending admin report notification:', notifError);
+      // Don't fail the report submission if notification fails
+    }
 
     return data;
   }
@@ -114,11 +136,61 @@ class ReportService {
       },
     ]);
 
+    // Send notification to reporter based on their role
+    try {
+      const { data: reporterProfile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', report.reporter_user_id)
+        .single();
+      
+      if (reporterProfile?.role === 'ELDERLY') {
+        await NotificationService.notifyReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          ReportStatus.IN_PROGRESS
+        );
+      } else if (reporterProfile?.role === 'CAREGIVER') {
+        await NotificationService.notifyCaregiverReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          ReportStatus.IN_PROGRESS
+        );
+      } else if (reporterProfile?.role === 'VOLUNTEER') {
+        await NotificationService.notifyVolunteerReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          ReportStatus.IN_PROGRESS
+        );
+      }
+    } catch (notifError) {
+      console.error('Error sending report update notification:', notifError);
+      // Don't fail the update if notification fails
+    }
+
     return updated;
   }
 
   async resolveReport({ reportId, adminUserId, note }) {
-    return this.#closeReport({ reportId, adminUserId, toStatus: ReportStatus.RESOLVED, note });
+    const result = await this.#closeReport({ reportId, adminUserId, toStatus: ReportStatus.RESOLVED, note });
+    
+    // Notify other admins about report resolution
+    try {
+      const { data: adminProfile } = await supabase
+        .from('user_profiles')
+        .select('username, full_name')
+        .eq('user_id', adminUserId)
+        .single();
+      
+      const resolvedBy = adminProfile?.full_name || adminProfile?.username || 'Admin';
+      
+      await NotificationService.notifyAdminReportResolved(reportId, resolvedBy);
+    } catch (notifError) {
+      console.error('Error sending admin report resolved notification:', notifError);
+      // Don't fail the operation if notification fails
+    }
+    
+    return result;
   }
 
   async rejectReport({ reportId, adminUserId, note }) {
@@ -150,6 +222,41 @@ class ReportService {
         admin_note: note || null,
       },
     ]);
+
+    // Send notification to reporter based on their role
+    try {
+      const { data: reporterProfile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', report.reporter_user_id)
+        .single();
+      
+      if (reporterProfile?.role === 'ELDERLY') {
+        await NotificationService.notifyReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          toStatus,
+          note
+        );
+      } else if (reporterProfile?.role === 'CAREGIVER') {
+        await NotificationService.notifyCaregiverReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          toStatus,
+          note
+        );
+      } else if (reporterProfile?.role === 'VOLUNTEER') {
+        await NotificationService.notifyVolunteerReportUpdate(
+          report.reporter_user_id,
+          reportId,
+          toStatus,
+          note
+        );
+      }
+    } catch (notifError) {
+      console.error('Error sending report update notification:', notifError);
+      // Don't fail the update if notification fails
+    }
 
     return updated;
   }

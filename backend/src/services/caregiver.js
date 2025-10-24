@@ -1,19 +1,41 @@
 const { supabase } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus'); // keep if you have it
+const NotificationService = require('./notificationService');
 
 const CaregiverServices = {
   async linkToElderlyByPIN(caregiverUserId, pin) {
+    console.log('Attempting to link with PIN:', pin);
+    
     const { data: elderlyProfile, error: pinErr } = await supabase
       .from('user_profiles')
       .select('user_id, role, linking_pin')
       .eq('linking_pin', pin)
       .eq('role', Role.ELDERLY)
       .single();
-    if (pinErr || !elderlyProfile) throw new Error('Invalid or expired PIN');
+    
+    console.log('PIN lookup result:', { elderlyProfile, pinErr });
+    
+    if (pinErr) {
+      console.error('PIN lookup error:', pinErr);
+      throw new Error('Invalid or expired PIN');
+    }
+    
+    if (!elderlyProfile) {
+      throw new Error('No elderly user found with this PIN');
+    }
+
+    // Get caregiver name for notification
+    const { data: caregiverProfile, error: caregiverErr } = await supabase
+      .from('user_profiles')
+      .select('username, full_name')
+      .eq('user_id', caregiverUserId)
+      .single();
+    
+    const caregiverName = caregiverProfile?.full_name || caregiverProfile?.username || 'Your caregiver';
 
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_link')
+      .from('caregiver_links')
       .upsert(
         { caregiver_user_id: caregiverUserId, elderly_user_id: elderlyProfile.user_id },
         { onConflict: 'caregiver_user_id,elderly_user_id' }
@@ -21,6 +43,32 @@ const CaregiverServices = {
       .select('*')
       .single();
     if (linkErr) throw linkErr;
+
+    // Get elderly name for caregiver notification
+    const { data: elderlyProfileData, error: elderlyNameErr } = await supabase
+      .from('user_profiles')
+      .select('username, full_name')
+      .eq('user_id', elderlyProfile.user_id)
+      .single();
+    
+    const elderlyName = elderlyProfileData?.full_name || elderlyProfileData?.username || 'Elderly user';
+
+    // Send notification to elderly user
+    try {
+      await NotificationService.notifyCaregiverLinked(elderlyProfile.user_id, caregiverName);
+    } catch (notifError) {
+      console.error('Error sending caregiver linked notification:', notifError);
+      // Don't fail the link if notification fails
+    }
+
+    // Send notification to caregiver about successful linking
+    try {
+      await NotificationService.notifyCaregiverElderlyLinked(caregiverUserId, elderlyName);
+    } catch (notifError) {
+      console.error('Error sending elderly linked notification to caregiver:', notifError);
+      // Don't fail the link if notification fails
+    }
+
     return link;
   },
 
@@ -90,6 +138,25 @@ const CaregiverServices = {
       .update(allowed)
       .eq('user_id', caregiverUserId)
       .eq('role', Role.CAREGIVER)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateElderlyProfile(elderlyUserId, updates = {}) {
+    const allowed = {};
+    if ('full_name' in updates) allowed.full_name = updates.full_name;
+    if ('email' in updates) allowed.email = updates.email;
+    if ('phone' in updates) allowed.phone = updates.phone;
+    if ('mobility_preference' in updates) allowed.mobility_preference = updates.mobility_preference;
+    if ('avatar_url' in updates) allowed.avatar_url = updates.avatar_url;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(allowed)
+      .eq('user_id', elderlyUserId)
+      .eq('role', Role.ELDERLY)
       .select('*')
       .single();
     if (error) throw error;

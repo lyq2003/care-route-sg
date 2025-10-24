@@ -1,6 +1,7 @@
 const adminService = require('../services/admin');
 const reportService = require('../services/report');
 const reviewService = require('../services/review');
+const NotificationService = require('../services/notificationService');
 const { supabaseAdmin } = require('../config/supabase');
 //const User = require('../domain/User');
 const UserStatus = require('../domain/enum/UserStatus');
@@ -663,6 +664,148 @@ class AdminController {
       });
     } catch (error) {
       console.error('Get admin logs error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // ==================== SYSTEM-WIDE NOTIFICATIONS ====================
+
+  // Announce service outage (API/external service down)
+  async announceServiceOutage(req, res) {
+    try {
+      const { serviceName, description } = req.body;
+
+      if (!serviceName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Service name is required'
+        });
+      }
+
+      await NotificationService.notifyServiceOutage(
+        serviceName,
+        description || 'temporarily unavailable due to service maintenance'
+      );
+
+      // Log admin action
+      await adminService.logAdminAction(req.user.id, 'ANNOUNCE_SERVICE_OUTAGE', null, { 
+        serviceName,
+        description
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Service outage notification sent to all users'
+      });
+    } catch (error) {
+      console.error('Announce service outage error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Announce feature update
+  async announceFeatureUpdate(req, res) {
+    try {
+      const { featureName, description } = req.body;
+
+      if (!featureName || !description) {
+        return res.status(400).json({
+          success: false,
+          error: 'Feature name and description are required'
+        });
+      }
+
+      await NotificationService.notifyFeatureUpdate(featureName, description);
+
+      // Log admin action
+      await adminService.logAdminAction(req.user.id, 'ANNOUNCE_FEATURE_UPDATE', null, { 
+        featureName,
+        description
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Feature update notification sent to all users'
+      });
+    } catch (error) {
+      console.error('Announce feature update error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Announce scheduled maintenance
+  async announceScheduledMaintenance(req, res) {
+    try {
+      const { date, startTime, endTime } = req.body;
+
+      if (!date || !startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: 'Date, start time, and end time are required'
+        });
+      }
+
+      await NotificationService.notifyScheduledMaintenance(date, startTime, endTime);
+
+      // Log admin action
+      await adminService.logAdminAction(req.user.id, 'ANNOUNCE_SCHEDULED_MAINTENANCE', null, { 
+        date,
+        startTime,
+        endTime
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Scheduled maintenance notification sent to all users'
+      });
+    } catch (error) {
+      console.error('Announce scheduled maintenance error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Flag review for removal (can also be called by automated moderation)
+  async flagReview(req, res) {
+    try {
+      const { reviewId } = req.params;
+      const { reason } = req.body;
+      const adminUserId = req.user.id;
+
+      if (!reviewId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Review ID is required'
+        });
+      }
+
+      const flaggedReview = await reviewService.flagReview({
+        reviewId,
+        reason: reason || 'offensive language',
+        flaggedBy: adminUserId
+      });
+
+      // Log admin action
+      await adminService.logAdminAction(adminUserId, 'FLAG_REVIEW', reviewId, { reason });
+
+      res.status(200).json({
+        success: true,
+        message: 'Review flagged successfully',
+        data: flaggedReview
+      });
+    } catch (error) {
+      console.error('Flag review error:', error);
       res.status(500).json({
         success: false,
         error: error.message
