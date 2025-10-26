@@ -69,6 +69,8 @@ export default function ElderlyUI() {
   const [showRouteTracking, setShowRouteTracking] = useState(false);
   const [routeHistory, setRouteHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [recentActivity, setRecentActivity] = useState<any[]>([
     {
       id: 1,
@@ -533,7 +535,77 @@ export default function ElderlyUI() {
 		}
 	};
 
-  
+	const handleUseCurrentLocation = () => {
+		if (!navigator.geolocation) {
+			toast({
+				title: "Location not supported",
+				description: "Your browser doesn't support location services.",
+				variant: "destructive"
+			});
+			return;
+		}
+
+		setIsGettingLocation(true);
+		
+		navigator.geolocation.getCurrentPosition(
+			async (position) => {
+				const { latitude, longitude } = position.coords;
+				setCurrentLocation({ lat: latitude, lng: longitude });
+				
+				// Convert coordinates to address using Geocoding API
+				if (googleLoaded && (window as any).google) {
+					const google = (window as any).google as typeof window.google;
+					const geocoder = new google.maps.Geocoder();
+					
+					try {
+						const results = await geocoder.geocode({ 
+							location: { lat: latitude, lng: longitude } 
+						});
+						
+						if (results.results && results.results.length > 0) {
+							const address = results.results[0].formatted_address;
+							setRouteFormData(prev => ({ ...prev, from: address }));
+							toast({
+								title: "Location set",
+								description: "Current location has been set as starting point."
+							});
+						}
+					} catch (error) {
+						console.error('Geocoding error:', error);
+						toast({
+							title: "Error",
+							description: "Could not convert location to address.",
+							variant: "destructive"
+						});
+					}
+				} else {
+					// Fallback to coordinates if geocoding not available
+					setRouteFormData(prev => ({ ...prev, from: `${latitude}, ${longitude}` }));
+					toast({
+						title: "Location set",
+						description: "Using coordinates as location."
+					});
+				}
+				
+				setIsGettingLocation(false);
+			},
+			(error) => {
+				console.error('Geolocation error:', error);
+				setIsGettingLocation(false);
+				toast({
+					title: "Location error",
+					description: error.message || "Could not get your current location.",
+					variant: "destructive"
+				});
+			},
+			{
+				enableHighAccuracy: true,
+				timeout: 10000,
+				maximumAge: 60000
+			}
+		);
+	};
+
 	const handleRouteSearch = async () => {
 		if (!routeFormData.from || !routeFormData.to) return;
 		if (!googleLoaded || !(window as any).google) {
@@ -1175,9 +1247,31 @@ export default function ElderlyUI() {
             {!showRouteResults ? (
               <div className="space-y-6">
                 <div className="space-y-2 relative">
-                  <Label htmlFor="from" className="text-lg font-medium">
-                    From
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="from" className="text-lg font-medium">
+                      From
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUseCurrentLocation}
+                      disabled={isGettingLocation}
+                      className="text-xs"
+                    >
+                      {isGettingLocation ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
+                          Getting location...
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-3 w-3 mr-1" />
+                          Use Current Location
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <Input
                     id="from"
                     value={routeFormData.from}

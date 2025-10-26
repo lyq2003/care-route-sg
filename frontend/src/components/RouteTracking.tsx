@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Volume2,
   VolumeX,
-  RotateCcw
+  RotateCcw,
+  Locate
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
@@ -64,6 +65,9 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
   const mapRef = useRef<google.maps.Map | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const destinationMarkerRef = useRef<google.maps.Marker | null>(null);
+  const originMarkerRef = useRef<google.maps.Marker | null>(null);
+  const userLocationMarkerRef = useRef<google.maps.Marker | null>(null);
 
   // Load Google Maps API
   useEffect(() => {
@@ -217,6 +221,134 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
     }
   }, [isNavigating]);
 
+  // Create destination marker when directions are available
+  useEffect(() => {
+    if (!mapRef.current || !directions || !googleLoaded) return;
+
+    const google = (window as any).google as typeof window.google;
+    
+    // Get destination coordinates from directions
+    const destination = directions.routes[0]?.legs[0]?.end_location;
+    if (!destination) return;
+
+    // Remove existing destination marker if any
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.setMap(null);
+    }
+
+    // Create destination marker with green pin icon
+    destinationMarkerRef.current = new google.maps.Marker({
+      position: destination,
+      map: mapRef.current,
+      title: 'Destination',
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#10b981" d="M16 0C7.163 0 0 7.163 0 16c0 11.089 16 24 16 24s16-12.911 16-24c0-8.837-7.163-16-16-16z"/>
+            <circle cx="16" cy="16" r="4" fill="#ffffff"/>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(32, 40),
+        anchor: new google.maps.Point(16, 40)
+      },
+      zIndex: 1000
+    });
+
+    return () => {
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current.setMap(null);
+      }
+    };
+  }, [directions, googleLoaded]);
+
+  // Create origin marker when directions are available
+  useEffect(() => {
+    if (!mapRef.current || !directions || !googleLoaded) return;
+
+    const google = (window as any).google as typeof window.google;
+    
+    // Get origin coordinates from directions
+    const origin = directions.routes[0]?.legs[0]?.start_location;
+    if (!origin) return;
+
+    // Remove existing origin marker if any
+    if (originMarkerRef.current) {
+      originMarkerRef.current.setMap(null);
+    }
+
+    // Create origin marker with red/orange pin icon
+    originMarkerRef.current = new google.maps.Marker({
+      position: origin,
+      map: mapRef.current,
+      title: 'Starting Point',
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#ef4444" d="M16 0C7.163 0 0 7.163 0 16c0 11.089 16 24 16 24s16-12.911 16-24c0-8.837-7.163-16-16-16z"/>
+            <circle cx="16" cy="16" r="4" fill="#ffffff"/>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(32, 40),
+        anchor: new google.maps.Point(16, 40)
+      },
+      zIndex: 999
+    });
+
+    return () => {
+      if (originMarkerRef.current) {
+        originMarkerRef.current.setMap(null);
+      }
+    };
+  }, [directions, googleLoaded]);
+
+  // Create user location marker when navigation starts
+  useEffect(() => {
+    if (!mapRef.current || !googleLoaded || !isNavigating) {
+      // Clean up marker when not navigating
+      if (!isNavigating && userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.setMap(null);
+        userLocationMarkerRef.current = null;
+        console.log('🗑️ User location marker removed');
+      }
+      return;
+    }
+
+    const google = (window as any).google as typeof window.google;
+
+    // Create the marker once when navigation starts (with fallback position)
+    if (!userLocationMarkerRef.current) {
+      console.log('🎯 Creating user location marker');
+      // Create user location marker as a blue dot with fallback position
+      const initialPosition = userLocation || { lat: 1.3521, lng: 103.8198 };
+      
+      userLocationMarkerRef.current = new google.maps.Marker({
+        position: initialPosition,
+        map: mapRef.current,
+        title: 'Your Current Location',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 15,
+          fillColor: '#3b82f6', // Blue color
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        },
+        zIndex: 1001,
+        optimized: false,
+        visible: true
+      });
+      console.log('✅ User location marker created at:', initialPosition);
+    }
+  }, [googleLoaded, isNavigating, userLocation]);
+
+  // Update marker position when userLocation changes
+  useEffect(() => {
+    if (userLocationMarkerRef.current && userLocation) {
+      userLocationMarkerRef.current.setPosition(userLocation);
+      console.log('📍 User location marker updated to:', userLocation);
+    }
+  }, [userLocation]);
+
   // Request notification permission on component mount
   useEffect(() => {
     if ('Notification' in window) {
@@ -358,6 +490,19 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
   const resetRoute = () => {
     setCurrentStep(0);
     setIsNavigating(false);
+  };
+
+  const relocateToCurrentLocation = () => {
+    if (!mapRef.current || !userLocation) {
+      addNotification("No current location available", 'warning');
+      return;
+    }
+
+    // Center the map on user's current location
+    mapRef.current.setCenter(userLocation);
+    mapRef.current.setZoom(17); // Zoom in to show detail
+    
+    addNotification("Map centered on your current location", 'success');
   };
 
   const completeRoute = async () => {
@@ -513,7 +658,7 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
                   if (directions) {
                     directionsRendererRef.current = new google.maps.DirectionsRenderer({
                       map: mapRef.current,
-                      suppressMarkers: false,
+                      suppressMarkers: true, // Suppress default markers since we're using custom ones
                       polylineOptions: {
                         strokeColor: "#3b82f6",
                         strokeWeight: 4
@@ -529,7 +674,7 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
           
           {/* Navigation Controls Overlay */}
           {isNavigating && (
-            <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+            <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg p-4 shadow-lg z-10">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium">Navigating</span>
@@ -539,7 +684,7 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
               </div>
               
               {/* Location Status */}
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs mb-3">
                 {locationPermission === 'granted' && userLocation ? (
                   <>
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -560,6 +705,49 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
                     <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
                     <span className="text-gray-600">Requesting location...</span>
                   </>
+                )}
+              </div>
+
+              {/* Map Legend */}
+              <div className="border-t border-border pt-3 space-y-1">
+                <div className="text-xs font-medium text-muted-foreground mb-2">Map Legend:</div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></div>
+                  <span>Your location</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <svg width="12" height="15" viewBox="0 0 12 15" className="flex-shrink-0">
+                    <path fill="#ef4444" d="M6 0C2.7 0 0 2.7 0 6c0 4.2 6 9 6 9s6-4.8 6-9c0-3.3-2.7-6-6-6z"/>
+                    <circle cx="6" cy="6" r="1.5" fill="#fff"/>
+                  </svg>
+                  <span>Starting point</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <svg width="12" height="15" viewBox="0 0 12 15" className="flex-shrink-0">
+                    <path fill="#10b981" d="M6 0C2.7 0 0 2.7 0 6c0 4.2 6 9 6 9s6-4.8 6-9c0-3.3-2.7-6-6-6z"/>
+                    <circle cx="6" cy="6" r="1.5" fill="#fff"/>
+                  </svg>
+                  <span>Destination</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Relocate Button - Floating on map */}
+          {userLocation && (
+            <div className="absolute bottom-4 right-4 z-20">
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  onClick={relocateToCurrentLocation}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg h-14 w-14 rounded-full transition-all"
+                  title="Show my current location on map"
+                >
+                  <Locate className="h-6 w-6" />
+                </Button>
+                {isNavigating && (
+                  <div className="bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs text-muted-foreground">
+                    Tap to center
+                  </div>
                 )}
               </div>
             </div>
