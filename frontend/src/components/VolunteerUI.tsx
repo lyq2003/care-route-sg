@@ -20,6 +20,8 @@ import useLocation from "../features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
 import AcceptedRequest from "../features/volunteer/VolunteerAcceptedRequest";
 import VolunteerProfile from "@/features/volunteer/VolunteerProfile";
+import VolunteerRoute from "./VolunteerRoute";
+
 // Max number of posts to be fetched every call
 const LIMIT=10;
 
@@ -38,7 +40,8 @@ export default function VolunteerUI() {
     averageRating: 0,
     reviewCount: 0
   });
-  
+  const [selectedRoute, setSelectedRoute] = useState<{ from: any; to: any } | null>(null);
+
   // getting user info from getProfile
   const {profile} = getProfile();
 
@@ -157,9 +160,20 @@ export default function VolunteerUI() {
       alert("Error accepting request. Please try again.");
     }
   };
+
   // todo
-  const handleViewRoute = (requestId: number) => {
-    console.log("Viewing route for request:", requestId);
+  const handleViewRoute = (latitude: number, longitude: number) => {
+    if (!location) {
+      alert("Unable to get your current location.");
+      return;
+    }
+
+    setSelectedRoute({
+      from: { lat: location.latitude, lng: location.longitude },
+      to: { lat: latitude, lng: longitude },
+    });
+
+    setActiveTab("route");
   };
 
   const getPriorityColor = (priority: string) => {
@@ -259,7 +273,7 @@ export default function VolunteerUI() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => handleViewRoute(request.id)}
+                        onClick={() => handleViewRoute(request.latitude, request.longitude)}
                         className="flex-1 text-primary border-primary/50"
                       >
                         <Navigation className="h-5 w-5 mr-2" />
@@ -279,6 +293,16 @@ export default function VolunteerUI() {
       case "profile":
         return <VolunteerProfile />;
 
+      case "route":
+        if (!selectedRoute) return null;
+        return (
+          <VolunteerRoute
+            selectedRoute={selectedRoute}
+            from={selectedRoute.from}
+            to={selectedRoute.to}
+            onBack={() => setActiveTab("dashboard")}
+          />
+        );
       default:
         return null;
     }
