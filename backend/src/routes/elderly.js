@@ -31,6 +31,7 @@ const upload = multer({ storage: storage });
 
 router.get('/profile', requireAuth, ElderlyController.getProfile);
 router.put('/profile', requireAuth, ElderlyController.updateProfile);
+router.put('/profile/language', requireAuth, ElderlyController.updateLanguagePreference);
 
 // PIN Management routes
 router.get('/linking-pin', requireAuth, ElderlyController.getLinkingPIN);

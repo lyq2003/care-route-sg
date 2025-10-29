@@ -29,6 +29,49 @@ class ElderlyController {
   }
 
   /**
+   * Update language preference for elderly user
+   */
+  static async updateLanguagePreference(req, res) {
+    try {
+      const { language } = req.body;
+      
+      if (!language) {
+        return res.status(400).json({ error: 'Language is required' });
+      }
+
+      // Validate language code
+      const validLanguages = ['en', 'zh', 'ms', 'ta'];
+      if (!validLanguages.includes(language)) {
+        return res.status(400).json({ error: 'Invalid language code' });
+      }
+
+      // Update language preference in user profile
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          language_preference: language
+        })
+        .eq('user_id', req.user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating language preference:', error);
+        return res.status(500).json({ error: 'Failed to update language preference' });
+      }
+
+      res.json({ 
+        message: 'Language preference updated successfully', 
+        language: language,
+        profile: data
+      });
+    } catch (err) {
+      console.error('Update language preference error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
    * Get linking PIN for elderly user (generates one if it doesn't exist)
    */
   static async getLinkingPIN(req, res) {
