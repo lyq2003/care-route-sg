@@ -14,9 +14,7 @@ import {
   MapPin, 
   Star, 
   User, 
-  Volume2, 
   LogOut,
-  Pin,
   Phone,
   MessageSquare,
   Clock,
@@ -46,7 +44,6 @@ export default function ElderlyUI() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("home");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
     location: "",
     description: "",
@@ -821,17 +818,18 @@ export default function ElderlyUI() {
               
               <div className="flex gap-3">
                 <Button
-                  variant={voiceEnabled ? "success" : "outline"}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setVoiceEnabled(!voiceEnabled)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(caregiverPin);
+                    toast({
+                      title: "PIN Copied!",
+                      description: "Caregiver PIN has been copied to clipboard",
+                    });
+                  }}
                   className="flex-1"
                 >
-                  <Volume2 className="h-5 w-5" />
-                  Voice {voiceEnabled ? "On" : "Off"}
-                </Button>
-                
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Pin className="h-5 w-5" />
+                  <Copy className="h-5 w-5 mr-2" />
                   PIN: {caregiverPin}
                 </Button>
                 
