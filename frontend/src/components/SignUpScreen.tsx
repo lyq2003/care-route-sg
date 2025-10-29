@@ -17,6 +17,7 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
   const [step, setStep] = useState<"role" | "details">("role");
   const [selectedRole, setSelectedRole] = useState<UserType>(null);
   const [error,setError] = useState(null);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -62,9 +63,56 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
     setStep("details");
   };
 
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters long");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter");
+    }
+    if (!/\d/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push("Password must contain at least one special character");
+    }
+    
+    return errors;
+  };
+
+  const handlePasswordChange = (password: string) => {
+    setFormData({ ...formData, password });
+    if (password.length > 0) {
+      const errors = validatePassword(password);
+      setPasswordErrors(errors);
+    } else {
+      setPasswordErrors([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        // Validate password on submit
+        const passwordValidationErrors = validatePassword(formData.password);
+        if (passwordValidationErrors.length > 0) {
+          setError("Please fix the password requirements below.");
+          setPasswordErrors(passwordValidationErrors);
+          return;
+        }
+
+        // Check password confirmation
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match.");
+          return;
+        }
+
         try{
           // Logic for checking with backend to sign up
           const response = await axiosInstance.post("/auth/signup",
@@ -83,7 +131,14 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
           navigate('/login');
         } catch (err: any) {
           console.error("Signup failed:", err);
-          setError(err.response?.data?.message || "Failed to signup, Please try again.");
+          
+          // Handle password validation errors from backend
+          if (err.response?.data?.passwordErrors) {
+            setPasswordErrors(err.response.data.passwordErrors);
+            setError(err.response.data.message || "Password does not meet requirements");
+          } else {
+            setError(err.response?.data?.message || "Failed to signup, Please try again.");
+          }
         }
       };
   if (step === "role") {
@@ -212,11 +267,21 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
             id="password"
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) => handlePasswordChange(e.target.value)}
             className="h-14 text-lg"
             placeholder="Create a secure password"
             required
           />
+          {passwordErrors.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {passwordErrors.map((error, index) => (
+                <p key={index} className="text-red-500 text-sm flex items-center gap-2">
+                  <span className="text-red-500">•</span>
+                  {error}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -237,6 +302,11 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
           )}
         </div>
 
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+          </div>
+        )}
 
         <Button type="submit" size="xl" className="w-full mt-8">
           Create Account

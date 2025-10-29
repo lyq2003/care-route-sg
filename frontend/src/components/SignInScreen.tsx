@@ -121,6 +121,12 @@ export default function SignInScreen() {
               />
             </div>
 
+            {error && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm font-medium">{error}</p>
+              </div>
+            )}
+
             <Button type="submit" size="xl" className="w-full mt-8">
               Sign In
             </Button>
