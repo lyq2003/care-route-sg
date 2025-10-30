@@ -5,6 +5,7 @@ class ReportController {
   submitReport = async (req, res) => {
     try {
       const reporterUserId = req.user.id;
+      const reporterRole = req.user.role; // <- NEW
       const { reportedUserId, helpRequestId, reason, description } = req.body;
 
       if (!reportedUserId || !reason) {
@@ -13,6 +14,7 @@ class ReportController {
 
       const report = await ReportService.submitReport({
         reporterUserId,
+        reporterRole, // <- pass down
         reportedUserId,
         helpRequestId,
         reason,
@@ -48,9 +50,15 @@ class ReportController {
   beginReview = async (req, res) => {
     try {
       const adminUserId = req.user.id;
+      const adminRole = req.user.role; // <- NEW
       const { reportId } = req.params;
 
-      const updated = await ReportService.beginReview({ reportId, adminUserId });
+      const updated = await ReportService.beginReview({
+        reportId,
+        adminUserId,
+        adminRole, // <- pass down
+      });
+
       return res.status(200).json({ success: true, data: updated });
     } catch (error) {
       console.error('beginReview error:', error);
@@ -62,10 +70,17 @@ class ReportController {
   resolveReport = async (req, res) => {
     try {
       const adminUserId = req.user.id;
+      const adminRole = req.user.role; // <- NEW
       const { reportId } = req.params;
       const { note } = req.body;
 
-      const updated = await ReportService.resolveReport({ reportId, adminUserId, note });
+      const updated = await ReportService.resolveReport({
+        reportId,
+        adminUserId,
+        adminRole, // <- pass down
+        note,
+      });
+
       return res.status(200).json({ success: true, data: updated });
     } catch (error) {
       console.error('resolveReport error:', error);
@@ -76,10 +91,17 @@ class ReportController {
   rejectReport = async (req, res) => {
     try {
       const adminUserId = req.user.id;
+      const adminRole = req.user.role; // <- NEW
       const { reportId } = req.params;
       const { note } = req.body;
 
-      const updated = await ReportService.rejectReport({ reportId, adminUserId, note });
+      const updated = await ReportService.rejectReport({
+        reportId,
+        adminUserId,
+        adminRole, // <- pass down
+        note,
+      });
+
       return res.status(200).json({ success: true, data: updated });
     } catch (error) {
       console.error('rejectReport error:', error);
@@ -100,4 +122,3 @@ class ReportController {
 }
 
 module.exports = new ReportController();
-

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 const ReportController = require('../controllers/reportController');
 const ReportService = require('../services/report');
 
@@ -10,17 +10,16 @@ router.post('/', requireAuth, ReportController.submitReport);
 // User/Admin: upload evidence file to a report (multipart/form-data, field: file)
 router.post('/:reportId/evidence', requireAuth, ReportService.getEvidenceUploadMiddleware(), ReportController.addEvidence);
 
-// Admin: begin review
-router.post('/:reportId/start-review', requireAuth, ReportController.beginReview);
+// Admin-only: begin review
+router.post('/:reportId/start-review', requireAuth, requireAdmin, ReportController.beginReview);
 
-// Admin: resolve
-router.post('/:reportId/resolve', requireAuth, ReportController.resolveReport);
+// Admin-only: resolve
+router.post('/:reportId/resolve', requireAuth, requireAdmin, ReportController.resolveReport);
 
-// Admin: reject
-router.post('/:reportId/reject', requireAuth, ReportController.rejectReport);
+// Admin-only: reject
+router.post('/:reportId/reject', requireAuth, requireAdmin, ReportController.rejectReport);
 
 // User: view my reports
 router.get('/me', requireAuth, ReportController.viewMyReports);
 
 module.exports = router;
-
