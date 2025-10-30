@@ -72,8 +72,8 @@ class ReviewService {
       .from('reviews')
       .select(`
         *,
-        author:auth.users!author_user_id(*),
-        recipient:auth.users!recipient_user_id(*)
+        author:user_profiles!author_user_id(*),
+        recipient:user_profiles!recipient_user_id(*)
       `)
       .order('created_at', { ascending: false });
     
