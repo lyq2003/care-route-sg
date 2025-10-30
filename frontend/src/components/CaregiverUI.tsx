@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "../store/useAuthStore";
 
 import {
   Home,
@@ -123,6 +125,18 @@ export default function CaregiverUI() {
   // Live tracking state
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [elderlyLocations, setElderlyLocations] = useState<Map<string, any>>(new Map());
+  const [activeTrips, setActiveTrips] = useState<any[]>([]);
+  
+  // Google Maps state
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markers, setMarkers] = useState<Map<string, google.maps.Marker>>(new Map());
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+  const [routeData, setRouteData] = useState<Map<string, any>>(new Map()); // Store route info per elderly user
+  
+  // WebSocket state
+  const { socket } = useAuthStore();
 
   /* -------------------- Data Fetching -------------------- */
   useEffect(() => {
@@ -142,6 +156,121 @@ export default function CaregiverUI() {
       fetchHistory(selectedElderly.user_id);
     }
   }, [selectedElderly]);
+
+  // WebSocket listeners for real-time location updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleElderlyLocationUpdate = (data: any) => {
+      console.log('Received elderly location update:', data);
+      
+      // Update elderly locations state
+      setElderlyLocations(prev => {
+        const newMap = new Map(prev);
+        newMap.set(data.elderlyId, data.location);
+        return newMap;
+      });
+
+      // Store route information if available
+      if (data.tripContext && (data.tripContext.origin || data.tripContext.destination)) {
+        setRouteData(prev => {
+          const newMap = new Map(prev);
+          newMap.set(data.elderlyId, {
+            tripId: data.tripContext.tripId,
+            helpRequestId: data.tripContext.helpRequestId,
+            status: data.tripContext.status,
+            origin: data.tripContext.origin,
+            destination: data.tripContext.destination,
+            elderlyName: data.elderlyName
+          });
+          return newMap;
+        });
+      }
+
+      // Show notification for location updates
+      toast({
+        title: "Location Update",
+        description: `${data.elderlyName}'s location has been updated`,
+      });
+    };
+
+    const handleNotification = (data: any) => {
+      console.log('Received notification:', data);
+      
+      // Add notification to list
+      setNotifications(prev => [{
+        id: Date.now(),
+        message: data.message,
+        metadata: data.metadata,
+        timestamp: new Date(),
+        isRead: false
+      }, ...prev.slice(0, 9)]); // Keep last 10 notifications
+
+      // Show toast notification
+      toast({
+        title: "Notification",
+        description: data.message,
+      });
+    };
+
+    // Add event listeners
+    socket.on('elderly_location_update', handleElderlyLocationUpdate);
+    socket.on('notify', handleNotification);
+
+    // Cleanup
+    return () => {
+      socket.off('elderly_location_update', handleElderlyLocationUpdate);
+      socket.off('notify', handleNotification);
+    };
+  }, [socket, toast]);
+
+  // Initialize Google Maps
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+      if (!apiKey) {
+        console.error("[Google Maps] No API key found");
+        return;
+      }
+      try {
+        setOptions({ key: apiKey, v: "weekly", libraries: ["maps", "marker"] });
+        await importLibrary("maps");
+        await importLibrary("marker");
+        if (cancelled) return;
+        setGoogleLoaded(true);
+      } catch (err) {
+        console.error("Failed to load Google Maps API", err);
+      }
+    };
+    init();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch active trips when component mounts or when linkedElderly changes
+  useEffect(() => {
+    if (linkedElderly.length > 0) {
+      fetchActiveTrips();
+    }
+  }, [linkedElderly]);
+
+  const fetchActiveTrips = async () => {
+    try {
+      const response = await axios.get('/caregiver/active-trips');
+      setActiveTrips(response.data.success ? response.data.data : []);
+    } catch (error) {
+      console.error('Error fetching active trips:', error);
+    }
+  };
+
+  const handleLocationUpdate = (location: any) => {
+    // Update the elderly locations when received from map component
+    setElderlyLocations(prev => {
+      const newMap = new Map(prev);
+      newMap.set(location.elderlyId, location);
+      return newMap;
+    });
+  };
 
   const fetchCaregiverProfile = async () => {
     try {
@@ -348,33 +477,49 @@ export default function CaregiverUI() {
                 }`}
                 onClick={() => setSelectedElderly(elderly)}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                      {elderly.full_name?.[0]?.toUpperCase() || "E"}
-                    </div>
-                    <div>
-                      <div className="font-semibold">{elderly.full_name}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-                        {elderly.phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {elderly.phone}
-                          </span>
-                        )}
-                        {elderly.email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {elderly.email}
-                          </span>
-                        )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold">
+                        {elderly.full_name?.[0]?.toUpperCase() || "E"}
+                      </div>
+                      <div>
+                        <div className="font-semibold">{elderly.full_name}</div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
+                          {elderly.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {elderly.phone}
+                            </span>
+                          )}
+                          {elderly.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {elderly.email}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      {selectedElderly?.user_id === elderly.user_id && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTab("live");
+                            }}
+                            className="gap-1"
+                          >
+                            <Radio className="h-3 w-3" />
+                            Track Live
+                          </Button>
+                          <Badge variant="default">Selected</Badge>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  {selectedElderly?.user_id === elderly.user_id && (
-                    <Badge variant="default">Selected</Badge>
-                  )}
-                </div>
               </div>
             ))}
           </div>
@@ -425,6 +570,199 @@ export default function CaregiverUI() {
     </div>
   );
 
+  /* -------------------- Google Maps Functions -------------------- */
+  const initializeMap = (container: HTMLElement) => {
+    if (!googleLoaded || map) return;
+    
+    const google = (window as any).google as typeof window.google;
+    const mapInstance = new google.maps.Map(container, {
+      center: { lat: 1.3521, lng: 103.8198 }, // Singapore center
+      zoom: 11,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }]
+        }
+      ]
+    });
+    
+    setMap(mapInstance);
+  };
+
+  const updateElderlyMarkers = () => {
+    if (!map || !googleLoaded) return;
+    
+    const google = (window as any).google as typeof window.google;
+    
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    const newMarkers = new Map<string, google.maps.Marker>();
+    
+    // If we're on the live tracking tab, only show the selected elderly
+    if (activeTab === "live") {
+      if (!selectedElderly) return; // No markers if no elderly selected
+      
+      const location = elderlyLocations.get(selectedElderly.user_id);
+      if (!location || !location.lat || !location.lng) return;
+      
+      const marker = new google.maps.Marker({
+        position: { lat: location.lat, lng: location.lng },
+        map: map,
+        title: selectedElderly.full_name,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="16" r="12" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/>
+              <circle cx="16" cy="16" r="4" fill="#ffffff"/>
+            </svg>
+          `),
+          scaledSize: new google.maps.Size(32, 32),
+          anchor: new google.maps.Point(16, 16),
+        }
+      });
+      
+      // Add info window for selected elderly
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <h3 style="margin: 0 0 4px 0; font-weight: bold;">${selectedElderly.full_name}</h3>
+            <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
+            ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
+          </div>
+        `
+      });
+      
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+      });
+      
+      newMarkers.set(selectedElderly.user_id, marker);
+      
+      // Center map on the selected elderly
+      map.setCenter({ lat: location.lat, lng: location.lng });
+      map.setZoom(15);
+      
+    } else {
+      // For other tabs (dashboard), show all linked elderly with locations
+      elderlyLocations.forEach((location, userId) => {
+        const elderlyUser = linkedElderly.find(user => user.user_id === userId);
+        if (!elderlyUser || !location.lat || !location.lng) return;
+        
+        const marker = new google.maps.Marker({
+          position: { lat: location.lat, lng: location.lng },
+          map: map,
+          title: elderlyUser.full_name,
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="12" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/>
+                <circle cx="16" cy="16" r="4" fill="#ffffff"/>
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(32, 32),
+            anchor: new google.maps.Point(16, 16),
+          }
+        });
+        
+        // Add info window
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <h3 style="margin: 0 0 4px 0; font-weight: bold;">${elderlyUser.full_name}</h3>
+              <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
+              ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
+            </div>
+          `
+        });
+        
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+        });
+        
+        newMarkers.set(userId, marker);
+      });
+      
+      // Center map on selected elderly if available (for dashboard tab)
+      if (selectedElderly && elderlyLocations.has(selectedElderly.user_id)) {
+        const location = elderlyLocations.get(selectedElderly.user_id);
+        map.setCenter({ lat: location.lat, lng: location.lng });
+        map.setZoom(15);
+      }
+    }
+    
+    setMarkers(newMarkers);
+  };
+
+  const updateRouteDisplay = async () => {
+    if (!map || !googleLoaded) return;
+    
+    const google = (window as any).google as typeof window.google;
+    
+    // Clear existing directions
+    if (directionsRenderer) {
+      directionsRenderer.setMap(null);
+    }
+    
+    // Only show route on live tracking tab for selected elderly
+    if (activeTab !== "live" || !selectedElderly) return;
+    
+    const routeInfo = routeData.get(selectedElderly.user_id);
+    
+    // If we have route information, display the route
+    if (routeInfo && routeInfo.origin && routeInfo.destination) {
+      const directionsService = new google.maps.DirectionsService();
+      const renderer = new google.maps.DirectionsRenderer({
+        suppressMarkers: false, // Show default origin/destination markers
+        polylineOptions: {
+          strokeColor: '#059669', // Green route line
+          strokeWeight: 4,
+          strokeOpacity: 0.8,
+        }
+      });
+      
+      try {
+        const result = await directionsService.route({
+          origin: routeInfo.origin,
+          destination: routeInfo.destination,
+          travelMode: google.maps.TravelMode.WALKING, // Default to walking for elderly
+        });
+        
+        renderer.setDirections(result);
+        renderer.setMap(map);
+        setDirectionsRenderer(renderer);
+        
+        // Fit map to show entire route
+        const bounds = new google.maps.LatLngBounds();
+        result.routes[0].legs.forEach(leg => {
+          bounds.extend(leg.start_location);
+          bounds.extend(leg.end_location);
+        });
+        
+        // Also include current elderly location in bounds
+        const currentLocation = elderlyLocations.get(selectedElderly.user_id);
+        if (currentLocation) {
+          bounds.extend({ lat: currentLocation.lat, lng: currentLocation.lng });
+        }
+        
+        map.fitBounds(bounds);
+        
+      } catch (error) {
+        console.error('Error displaying route:', error);
+      }
+    }
+  };
+
+  // Update markers when locations change
+  useEffect(() => {
+    updateElderlyMarkers();
+  }, [elderlyLocations, map, googleLoaded, linkedElderly, selectedElderly, activeTab]);
+
+  // Update route display when route data changes
+  useEffect(() => {
+    updateRouteDisplay();
+  }, [routeData, map, googleLoaded, selectedElderly, activeTab]);
+
   /* -------------------- Render: Live Tracking Tab -------------------- */
   const renderLiveTracking = () => (
     <div className="space-y-6 pb-24">
@@ -433,7 +771,29 @@ export default function CaregiverUI() {
           <div className="text-center py-8 text-muted-foreground">
             <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p className="font-medium">No Elderly User Selected</p>
-            <p className="text-sm">Please link and select an elderly user from the Dashboard to view live tracking</p>
+            <p className="text-sm mb-4">To view live tracking, you need to:</p>
+            <div className="text-sm text-left max-w-md mx-auto space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">1</span>
+                <span>Go to the <strong>Dashboard</strong> tab below</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">2</span>
+                <span>Click on any elderly user that you want to track in <strong>"Linked Elderly Users"</strong> section</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">3</span>
+                <span>Click the <strong>"Track Live"</strong> button or return to this <strong>Live</strong> tab</span>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => setActiveTab("dashboard")}
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Go to Dashboard
+            </Button>
           </div>
         </Card>
       ) : (
@@ -564,19 +924,72 @@ export default function CaregiverUI() {
             )}
           </Card>
 
-          {/* Location Map Placeholder */}
+          {/* Live Location Map */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <MapPin className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold">Live Location Map</h3>
+              {elderlyLocations.size > 0 && (
+                <div className="ml-auto flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span>Real-time tracking</span>
+                </div>
+              )}
             </div>
-            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <Radio className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
-                <p className="font-medium">Live Map View</p>
-                <p className="text-sm">Real-time location tracking integration coming soon</p>
+            
+            {!googleLoaded ? (
+              <div className="h-96 bg-muted rounded-lg flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Radio className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
+                  <p className="font-medium">Loading Map...</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div 
+                  id="caregiver-map" 
+                  className="h-96 bg-muted rounded-lg"
+                  ref={(container) => {
+                    if (container && googleLoaded && !map) {
+                      initializeMap(container);
+                    }
+                  }}
+                ></div>
+                
+                {elderlyLocations.size === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No elderly location data available</p>
+                    <p className="text-xs">Location updates will appear here when elderly users are active</p>
+                  </div>
+                )}
+                
+                {elderlyLocations.size > 0 && (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span>Elderly Location</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>Active</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                        <span>In Transit</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span>Help Needed</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
         </>
       )}

@@ -12,4 +12,9 @@ router.patch('/elderly/:elderlyUserId', CaregiverController.updateElderlyProfile
 router.post('/reports', CaregiverController.submitReport);
 router.get('/history/:elderlyUserId', CaregiverController.requestHistory);
 
+// Location tracking routes
+router.get('/elderly/:elderlyUserId/location', CaregiverController.getElderlyLocation);
+router.get('/elderly/:elderlyUserId/location-history', CaregiverController.getElderlyLocationHistory);
+router.get('/active-trips', CaregiverController.getActiveTrips);
+
 module.exports = router;
