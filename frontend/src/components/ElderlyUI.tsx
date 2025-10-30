@@ -817,11 +817,13 @@ export default function ElderlyUI() {
   // Handle language change
   const handleLanguageChange = async (languageCode: string) => {
     try {
+      // Get the language name for display
+      const languageName = languages.find(lang => lang.code === languageCode)?.name || "English";
+      
       // Change the i18n language first
       await i18n.changeLanguage(languageCode);
       
       // Update the profile data state
-      const languageName = languages.find(lang => lang.code === languageCode)?.name || "English";
       setProfileData(prev => ({
         ...prev,
         language: languageName
@@ -832,9 +834,24 @@ export default function ElderlyUI() {
         language: languageCode
       }, { withCredentials: true });
 
+      // Show success message in the NEW language (target language)
+      const successMessages = {
+        'en': `Language changed to ${languageName}`,
+        'zh': `语言已更改为${languageName}`,
+        'ms': `Bahasa ditukar kepada ${languageName}`,
+        'ta': `மொழி ${languageName} ஆக மாற்றப்பட்டது`
+      };
+
+      const successTitles = {
+        'en': 'Success',
+        'zh': '成功',
+        'ms': 'Berjaya',
+        'ta': 'வெற்றி'
+      };
+
       toast({
-        title: t('common.success'),
-        description: t('notifications.languageChanged', { language: languageName }),
+        title: successTitles[languageCode] || successTitles['en'],
+        description: successMessages[languageCode] || successMessages['en'],
       });
     } catch (error) {
       console.error('Error updating language:', error);
