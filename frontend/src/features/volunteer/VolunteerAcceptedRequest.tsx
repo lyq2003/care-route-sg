@@ -11,11 +11,12 @@ import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
 
-export default function AccepetedRequest({ setActiveTab }) {
+export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
     const navigate = useNavigate();
     const [request, setRequests] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+   
 
     // getting user info from getProfile
     //const {profile} = getProfile();
@@ -43,7 +44,7 @@ export default function AccepetedRequest({ setActiveTab }) {
             {params: {requestId, elderlyId}},
             {withCredentials: true,}
             )
-            console.log("response is:",response);
+            
             if (response.data.success) {
                 setActiveTab("dashboard");
         } else {
@@ -56,9 +57,22 @@ export default function AccepetedRequest({ setActiveTab }) {
         }
     };
 
+
     // todo
-    const handleViewRoute = (requestId: number) => {
-        console.log("Viewing route for request:", requestId);
+    const handleViewRoute = (latitude: number, longitude: number) => {
+        if (!location) {
+            alert("Unable to get your current location.");
+            return;
+        }
+
+        console.log(location,latitude,longitude);  // Check if this is correct.
+
+        setSelectedRoute({
+            from: { lat: location.latitude, lng: location.longitude },
+            to: { lat: latitude, lng: longitude },
+        });
+
+        setActiveTab("route");
     };
 
     const fetchAcceptedRequest = async (latitude,longitude) =>{
@@ -85,7 +99,7 @@ export default function AccepetedRequest({ setActiveTab }) {
     }, [location]);
 
     if (error) return <p>Error loading accepted request.</p>;
-    console.log(request);
+
     if (!request) return <p>No accepted request at the moment.</p>;
 
     return (
@@ -131,7 +145,7 @@ export default function AccepetedRequest({ setActiveTab }) {
             </Button>
             <Button
             variant="outline"
-            onClick={() => navigate(`/route/${request[0].id}`)}
+            onClick={() => handleViewRoute(request[0].latitude, request[0].longitude)}
             className="flex-1 text-primary border-primary/50"
             >
             <Navigation className="h-5 w-5 mr-2" />
