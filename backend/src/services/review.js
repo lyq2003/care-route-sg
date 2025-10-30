@@ -68,7 +68,7 @@ class ReviewService {
   async getAllReviewsForAdmin() {
     console.log('getAllReviewsForAdmin: Fetching all reviews for admin...');
     
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('reviews')
       .select(`
         *,

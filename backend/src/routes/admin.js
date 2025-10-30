@@ -14,6 +14,7 @@ const checkAdminRole = (req, res, next) => {
   const userRole = req.user.role || req.user.user_metadata?.role;
   
   console.log('Admin role check:', {
+    
     userId: req.user.id,
     sessionRole: req.user.role,
     metadataRole: req.user.user_metadata?.role,

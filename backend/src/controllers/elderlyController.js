@@ -301,7 +301,7 @@ class ElderlyController {
   static async getLinkedCaregiversForNotification(elderlyId) {
     try {
       const { data: caregivers, error } = await supabase
-        .from('caregiver_links')
+        .from('caregiver_link')
         .select(`
           caregiver_user_id,
           caregiver:user_profiles!caregiver_user_id (

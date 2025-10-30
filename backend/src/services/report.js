@@ -273,7 +273,7 @@ class ReportService {
 
   // Admin-specific method to get all reports with full user details
   async getAllReportsForAdmin() {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('reports')
       .select(`
         *,

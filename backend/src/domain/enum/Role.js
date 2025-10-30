@@ -1,8 +1,8 @@
 const Role = Object.freeze({
-  ELDERLY: "ELDERLY",
-  ADMIN: "ADMIN",
-  VOLUNTEER: "VOLUNTEER",
-  CAREGIVER: "CAREGIVER"
+  ELDERLY: "elderly",
+  ADMIN: "admin",
+  VOLUNTEER: "volunteer",
+  CAREGIVER: "caregiver"
 });
 
 module.exports = Role;

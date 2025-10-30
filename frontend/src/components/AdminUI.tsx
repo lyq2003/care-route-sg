@@ -182,7 +182,7 @@ export default function AdminUI() {
   // Fetch reports
   const fetchReports = async () => {
     try {
-      const response = await axios.get('/api/admin/reports');
+      const response = await axios.get('/admin/reports');
       if (response.data.success) {
         // Transform backend data to match frontend interface
         const transformedReports = response.data.data.reports.map(report => ({
@@ -226,8 +226,8 @@ export default function AdminUI() {
   // Fetch reviews
   const fetchReviews = async () => {
     try {
-      console.log('Fetching reviews from /api/admin/reviews...');
-      const response = await axios.get('/api/admin/reviews');
+      console.log('Fetching reviews from /admin/reviews...');
+      const response = await axios.get('/admin/reviews');
       
       console.log('Reviews response:', response.data);
       
@@ -344,7 +344,7 @@ export default function AdminUI() {
   const handleSuspendUser = async (userId: string, duration: 7 | 30 | 90 = 7) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${userId}/suspend`, {
+      const response = await axios.post(`/admin/users/${userId}/suspend`, {
         duration: duration
       });
       
@@ -391,7 +391,7 @@ export default function AdminUI() {
   const handleDeactivateUser = async (userId: string) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${userId}/deactivate`);
+      const response = await axios.post(`/admin/users/${userId}/deactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
@@ -416,7 +416,7 @@ export default function AdminUI() {
   const handleReactivateUser = async (userId: string) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/api/admin/users/${userId}/reactivate`);
+      const response = await axios.post(`/admin/users/${userId}/reactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
@@ -457,7 +457,7 @@ export default function AdminUI() {
     setIsReviewingReport(true);
     try {
       // Set report status to "In Progress"
-      const response = await axios.post(`/api/admin/reports/${reportId}/start-review`);
+      const response = await axios.post(`/admin/reports/${reportId}/start-review`);
       
       if (response.data.success) {
         // Refresh reports data
@@ -501,8 +501,8 @@ export default function AdminUI() {
     setActionLoading(reportId);
     try {
       const endpoint = action === 'reject' ? 
-        `/api/admin/reports/${reportId}/reject` : 
-        `/api/admin/reports/${reportId}/resolve`;
+        `/admin/reports/${reportId}/reject` : 
+        `/admin/reports/${reportId}/resolve`;
       
       const response = await axios.post(endpoint, {
         action: action !== 'reject' ? action : undefined,
@@ -546,7 +546,7 @@ export default function AdminUI() {
     
     setActionLoading(reviewId);
     try {
-      const response = await axios.delete(`/api/admin/reviews/${reviewId}`, {
+      const response = await axios.delete(`/admin/reviews/${reviewId}`, {
         data: { reason: 'Review removed for policy violation' }
       });
       

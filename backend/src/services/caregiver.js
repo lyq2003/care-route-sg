@@ -35,7 +35,7 @@ const CaregiverServices = {
     const caregiverName = caregiverProfile?.full_name || caregiverProfile?.username || 'Your caregiver';
 
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .upsert(
         { caregiver_user_id: caregiverUserId, elderly_user_id: elderlyProfile.user_id },
         { onConflict: 'caregiver_user_id,elderly_user_id' }
@@ -72,9 +72,10 @@ const CaregiverServices = {
     return link;
   },
 
+  // issue here
   async getLinkedElderly(caregiverUserId) {
     const { data, error } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .select('elderly:user_profiles (user_id, full_name, email, phone, avatar_url, mobility_preference)')
       .eq('caregiver_user_id', caregiverUserId);
     if (error) throw error;
@@ -85,7 +86,7 @@ const CaregiverServices = {
     const { linkedElderlyUserId, reportedVolunteerUserId, reasons = [], description = null } = payload;
 
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .select('elderly_user_id')
       .eq('caregiver_user_id', caregiverUserId)
       .eq('elderly_user_id', linkedElderlyUserId)
@@ -109,7 +110,7 @@ const CaregiverServices = {
 
   async getRequestHistory(caregiverUserId, elderlyUserId, { limit = 20, offset = 0 } = {}) {
     const { data: link, error: linkErr } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .select('elderly_user_id')
       .eq('caregiver_user_id', caregiverUserId)
       .eq('elderly_user_id', elderlyUserId)
