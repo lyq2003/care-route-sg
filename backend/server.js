@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session configuration (espress-session)
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
