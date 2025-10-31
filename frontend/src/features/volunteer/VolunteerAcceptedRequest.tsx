@@ -10,8 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
-import SubmitReviewModal from "../moderation/SubmitReviewModal";
-import SubmitReportModal from "../moderation/SubmitReportModal";
+import SubmitReviewModal from "@/features/moderation/SubmitReviewModal";
+import SubmitReportModal from "@/features/moderation/SubmitReportModal";
 
 export default function AccepetedRequest({ setActiveTab }) {
     const navigate = useNavigate();
