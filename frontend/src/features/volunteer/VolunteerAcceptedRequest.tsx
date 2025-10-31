@@ -10,13 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
+import SubmitReviewModal from "@/features/moderation/SubmitReviewModal";
+import SubmitReportModal from "@/features/moderation/SubmitReportModal";
 
 export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
     const navigate = useNavigate();
     const [request, setRequests] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-   
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     // getting user info from getProfile
     //const {profile} = getProfile();
@@ -152,6 +155,36 @@ export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
             View Route
             </Button>
         </div>
+        {request && request[0] && (
+            <div className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setIsReviewOpen(true)}
+                >
+                  Leave Review
+                </Button>
+
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => setIsReportOpen(true)}
+                >
+                  Report User
+                </Button>
+            </div>
+        )}
+        <SubmitReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          recipientUserId={request && request[0] ? request[0].requesterid : null}
+          helpRequestId={request && request[0] ? request[0].id : null}
+        />
+
+        <SubmitReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={request && request[0] ? request[0].requesterid : null}
+          helpRequestId={request && request[0] ? request[0].id : null}
+        />
         </Card>
     );
 }

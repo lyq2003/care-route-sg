@@ -40,12 +40,16 @@ import {
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import RouteTracking from "./RouteTracking";
+import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
+import SubmitReportModal from "../features/moderation/SubmitReportModal";
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState("home");
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
     location: "",
     description: "",
@@ -768,6 +772,10 @@ export default function ElderlyUI() {
     status: "On the way"
   };
 
+  // Placeholder IDs for demo purposes
+  const matchedVolunteerId = "demo-volunteer-001";
+  const helpRequestId = "demo-help-001";
+
   const defaultRouteResults = [
     {
       id: 1,
@@ -1306,9 +1314,23 @@ export default function ElderlyUI() {
                     </Button>
                   </div>
 
-                  <Button variant="secondary" size="lg" className="w-full mt-4">
-                    {t('help.reviewVolunteer')}
-                  </Button>
+                  <div className="flex justify-end gap-3 mt-4">
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => setIsReviewOpen(true)}
+                    >
+                      Review Volunteer
+                    </Button>
+
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => setIsReportOpen(true)}
+                    >
+                      Report Volunteer
+                    </Button>
+                  </div>
                 </Card>
 
                 <Button 
@@ -1744,6 +1766,19 @@ export default function ElderlyUI() {
       {/* Main Content */}
       <div className="px-6 py-8 pb-24">
         {renderTabContent()}
+        <SubmitReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          recipientUserId={matchedVolunteerId}
+          helpRequestId={helpRequestId}
+        />
+
+        <SubmitReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={matchedVolunteerId}
+          helpRequestId={helpRequestId}
+        />
       </div>
 
       {/* Bottom Navigation */}
