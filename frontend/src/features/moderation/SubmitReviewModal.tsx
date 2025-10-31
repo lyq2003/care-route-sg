@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubmitReviewModalProps {
   isOpen: boolean;
@@ -13,20 +14,33 @@ interface SubmitReviewModalProps {
 
 const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, recipientUserId, helpRequestId }) => {
   const [rating, setRating] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [text, setText] = useState<string>("");
+  const { toast } = useToast();
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
     if (!rating || rating < 1 || rating > 5) {
-      alert("Please select a rating from 1 to 5.");
+      toast({
+        title: "Rating required",
+        description: "Please select a rating from 1 to 5 stars.",
+        variant: "destructive",
+      });
       return;
     }
-    // Demo-only: log and alert
+    // Demo-only: log
     // eslint-disable-next-line no-console
     console.log("Submitting review", { recipientUserId, helpRequestId, rating, text });
-    alert("Review submitted!");
+    toast({
+      title: "Review submitted!",
+      description: "Thank you for your feedback.",
+    });
     onClose();
+    // Reset form
+    setRating(null);
+    setHoveredRating(null);
+    setText("");
   };
 
   const infoMissing = !recipientUserId || !helpRequestId;
@@ -49,22 +63,38 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, 
 
         <div className="space-y-4 mt-2">
           <div>
-            <label className="block text-sm font-medium mb-2">Rating</label>
-            <div className="flex items-center gap-2">
-              {[1,2,3,4,5].map((value) => {
-                const filled = (rating ?? 0) >= value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setRating(value)}
-                    className="p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
-                    aria-label={`Rate ${value} star${value>1?"s":""}`}
-                  >
-                    <Star className={`h-6 w-6 ${filled ? "text-warning fill-current" : "text-muted-foreground"}`} />
-                  </button>
-                );
-              })}
+            <label className="block text-sm font-medium mb-3">Rating</label>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map((value) => {
+                  const displayRating = hoveredRating ?? rating ?? 0;
+                  const filled = displayRating >= value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      onMouseEnter={() => setHoveredRating(value)}
+                      onMouseLeave={() => setHoveredRating(null)}
+                      className="p-1 rounded-md transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring"
+                      aria-label={`Rate ${value} star${value>1?"s":""}`}
+                    >
+                      <Star 
+                        className={`h-8 w-8 transition-colors ${
+                          filled 
+                            ? "text-yellow-500 fill-yellow-500" 
+                            : "text-muted-foreground/40"
+                        }`} 
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {(rating || hoveredRating) && (
+                <p className="text-sm text-muted-foreground">
+                  {hoveredRating ?? rating} / 5 stars
+                </p>
+              )}
             </div>
           </div>
 
