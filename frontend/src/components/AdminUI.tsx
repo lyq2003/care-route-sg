@@ -120,7 +120,7 @@ export default function AdminUI() {
   const fetchStats = async () => {
     try {
       // Fetch all users first
-      const response = await axios.get('/users/');
+      const response = await axiosInstance.get('/users/');
       if (response.data) {
         const allUsers = response.data;
         
@@ -161,7 +161,7 @@ export default function AdminUI() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/users/');
+      const response = await axiosInstance.get('/users/');
       if (response.data) {
         // Transform the user data to match our interface
         const transformedUsers = response.data.map(user => ({
@@ -322,7 +322,7 @@ export default function AdminUI() {
   const handleSuspendUser = async (userId: string, duration: 7 | 30 | 90 = 7) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/admin/users/${userId}/suspend`, {
+      const response = await axiosInstance.post(`/admin/users/${userId}/suspend`, {
         duration: duration
       });
       
@@ -369,7 +369,7 @@ export default function AdminUI() {
   const handleDeactivateUser = async (userId: string) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/admin/users/${userId}/deactivate`);
+      const response = await axiosInstance.post(`/admin/users/${userId}/deactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
