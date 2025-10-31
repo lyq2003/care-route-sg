@@ -60,15 +60,18 @@ useEffect(() => {
 
   console.log("user data is:", userProfile.data.profile);
 
-  const p = userProfile.data.profile;
+  const p = userProfile.data.profile[0];
+
+  console.log("P is:", p);
   setVolunteerData({
     name: p.username || "Unknown Volunteer",
     phoneNumber: p.phone_number ?? "Unknown number",
     isVerified: p.isVerified ?? false,
     totalHelped: p.requests || 0,
-    averageRating: p.rating || 0,
+    averageRating: p.rating || "NaN",
     reviewCount: p.review_count || 0
   });
+
 }, [userProfile]);
 
 
@@ -232,7 +235,7 @@ useEffect(() => {
                     </div>
                     <span className="text-lg font-medium text-muted-foreground">Average Rating</span>
                   </div>
-                  <span className="text-3xl font-bold text-foreground">{volunteerData.averageRating}/5.0</span>
+                  <span className="text-3xl font-bold text-foreground">{volunteerData.averageRating}/5</span>
                 </div>
               </Card>
             </div>
