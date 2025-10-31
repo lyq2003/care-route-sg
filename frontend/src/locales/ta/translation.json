@@ -18,7 +18,8 @@
     "refresh": "புதுப்பிக்க",
     "clear": "அழிக்க",
     "submit": "சமர்பிக்க",
-    "repeat": "மீண்டும்"
+    "repeat": "மீண்டும்",
+    "chas": "CHAS கிளினிக்"
   },
   "home": {
     "welcome": "வணக்கம், {{name}}!",
@@ -47,6 +48,7 @@
     "personalInformation": "தனிப்பட்ட தகவல்",
     "fullName": "முழு பெயர்",
     "emailAddress": "மின்னஞ்சல் முகவரி",
+    "phoneNumber": "தொலைபேசி எண்",
     "caregiverLinkingPin": "பராமரிப்பாளர் இணைப்பு பின்",
     "sharePinWithCaregivers": "கணக்குகளை இணைக்க உங்கள் பராமரிப்பாளர்களுடன் இந்த பின்னை பகிரவும்",
     "accessibilityPreferences": "அணுகல் மற்றும் விருப்பங்கள்",

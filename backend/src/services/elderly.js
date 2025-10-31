@@ -131,8 +131,8 @@ const ElderlyServices = {
       .from("help_request")
       .select(`id, description, createdAt, help_request_status (statusName), help_request_assignedVolunteerId_fkey (user_id, username, phone_number)`)
       .eq("requesterId", elderlyID)
-      .neq("helpRequestStatus", 1)
-      .not("assignedVolunteerId", "is", null);;
+      //.neq("helpRequestStatus", 1)
+      //.not("assignedVolunteerId", "is", null);;
 
     if (error) {
       throw error

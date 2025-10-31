@@ -13,7 +13,7 @@ const ElderlyController = require('../controllers/elderlyController');
 // Create uploads folder if it doesn't exist
 const uploadPath = path.join(__dirname, "../services/uploads");
 if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
+    fs.mkdirSync(uploadPath, { recursive: true });
 }
 
 var storage = multer.diskStorage({
@@ -50,7 +50,7 @@ router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) =>
 
     try {
         var userID = req.params.userID;
-        
+
         const result = await HelpRequest.getCompletedHelpRequestswithVolunteer(userID);
 
         console.log(result);
@@ -70,7 +70,7 @@ router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) =>
 
 
 // POST /api/elderly/requestHelp - Create new help request
-router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (req, res) => {
+router.post('/requestHelp', upload.single('image'), requireAuth, async (req, res) => {
 
     try {
         var userID = req.body.userID;
@@ -85,12 +85,7 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
             var uploadedFilename = null;
         }
 
-
-        // TODO: convert location to longitude and latitude
-
-
-
-        const result = await HelpRequest.createRequest(userID, longitude, latitude, address, description, urgency,uploadedFilename);
+        const result = await HelpRequest.createRequest(userID, longitude, latitude, address, description, urgency, uploadedFilename);
 
         console.log(result);
 
@@ -109,17 +104,42 @@ router.post('/requestHelp', upload.single('image'),/*  requireAuth, */ async (re
 
 });
 
+
+router.post('/endRequest', requireAuth, async (req, res) => {
+
+    try {
+
+        var helpRequestId = req.body.helpRequestId;
+
+
+        const result = await HelpRequest.endHelpRequest(helpRequestId);
+
+        res.json({
+            message: 'Successfully ended help request',
+            result: result
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        console.error('Error creating help request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+
+    }
+
+});
+
 // Route history endpoints
 router.post('/route-history', requireAuth, async (req, res) => {
     try {
-        const { 
-            from, 
-            to, 
-            mode, 
-            duration, 
-            accessibility, 
-            completedAt, 
-            steps, 
+        const {
+            from,
+            to,
+            mode,
+            duration,
+            accessibility,
+            completedAt,
+            steps,
             isRecommended,
             userLocation,
             locationPermission
@@ -128,8 +148,8 @@ router.post('/route-history', requireAuth, async (req, res) => {
 
         // Validate required fields
         if (!from || !to || !mode || !duration) {
-            return res.status(400).json({ 
-                error: 'Missing required fields: from, to, mode, duration are required' 
+            return res.status(400).json({
+                error: 'Missing required fields: from, to, mode, duration are required'
             });
         }
 
@@ -151,17 +171,17 @@ router.post('/route-history', requireAuth, async (req, res) => {
 
         // Save to Supabase
         const savedRoute = await RouteHistoryService.saveRouteHistory(routeHistoryData);
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             message: 'Route history saved successfully',
             routeHistory: savedRoute
         });
 
     } catch (error) {
         console.error('Error saving route history:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Internal server error',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -174,7 +194,7 @@ router.get('/route-history', requireAuth, async (req, res) => {
 
         // Fetch from Supabase
         const routeHistory = await RouteHistoryService.getRouteHistory(userId, limit, offset);
-        
+
         // Transform data to match frontend expectations
         const transformedHistory = routeHistory.map(route => ({
             id: route.id,
@@ -188,16 +208,16 @@ router.get('/route-history', requireAuth, async (req, res) => {
             isRecommended: route.is_recommended
         }));
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: 'Route history retrieved successfully',
-            history: transformedHistory 
+            history: transformedHistory
         });
 
     } catch (error) {
         console.error('Error fetching route history:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Internal server error',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -213,22 +233,22 @@ router.delete('/route-history/:routeId', requireAuth, async (req, res) => {
         }
 
         const success = await RouteHistoryService.deleteRouteHistory(routeId, userId);
-        
+
         if (success) {
-            res.status(200).json({ 
-                message: 'Route deleted successfully' 
+            res.status(200).json({
+                message: 'Route deleted successfully'
             });
         } else {
-            res.status(404).json({ 
-                error: 'Route not found or access denied' 
+            res.status(404).json({
+                error: 'Route not found or access denied'
             });
         }
 
     } catch (error) {
         console.error('Error deleting route history:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Internal server error',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -239,17 +259,17 @@ router.get('/route-history/stats', requireAuth, async (req, res) => {
         const userId = req.user.id;
 
         const stats = await RouteHistoryService.getRouteStatistics(userId);
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             message: 'Route statistics retrieved successfully',
-            statistics: stats 
+            statistics: stats
         });
 
     } catch (error) {
         console.error('Error fetching route statistics:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Internal server error',
-            details: error.message 
+            details: error.message
         });
     }
 });

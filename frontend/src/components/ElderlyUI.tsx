@@ -36,7 +36,9 @@ import {
   Accessibility,
   Car,
   Bike,
-  Flag
+  Flag,
+  Check,
+  Hospital
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
@@ -55,6 +57,9 @@ export default function ElderlyUI() {
 
     if (newTab == "help") {
       navigate('/request_help');
+
+    } else if (newTab == "chas") {
+      navigate('/chasLocation');
 
     }
 
@@ -120,6 +125,7 @@ export default function ElderlyUI() {
   const [profileData, setProfileData] = useState({
     fullName: "",
     email: "",
+    phoneNumber: "",
     language: "English",
     accessibilityNeeds: {
       wheelchair: false,
@@ -188,6 +194,7 @@ export default function ElderlyUI() {
         setProfileData({
           fullName: data.username || "",
           email: data.email || "",
+          phoneNumber: data.phone_number,
           language: currentLanguageName,
           accessibilityNeeds: {
             wheelchair: userAssessibilityNeeds.wheelchair,
@@ -312,16 +319,30 @@ export default function ElderlyUI() {
 
       for (let i = 0; i < data.length; i++) {
 
-        var activityObj = {
-          "id": data[i].id,
-          "type": "help_request",
-          "description": data[i].description,
-          "status": data[i].help_request_status.statusName,
-          "time": data[i].createdAt,
-          "volunteer": data[i].help_request_assignedVolunteerId_fkey.username,
-          "volunteerID": data[i].help_request_assignedVolunteerId_fkey.user_id,
-          "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number
+
+        var activityObj = null;
+
+        if (data[i].help_request_assignedVolunteerId_fkey) {
+          activityObj = {
+            "id": data[i].id,
+            "type": "help_request",
+            "description": data[i].description,
+            "status": data[i].help_request_status.statusName,
+            "time": data[i].createdAt,
+            "volunteer": data[i].help_request_assignedVolunteerId_fkey.username,
+            "volunteerID": data[i].help_request_assignedVolunteerId_fkey.user_id,
+            "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number
+          }
+        } else {
+          activityObj = {
+            "id": data[i].id,
+            "type": "help_request",
+            "description": data[i].description,
+            "status": data[i].help_request_status.statusName,
+            "time": data[i].createdAt,
+          }
         }
+
 
         tempRecentActivityArr.push(activityObj);
 
@@ -852,6 +873,25 @@ export default function ElderlyUI() {
     }
   };
 
+  const handleEndHelpRequest = async (helpRequestId) => {
+
+    try {
+
+      const response = await axiosInstance.post('/elderly/endRequest', {
+        helpRequestId: helpRequestId
+      }, { withCredentials: true });
+
+      console.log(response);
+
+      location.reload()
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
 
   const handleAddReview = (helpRequestID, volunteerID) => {
     navigate('/add_review', {
@@ -860,6 +900,11 @@ export default function ElderlyUI() {
         volunteerID: volunteerID
       }
     });
+  }
+
+
+  const handleAddReport = (helpRequestID, volunteerID) => {
+    // Use report modal
   }
 
   // Load Google Maps JS API and attach Places Autocomplete to inputs
@@ -971,6 +1016,27 @@ export default function ElderlyUI() {
   ];
 
 
+
+
+  const handleUpdatePersonalInformation = async () => {
+    try {
+
+      const response = await axiosInstance.put('/users/updatePersonalInfo', {
+        name: profileData.fullName,
+        phone_number: profileData.phoneNumber
+      }, { withCredentials: true });
+
+      //console.log(response);
+
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+  }
+
+
   const handleUserAccessibilityNeedChange = async (need, currentValue) => {
 
     // Update in backend
@@ -992,9 +1058,8 @@ export default function ElderlyUI() {
 
     }
 
-
-
   }
+
 
   // Handle language change
   const handleLanguageChange = async (languageCode: string) => {
@@ -1344,11 +1409,18 @@ export default function ElderlyUI() {
                       </div>
 
                       {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
-                        <div className="flex gap-2 mt-3">
-                          <p className="text-sm mt-1">
-                            Phone Number: {activity.phone_number}
-                          </p>
+                        <div>
+                          <div className="flex gap-2 mt-3">
+                            <p className="text-sm mt-1">
+                              Phone Number: {activity.phone_number}
+                            </p>
+                          </div>
 
+                          <div className="flex gap-2 mt-3">
+                            <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleEndHelpRequest(activity.id)}>
+                              End
+                            </Button>
+                          </div>
                         </div>
                       )}
 
@@ -1358,7 +1430,7 @@ export default function ElderlyUI() {
                             <Star className="h-4 w-4" />
                             Review
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleAddReport(activity.id, activity.volunteerID)}>
                             <Flag className="h-4 w-4" />
                             Report
                           </Button>
@@ -1837,14 +1909,14 @@ export default function ElderlyUI() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-lg font-medium">
-                    {t('profile.emailAddress')}
+                  <Label htmlFor="phoneNumber" className="text-lg font-medium">
+                    {t('profile.phoneNumber')}
                   </Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    id="phoneNumber"
+                    type="tel"
+                    value={profileData.phoneNumber}
+                    onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
                     className="h-12 text-lg"
                   />
                 </div>
@@ -1893,33 +1965,6 @@ export default function ElderlyUI() {
                   </div>
                 </div>
 
-                {/* Accessibility Needs */}
-                {/* <div className="space-y-3">
-                  <Label className="text-lg font-medium">{t('profile.accessibilityNeeds')}</Label>
-                  <div className="space-y-3">
-                    {accessibilityOptions.map((option) => {
-                      const Icon = option.icon;
-
-                      return (
-                        <Card
-                          key={option.key}
-                          className={`p-4 cursor-pointer transition-all border-2 ${profileData.accessibilityNeeds[option.key]
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
-                            }`}
-                          onClick={() => handleUserAccessibilityNeedChange(option.key)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-6 w-6 text-primary" />
-                            <span className="text-lg font-medium">{option.label}</span>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div> */}
-
-
                 <div className="space-y-3">
                   <Label className="text-lg font-medium">{t('profile.accessibilityNeeds')}</Label>
                   <div className="grid grid-cols-1 gap-3">
@@ -1946,7 +1991,7 @@ export default function ElderlyUI() {
               </div>
             </Card>
 
-            <Button size="xl" className="w-full">
+            <Button size="xl" className="w-full" onClick={handleUpdatePersonalInformation}>
               <Edit3 className="h-6 w-6" />
               {t('profile.saveSettings')}
             </Button>
@@ -2005,6 +2050,7 @@ export default function ElderlyUI() {
             { id: "home", icon: Home, label: t('common.home') },
             { id: "help", icon: HelpCircle, label: t('common.help') },
             { id: "routes", icon: MapPin, label: t('common.routes') },
+            { id: "chas", icon: Hospital, label: t('common.chas') },
             { id: "reviews", icon: Star, label: t('common.reviews') },
             { id: "profile", icon: User, label: t('common.profile') },
           ].map((tab) => (
