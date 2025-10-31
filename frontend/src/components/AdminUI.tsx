@@ -394,7 +394,7 @@ export default function AdminUI() {
   const handleReactivateUser = async (userId: string) => {
     setActionLoading(userId);
     try {
-      const response = await axiosInstance.post(`/admin/users/${userId}/reactivate`);
+      const response = await axios.post(`/admin/users/${userId}/reactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
@@ -435,7 +435,7 @@ export default function AdminUI() {
     setIsReviewingReport(true);
     try {
       // Set report status to "In Progress"
-      const response = await axiosInstance.post(`/admin/reports/${reportId}/start-review`);
+      const response = await axios.post(`/admin/reports/${reportId}/start-review`);
       
       if (response.data.success) {
         // Refresh reports data
@@ -482,7 +482,7 @@ export default function AdminUI() {
         `/admin/reports/${reportId}/reject` : 
         `/admin/reports/${reportId}/resolve`;
       
-      const response = await axiosInstance.post(endpoint, {
+      const response = await axios.post(endpoint, {
         action: action !== 'reject' ? action : undefined,
         reason: `Admin action: ${action}${duration && action === 'suspend' ? ` for ${duration} days` : ''}`,
         duration: action === 'suspend' ? duration : undefined
@@ -1027,7 +1027,7 @@ export default function AdminUI() {
                               onClick={async () => {
                                 setActionLoading(report.id);
                                 try {
-                                  const response = await axiosInstance.post(`/admin/reports/${report.id}/resolve`, {
+                                  const response = await axios.post(`/admin/reports/${report.id}/resolve`, {
                                     note: 'Report resolved by admin'
                                   });
                                   if (response.data.success) {
@@ -1058,7 +1058,7 @@ export default function AdminUI() {
                               onClick={async () => {
                                 setActionLoading(report.id);
                                 try {
-                                  const response = await axiosInstance.post(`/admin/reports/${report.id}/reject`, {
+                                  const response = await axios.post(`/admin/reports/${report.id}/reject`, {
                                     note: 'Report rejected by admin'
                                   });
                                   if (response.data.success) {
@@ -1160,7 +1160,7 @@ export default function AdminUI() {
             className="gap-2"
             onClick={async () => {
               try {
-                await axiosInstance.post('/auth/logout', {}, {
+                await axios.post('/auth/logout', {}, {
                   withCredentials: true,
                 });
                 window.location.href = '/login';
