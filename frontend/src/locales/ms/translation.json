@@ -45,6 +45,7 @@
     "planSmartRoute": "Rancang Laluan Pintar",
     "recentRoutes": "Laluan Terkini",
     "recentActivity": "Aktiviti Terkini",
+    "noRecentActivity": "Tiada Aktiviti Terkini",
     "noRecentRoutes": "Tiada laluan terkini dijumpai",
     "completeRouteToSee": "Lengkapkan laluan untuk melihatnya di sini",
     "loadingRouteHistory": "Memuatkan sejarah laluan...",

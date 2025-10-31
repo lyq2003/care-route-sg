@@ -32,6 +32,7 @@
     "planSmartRoute": "புத்திசாலி பாதை திட்டமிடுங்கள்",
     "recentRoutes": "சமீபத்திய பாதைகள்",
     "recentActivity": "சமீபத்திய செயல்பாடு",
+    "noRecentActivity": "சமீபத்திய செயல்பாடு இல்லை",
     "noRecentRoutes": "சமீபத்திய பாதைகள் எதுவும் கிடைக்கவில்லை",
     "completeRouteToSee": "இங்கே பார்க்க ஒரு பாதையை முடிக்கவும்",
     "loadingRouteHistory": "பாதை வரலாறு ஏற்றுகிறது...",

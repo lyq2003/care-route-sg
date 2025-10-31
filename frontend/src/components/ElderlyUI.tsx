@@ -83,6 +83,7 @@ export default function ElderlyUI() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([/* 
     {
       id: 1,
@@ -148,11 +149,14 @@ export default function ElderlyUI() {
     }
   };
   useEffect(() => {
+
     const fetchProfile = async () => {
       try {
         const response = await axiosInstance.get('/profile/getId',
           { withCredentials: true }
         );
+
+
         const data = response.data.profile;
 
         // Determine current language code
@@ -173,18 +177,26 @@ export default function ElderlyUI() {
           }
         }
 
+
+        var userAssessibilityNeeds = data.user_accessibility_needs[0]
+
+
         setProfileData({
           fullName: data.username || "",
           email: data.email || "",
           language: currentLanguageName,
           accessibilityNeeds: {
-            wheelchair: data.accessibilityNeeds?.wheelchair || false,
-            visual: data.accessibilityNeeds?.visual || false,
-            hearing: data.accessibilityNeeds?.hearing || false,
-            mobility: data.accessibilityNeeds?.mobility || true,  // Default to true if not available
-            cognitive: data.accessibilityNeeds?.cognitive || false
+            wheelchair: userAssessibilityNeeds.wheelchair,
+            visual: userAssessibilityNeeds.visual,
+            hearing: userAssessibilityNeeds.hearing,
+            mobility: userAssessibilityNeeds.mobility,
+            cognitive: userAssessibilityNeeds.cognitive
           }
         });
+
+
+
+
 
         // Set i18n language
         i18n.changeLanguage(currentLanguageCode);
@@ -241,6 +253,17 @@ export default function ElderlyUI() {
   };
 
 
+  const formatDate = (dateString) => {
+    const options: Intl.DateTimeFormatOptions = {
+      /* weekday: "long", */
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options)
+  }
+
+
   const fetchLinkingPin = async () => {
     console.log("Fetching linking pin");
 
@@ -292,6 +315,7 @@ export default function ElderlyUI() {
           "status": data[i].help_request_status.statusName,
           "time": data[i].createdAt,
           "volunteer": data[i].help_request_assignedVolunteerId_fkey.username,
+          "volunteerID": data[i].help_request_assignedVolunteerId_fkey.user_id,
           "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number
         }
 
@@ -301,9 +325,45 @@ export default function ElderlyUI() {
 
       setRecentActivity(tempRecentActivityArr);
 
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+
+  const fetchReviews = async () => {
+    console.log("fetchReviews");
+
+    try {
+
+      const response = await axiosInstance.get('/reviews/me/');
+
+      var data = response.data.data;
+
+      //console.log(data);
 
 
 
+
+      var tempReviewsArr = [];
+
+      for (let i = 0; i < data.length; i++) {
+
+        var reviewObj = {
+          "id": data[i].id,
+          "volunteer": data[i].reviews_recipient_user_id_fkey1.username,
+          "date": data[i].created_at,
+          "rating": data[i].rating,
+          "comment": data[i].text
+        }
+
+        tempReviewsArr.push(reviewObj);
+
+      }
+
+
+      setReviews(tempReviewsArr);
 
     } catch (error) {
       console.error('Error details:', error);
@@ -789,10 +849,11 @@ export default function ElderlyUI() {
   };
 
 
-  const handleAddReview = (helpRequestID) => {
+  const handleAddReview = (helpRequestID, volunteerID) => {
     navigate('/add_review', {
       state: {
-        helpRequestID: helpRequestID
+        helpRequestID: helpRequestID,
+        volunteerID: volunteerID
       }
     });
   }
@@ -828,6 +889,7 @@ export default function ElderlyUI() {
     fetchRouteHistory();
     fetchLinkingPin();
     fetchRecentActivity();
+    fetchReviews();
   }, []);
 
   // Clean duplicates when recent activity updates (only once per update)
@@ -900,15 +962,31 @@ export default function ElderlyUI() {
     }
   ];
 
-  const reviews = [
-    {
-      id: 1,
-      volunteer: "Sarah Tan",
-      date: "Nov 10, 2024",
-      rating: 5,
-      comment: "Very helpful with grocery shopping. Patient and kind."
+
+  const handleUserAccessibilityNeedChange = async (need, currentValue) => {
+
+    // Update in backend
+    try {
+
+      const response = await axiosInstance.put('/userAccessibilityNeeds/update', {
+        need: need,
+        currentValue: currentValue
+      }, { withCredentials: true });
+
+      console.log(response);
+
+      setProfileData({...profileData, accessibilityNeeds: {...profileData.accessibilityNeeds, [need]: !profileData.accessibilityNeeds[need]}})
+
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
     }
-  ];
+
+
+
+  }
 
   // Handle language change
   const handleLanguageChange = async (languageCode: string) => {
@@ -1179,126 +1257,143 @@ export default function ElderlyUI() {
                 <h3 className="text-xl font-semibold text-foreground">Recent Activity</h3>
               </div>
 
-              <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <Card
-                    key={activity.id}
-                    className={`p-4 ${activity.type === "route" && activity.status === "active"
-                      ? "cursor-pointer hover:bg-accent/50 transition-colors"
-                      : ""
-                      }`}
-                    onClick={() => {
-                      if (activity.type === "route" && activity.status === "active") {
-                        handleActiveNavigationClick(activity);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          {activity.type === "route" ? (
-                            <MapPin className="h-4 w-4 text-primary" />
-                          ) : (
-                            <HelpCircle className="h-4 w-4 text-orange-500" />
-                          )}
-                          <p className="font-medium text-card-foreground">
-                            {activity.description}
-                          </p>
-                          {activity.type === "route" && activity.status === "active" && (
-                            <span className="text-xs text-primary font-medium">
-                              (Click to continue)
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {activity.time}
-                        </div>
-                        {activity.type === "route" && activity.mode && (
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Bus className="h-3 w-3" />
-                              {activity.mode}
-                            </span>
-                            {activity.duration && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {activity.duration}
-                              </span>
+              {recentActivity.length > 0 ? (
+                <div className="space-y-3">
+                  {recentActivity.map((activity) => (
+                    <Card
+                      key={activity.id}
+                      className={`p-4 ${activity.type === "route" && activity.status === "active"
+                        ? "cursor-pointer hover:bg-accent/50 transition-colors"
+                        : ""
+                        }`}
+                      onClick={() => {
+                        if (activity.type === "route" && activity.status === "active") {
+                          handleActiveNavigationClick(activity);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {activity.type === "route" ? (
+                              <MapPin className="h-4 w-4 text-primary" />
+                            ) : (
+                              <HelpCircle className="h-4 w-4 text-orange-500" />
                             )}
-                            {activity.accessibility && (
-                              <span className="flex items-center gap-1">
-                                <Accessibility className="h-3 w-3" />
-                                {activity.accessibility}
+                            <p className="font-medium text-card-foreground">
+                              {activity.description}
+                            </p>
+                            {activity.type === "route" && activity.status === "active" && (
+                              <span className="text-xs text-primary font-medium">
+                                (Click to continue)
                               </span>
                             )}
                           </div>
-                        )}
-                        {activity.volunteer && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Volunteer: {activity.volunteer}
-                          </p>
-                        )}
-                      </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {formatDate(activity.time)}
+                          </div>
+                          {activity.type === "route" && activity.mode && (
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Bus className="h-3 w-3" />
+                                {activity.mode}
+                              </span>
+                              {activity.duration && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {activity.duration}
+                                </span>
+                              )}
+                              {activity.accessibility && (
+                                <span className="flex items-center gap-1">
+                                  <Accessibility className="h-3 w-3" />
+                                  {activity.accessibility}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {activity.volunteer && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Volunteer: {activity.volunteer}
+                            </p>
+                          )}
+                        </div>
 
-                      <Badge
-                        variant={activity.status === "completed" ? "default" :
-                          activity.status === "active" ? "secondary" : "outline"}
-                        className={
-                          activity.status === "completed" ? "bg-success text-success-foreground" :
-                            activity.status === "active" ? "bg-warning text-warning-foreground" :
-                              ""
-                        }
-                      >
-                        {activity.status === "completed" && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {activity.status === "active" && <AlertCircle className="h-3 w-3 mr-1" />}
-                        {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
-                      </Badge>
-                    </div>
-
-                    {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
-                      <div className="flex gap-2 mt-3">
-                        <p className="text-sm mt-1">
-                          Phone Number: {activity.phone_number}
-                        </p>
-
-                      </div>
-                    )}
-
-                    {activity.status === "Resolved" && (
-                      <div className="flex gap-2 mt-3">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => handleAddReview(activity.id)}>
-                          <Star className="h-4 w-4" />
-                          Review
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Flag className="h-4 w-4" />
-                          Report
-                        </Button>
-
-
-                      </div>
-                    )}
-
-                    {activity.type === "route" && activity.status === "active" && (
-                      <div className="mt-3">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleActiveNavigationClick(activity);
-                          }}
+                        <Badge
+                          variant={activity.status === "completed" || activity.status === "Resolved" ? "default" :
+                            activity.status === "active" || activity.status === "In Progress" ? "secondary" : "outline"}
+                          className={
+                            activity.status === "completed" || activity.status === "Resolved" ? "bg-success text-success-foreground" :
+                              activity.status === "active" || activity.status === "In Progress" ? "bg-warning text-warning-foreground" :
+                                ""
+                          }
                         >
-                          <MapPin className="h-4 w-4 mr-2" />
-                          Continue Navigation
-                        </Button>
+                          {(activity.status === "completed" || activity.status === "Resolved") && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {(activity.status === "active" || activity.status === "In Progress") && <AlertCircle className="h-3 w-3 mr-1" />}
+                          {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
+                        </Badge>
                       </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
+
+                      {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
+                        <div className="flex gap-2 mt-3">
+                          <p className="text-sm mt-1">
+                            Phone Number: {activity.phone_number}
+                          </p>
+
+                        </div>
+                      )}
+
+                      {(activity.status === "Resolved" || activity.status === "completed") && (
+                        <div className="flex gap-2 mt-3">
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleAddReview(activity.id, activity.volunteerID)}>
+                            <Star className="h-4 w-4" />
+                            Review
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Flag className="h-4 w-4" />
+                            Report
+                          </Button>
+
+
+                        </div>
+                      )}
+
+                      {activity.type === "route" && activity.status === "active" && (
+                        <div className="mt-3">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleActiveNavigationClick(activity);
+                            }}
+                          >
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Continue Navigation
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+
+                <Card className="p-4 text-center">
+                  <div className="text-center py-6">
+                    <p className="text-xl text-muted-foreground">{t('home.noRecentActivity')}</p>
+                  </div>
+                </Card>
+
+              )}
+
+
+
+
+
+
+
             </div>
           </div>
         );
@@ -1666,7 +1761,7 @@ export default function ElderlyUI() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h4 className="text-xl font-semibold text-foreground">{review.volunteer}</h4>
-                        <p className="text-muted-foreground">{review.date}</p>
+                        <p className="text-muted-foreground">{formatDate(review.date)}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
@@ -1777,25 +1872,20 @@ export default function ElderlyUI() {
                 </div>
 
                 {/* Accessibility Needs */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <Label className="text-lg font-medium">{t('profile.accessibilityNeeds')}</Label>
                   <div className="space-y-3">
                     {accessibilityOptions.map((option) => {
                       const Icon = option.icon;
+
                       return (
                         <Card
                           key={option.key}
-                          className={`p-4 cursor-pointer transition-all border-2 ${profileData.accessibilityNeeds[option.key as keyof typeof profileData.accessibilityNeeds]
+                          className={`p-4 cursor-pointer transition-all border-2 ${profileData.accessibilityNeeds[option.key]
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-primary/50"
                             }`}
-                          onClick={() => setProfileData({
-                            ...profileData,
-                            accessibilityNeeds: {
-                              ...profileData.accessibilityNeeds,
-                              [option.key]: !profileData.accessibilityNeeds[option.key as keyof typeof profileData.accessibilityNeeds]
-                            }
-                          })}
+                          onClick={() => handleUserAccessibilityNeedChange(option.key)}
                         >
                           <div className="flex items-center gap-3">
                             <Icon className="h-6 w-6 text-primary" />
@@ -1805,7 +1895,32 @@ export default function ElderlyUI() {
                       );
                     })}
                   </div>
+                </div> */}
+
+
+                <div className="space-y-3">
+                  <Label className="text-lg font-medium">{t('profile.accessibilityNeeds')}</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {accessibilityOptions.map((option) => {
+                      const Icon = option.icon;
+
+                      return (
+                        <Button
+                          key={option.key}
+                          variant={profileData.accessibilityNeeds[option.key] ? "default" : "outline"}
+                          onClick={() => handleUserAccessibilityNeedChange(option.key, profileData.accessibilityNeeds[option.key])}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-6 w-6 text-primary" />
+                            <span className="text-lg font-medium">{option.label}</span>
+                          </div>
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+
               </div>
             </Card>
 

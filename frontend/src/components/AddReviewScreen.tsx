@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare, Star } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
-import { useNavigate, useLocation  } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 
@@ -32,38 +32,29 @@ export default function AddReviewScreen() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Get reviewer ID
-        var token = localStorage.getItem("auth-storage");
-
-        var tokenJSON = JSON.parse(token);
-
-        var userID = tokenJSON.state.authUser.id;
-
-        // Get help request ID passed in as state from elderly dashboard
-
-        // get userId
+        // Get help request ID and volunteer ID passed in as state from elderly dashboard
         var helpRequestID = location.state.helpRequestID;
+        var volunteerID = location.state.volunteerID;
 
-        console.log(helpRequestID);
-        
 
         try {
-            const response = await axios.post("/elderly/",
+            const response = await axios.post("/reviews",
                 {
                     rating: formData.rating,
-                    reviewText: formData.description,
-                    authorID: userID,
-                    helpRequestID: helpRequestID
+                    text: formData.description,
+                    helpRequestId: helpRequestID,
+                    recipientUserId: volunteerID
                 },
                 { withCredentials: true }
             );
 
 
+            navigate(`/elderly_dashboard`);
 
         } catch (error: any) {
             console.error(error);
         } finally {
-            navigate(`/elderly_dashboard`);
+
         }
 
     };

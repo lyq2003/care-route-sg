@@ -32,6 +32,7 @@
     "planSmartRoute": "规划智能路线",
     "recentRoutes": "最近路线",
     "recentActivity": "最近活动",
+    "noRecentActivity": "最近没有活动",
     "noRecentRoutes": "未找到最近路线",
     "completeRouteToSee": "完成路线后在此查看"
   },

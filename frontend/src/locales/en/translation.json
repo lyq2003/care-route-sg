@@ -32,6 +32,7 @@
     "planSmartRoute": "Plan Smart Route",
     "recentRoutes": "Recent Routes",
     "recentActivity": "Recent Activity",
+    "noRecentActivity": "No Recent Activity",
     "noRecentRoutes": "No recent routes found",
     "completeRouteToSee": "Complete a route to see it here",
     "loadingRouteHistory": "Loading route history...",
