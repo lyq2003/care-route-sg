@@ -1,5 +1,7 @@
 const ReportService = require('../services/report');
 const ReportStatus = require('../domain/enum/ReportStatus');
+const adminService = require('../services/admin');
+const { supabaseAdmin } = require('../config/supabase');
 
 class ReportController {
   submitReport = async (req, res) => {
@@ -67,47 +69,177 @@ class ReportController {
     }
   };
 
-  resolveReport = async (req, res) => {
+  // Get all reports for admin review
+  getAllReports = async (req, res) => {
     try {
-      const adminUserId = req.user.id;
-      const adminRole = req.user.role; // <- NEW
-      const { reportId } = req.params;
-      const { note } = req.body;
+      // Use the admin service method to get all reports with full user details
+      const reports = await ReportService.getAllReportsForAdmin();
 
-      const updated = await ReportService.resolveReport({
-        reportId,
-        adminUserId,
-        adminRole, // <- pass down
-        note,
+      // Apply status filter if provided
+      const { status } = req.query;
+      let filteredReports = reports;
+      
+      if (status && Object.values(ReportStatus).includes(status.toUpperCase())) {
+        filteredReports = reports.filter(report => 
+          report.status === status.toUpperCase()
+        );
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          reports: filteredReports,
+          pagination: {
+            total: filteredReports.length,
+            page: 1,
+            totalPages: 1,
+            limit: filteredReports.length
+          }
+        }
       });
-
-      return res.status(200).json({ success: true, data: updated });
     } catch (error) {
-      console.error('resolveReport error:', error);
-      return res.status(500).json({ error: error.message });
+      console.error('Get all reports error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   };
 
-  rejectReport = async (req, res) => {
+  // Start reviewing a report
+  startReportReview = async (req, res) => {
     try {
-      const adminUserId = req.user.id;
-      const adminRole = req.user.role; // <- NEW
       const { reportId } = req.params;
-      const { note } = req.body;
+      const adminUserId = req.user.id;
 
-      const updated = await ReportService.rejectReport({
-        reportId,
-        adminUserId,
-        adminRole, // <- pass down
-        note,
+      if (!reportId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Report ID is required'
+        });
+      }
+
+      const report = await ReportService.beginReview({ reportId, adminUserId });
+
+      res.status(200).json({
+        success: true,
+        message: 'Report review started',
+        data: report
       });
-
-      return res.status(200).json({ success: true, data: updated });
     } catch (error) {
-      console.error('rejectReport error:', error);
-      return res.status(500).json({ error: error.message });
+      console.error('Start report review error:', error);
+      
+      if (error.statusCode === 409) {
+        return res.status(409).json({
+          success: false,
+          error: 'Report is already being reviewed by another admin'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   };
+  // Resolve a report with disciplinary action
+  async resolveReport(req, res) {
+    try {
+      const { reportId } = req.params;
+      const { action, reason, duration } = req.body;
+      const adminUserId = req.user.id;
+
+      if (!reportId || !action) {
+        return res.status(400).json({
+          success: false,
+          error: 'Report ID and action are required'
+        });
+      }
+
+      // Get the report details first
+      const { data: report, error: reportError } = await supabaseAdmin
+        .from('reports')
+        .select('*, reported_user_id')
+        .eq('id', reportId)
+        .single();
+
+      if (reportError || !report) {
+        return res.status(404).json({
+          success: false,
+          error: 'Report not found'
+        });
+      }
+
+      const reportedUserId = report.reported_user_id;
+
+      // Take disciplinary action based on the action type
+      if (action === 'suspend' && duration) {
+        if (![7, 30, 90].includes(duration)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid suspension duration. Must be 7, 30, or 90 days'
+          });
+        }
+
+        await adminService.suspendUser(reportedUserId, reason || 'Report violation', adminUserId, duration);
+      } else if (action === 'deactivate') {
+        await adminService.deactivateUser(reportedUserId, reason || 'Report violation', adminUserId);
+      }
+
+      // Mark report as resolved
+      const resolvedReport = await ReportService.resolveReport({ 
+        reportId, 
+        adminUserId, 
+        note: `Action taken: ${action}${duration ? ` for ${duration} days` : ''}. Reason: ${reason || 'Report violation'}` 
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Report resolved and disciplinary action taken',
+        data: resolvedReport
+      });
+    } catch (error) {
+      console.error('Resolve report error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Reject a report
+  async rejectReport(req, res) {
+    try {
+      const { reportId } = req.params;
+      const { reason } = req.body;
+      const adminUserId = req.user.id;
+
+      if (!reportId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Report ID is required'
+        });
+      }
+
+      const rejectedReport = await ReportService.rejectReport({ 
+        reportId, 
+        adminUserId, 
+        note: reason || 'Report rejected - insufficient evidence or invalid claim' 
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Report rejected',
+        data: rejectedReport
+      });
+    } catch (error) {
+      console.error('Reject report error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
 
   viewMyReports = async (req, res) => {
     try {
