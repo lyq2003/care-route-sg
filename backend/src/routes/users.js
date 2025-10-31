@@ -18,6 +18,7 @@ router.get('/', requireAuth, async (req, res) => {
 // Get current user profile
 router.get('/profile', requireAuth, (req, res) => {
   // Transform user data for consistent API response
+  
   const userProfile = {
     id: req.user.id,
     email: req.user.email,
@@ -25,7 +26,11 @@ router.get('/profile', requireAuth, (req, res) => {
     phone_number: req.user.user_metadata?.phone_number,
     role: req.user.user_metadata?.role,
     created_at: req.user.created_at,
-    updated_at: req.user.updated_at
+    updated_at: req.user.updated_at,
+    rating: req.user.rating,
+    requests: req.user.requests,
+    language_perference: req.user.language_perference,
+    linking_pin: req.user.linking_pin
   };
 
   res.json(userProfile);

@@ -2,27 +2,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Clock, User, Filter, ArrowLeft, Check, Navigation, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
-import getProfile from "@/features/profile/getProfile";
-import SubmitReviewModal from "@/features/moderation/SubmitReviewModal";
-import SubmitReportModal from "@/features/moderation/SubmitReportModal";
 
 export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
     const navigate = useNavigate();
     const [request, setRequests] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isReviewOpen, setIsReviewOpen] = useState(false);
-    const [isReportOpen, setIsReportOpen] = useState(false);
-
-    // getting user info from getProfile
-    //const {profile} = getProfile();
 
     // color of the priority
     const getPriorityColor = (priority: string) => {
@@ -61,14 +50,13 @@ export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
     };
 
 
-    // todo
     const handleViewRoute = (latitude: number, longitude: number) => {
         if (!location) {
             alert("Unable to get your current location.");
             return;
         }
 
-        console.log(location,latitude,longitude);  // Check if this is correct.
+        console.log(location,latitude,longitude);  
 
         setSelectedRoute({
             from: { lat: location.latitude, lng: location.longitude },
@@ -155,38 +143,6 @@ export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
             View Route
             </Button>
         </div>
-        {request && request[0] && (
-            <div className="flex gap-3 pt-2">
-                <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => setIsReviewOpen(true)}
-                >
-                  Leave Review
-                </Button>
-
-                <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => setIsReportOpen(true)}
-                >
-                  Report User
-                </Button>
-            </div>
-        )}
-        <SubmitReviewModal
-          isOpen={isReviewOpen}
-          onClose={() => setIsReviewOpen(false)}
-          recipientUserId={request && request[0] ? request[0].requesterid : null}
-          recipientUsername={request && request[0] ? request[0].username: null}
-          helpRequestId={request && request[0] ? request[0].id : null}
-        />
-
-        <SubmitReportModal
-          isOpen={isReportOpen}
-          onClose={() => setIsReportOpen(false)}
-          reportedUserId={request && request[0] ? request[0].requesterid : null}
-          reportedUsername={request && request[0] ? request[0].username: null}
-          helpRequestId={request && request[0] ? request[0].id : null}
-        />
         </Card>
     );
 }
