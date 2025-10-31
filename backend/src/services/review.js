@@ -84,7 +84,7 @@ class ReviewService {
   async viewMyReviews(userId) {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select('*, reviews_recipient_user_id_fkey1 (username)')
       .eq('author_user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;

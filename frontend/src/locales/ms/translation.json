@@ -18,7 +18,8 @@
     "refresh": "Muat Semula",
     "clear": "Kosongkan",
     "submit": "Hantar",
-    "repeat": "Ulang"
+    "repeat": "Ulang",
+    "chas": "klinik CHAS"
   },
   "navigation": {
     "home": "Laman Utama",
@@ -45,6 +46,7 @@
     "planSmartRoute": "Rancang Laluan Pintar",
     "recentRoutes": "Laluan Terkini",
     "recentActivity": "Aktiviti Terkini",
+    "noRecentActivity": "Tiada Aktiviti Terkini",
     "noRecentRoutes": "Tiada laluan terkini dijumpai",
     "completeRouteToSee": "Lengkapkan laluan untuk melihatnya di sini",
     "loadingRouteHistory": "Memuatkan sejarah laluan...",
@@ -59,6 +61,7 @@
     "personalInformation": "Maklumat Peribadi",
     "fullName": "Nama Penuh",
     "emailAddress": "Alamat E-mel",
+    "phoneNumber": "Nombor Telefon",
     "caregiverLinkingPin": "PIN Penyambungan Penjaga",
     "sharePinWithCaregivers": "Kongsi PIN ini dengan penjaga anda untuk menyambungkan akaun",
     "accessibilityPreferences": "Kebolehcapaian & Keutamaan",
