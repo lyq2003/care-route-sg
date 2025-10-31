@@ -11,6 +11,7 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/MainUI';
 import ElderlyUI from "./components/ElderlyUI";
+import ChasLocation from "./features/location/chasLocation";
 import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import AddReviewScreen from "./components/AddReviewScreen";
@@ -119,7 +120,7 @@ const App = () => {
                 <AddReviewScreen/>
               }
             />
-
+            <Route path="/chasLocation" element={<ChasLocation/>}/>
             <Route path="/volunteer_dashboard"element={<VolunteerUI/>}/>
             <Route path="/request_filter" element={<RequestFileter/>}/>
             <Route

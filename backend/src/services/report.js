@@ -244,21 +244,33 @@ class ReportService {
     return data;
   }
 
-  // This stays mostly the same. It just reads reports + attachments.
-  // It does NOT look at user_profiles, so it's safe.
+  // fixed code
   async getAllReportsForAdmin() {
-    const { data, error } = await supabase
+    const { data:reports, error } = await supabase
       .from('reports')
       .select(`
         *,
-        reporter:auth.users!reporter_user_id(*),
-        reported:auth.users!reported_user_id(*),
-        attachments(*)
+        reporter:user_profiles!reporter_user_id(*),
+        reported:user_profiles!reported_user_id(*)
       `)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data;
+
+    const reportIds = reports.map(r => r.id);
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .in('parent_id', reportIds)
+      .eq('parent_type', 'report');
+
+    // Merge attachments into each report
+    const merged = reports.map(report => ({
+      ...report,
+      attachments: attachments.filter(a => a.parent_id === report.id),
+    }));
+
+    return merged;
   }
 }
 

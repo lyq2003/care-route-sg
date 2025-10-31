@@ -7,8 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
-import useLocation from "../features/location/locationTracking";
 import { useNavigate  } from "react-router-dom";
+import useLocation from "../features/location/locationTracking";
 
 
 
@@ -28,6 +28,9 @@ export default function RequestHelpScreen() {
 
   const [image, setImage] = useState<File | null>(null);
 
+  const handleBack = () => {
+    navigate(-1); 
+  };
   // getting user live location from useLocation
   const { location, error: locationError } = useLocation();
   
@@ -135,7 +138,7 @@ export default function RequestHelpScreen() {
     return (
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Finding Help</h1>
@@ -160,7 +163,7 @@ export default function RequestHelpScreen() {
     return (
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Help is Coming!</h1>
@@ -248,7 +251,7 @@ export default function RequestHelpScreen() {
   return (
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="h-6 w-6" />
         </Button>
         <h1 className="text-2xl font-bold text-foreground">Request Help</h1>

@@ -10,12 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../components/axios";
 import useLocation from "@/features/location/locationTracking";
 import getProfile from "@/features/profile/getProfile";
+import SubmitReviewModal from "@/features/moderation/SubmitReviewModal";
+import SubmitReportModal from "@/features/moderation/SubmitReportModal";
 
-export default function AccepetedRequest({ setActiveTab }) {
+export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
     const navigate = useNavigate();
     const [request, setRequests] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     // getting user info from getProfile
     //const {profile} = getProfile();
@@ -43,7 +47,7 @@ export default function AccepetedRequest({ setActiveTab }) {
             {params: {requestId, elderlyId}},
             {withCredentials: true,}
             )
-            console.log("response is:",response);
+            
             if (response.data.success) {
                 setActiveTab("dashboard");
         } else {
@@ -56,9 +60,22 @@ export default function AccepetedRequest({ setActiveTab }) {
         }
     };
 
+
     // todo
-    const handleViewRoute = (requestId: number) => {
-        console.log("Viewing route for request:", requestId);
+    const handleViewRoute = (latitude: number, longitude: number) => {
+        if (!location) {
+            alert("Unable to get your current location.");
+            return;
+        }
+
+        console.log(location,latitude,longitude);  // Check if this is correct.
+
+        setSelectedRoute({
+            from: { lat: location.latitude, lng: location.longitude },
+            to: { lat: latitude, lng: longitude },
+        });
+
+        setActiveTab("route");
     };
 
     const fetchAcceptedRequest = async (latitude,longitude) =>{
@@ -85,7 +102,7 @@ export default function AccepetedRequest({ setActiveTab }) {
     }, [location]);
 
     if (error) return <p>Error loading accepted request.</p>;
-    console.log(request);
+
     if (!request) return <p>No accepted request at the moment.</p>;
 
     return (
@@ -131,13 +148,45 @@ export default function AccepetedRequest({ setActiveTab }) {
             </Button>
             <Button
             variant="outline"
-            onClick={() => navigate(`/route/${request[0].id}`)}
+            onClick={() => handleViewRoute(request[0].latitude, request[0].longitude)}
             className="flex-1 text-primary border-primary/50"
             >
             <Navigation className="h-5 w-5 mr-2" />
             View Route
             </Button>
         </div>
+        {request && request[0] && (
+            <div className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setIsReviewOpen(true)}
+                >
+                  Leave Review
+                </Button>
+
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => setIsReportOpen(true)}
+                >
+                  Report User
+                </Button>
+            </div>
+        )}
+        <SubmitReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          recipientUserId={request && request[0] ? request[0].requesterid : null}
+          recipientUsername={request && request[0] ? request[0].username: null}
+          helpRequestId={request && request[0] ? request[0].id : null}
+        />
+
+        <SubmitReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={request && request[0] ? request[0].requesterid : null}
+          reportedUsername={request && request[0] ? request[0].username: null}
+          helpRequestId={request && request[0] ? request[0].id : null}
+        />
         </Card>
     );
 }

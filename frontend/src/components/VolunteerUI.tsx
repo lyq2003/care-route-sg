@@ -288,13 +288,16 @@ export default function VolunteerUI() {
         );
 
       case "Accepted_request":
-        return <AcceptedRequest setActiveTab={setActiveTab}/>;
+        return <AcceptedRequest setActiveTab={setActiveTab}
+                setSelectedRoute={setSelectedRoute}/>;
 
       case "profile":
         return <VolunteerProfile />;
 
       case "route":
+        console.log(selectedRoute);
         if (!selectedRoute) return null;
+
         return (
           <VolunteerRoute
             selectedRoute={selectedRoute}
