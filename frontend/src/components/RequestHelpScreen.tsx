@@ -8,18 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
 import useLocation from "../features/location/locationTracking";
+import { useNavigate  } from "react-router-dom";
 
-interface RequestHelpScreenProps {
-  onBack: () => void;
-}
 
-export default function RequestHelpScreen({ onBack }: RequestHelpScreenProps) {
+
+
+export default function RequestHelpScreen() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "submitted" | "matched">("form");
   const [formData, setFormData] = useState({
     location: "",
     description: "",
     urgency: "medium" as "low" | "medium" | "high"
   });
+
+  const onBack = () => {
+    navigate(`/elderly_dashboard`);
+  }
 
   const [image, setImage] = useState<File | null>(null);
 

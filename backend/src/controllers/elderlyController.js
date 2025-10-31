@@ -34,7 +34,7 @@ class ElderlyController {
   static async updateLanguagePreference(req, res) {
     try {
       const { language } = req.body;
-      
+
       if (!language) {
         return res.status(400).json({ error: 'Language is required' });
       }
@@ -48,7 +48,7 @@ class ElderlyController {
       // Update language preference in user profile
       const { data, error } = await supabase
         .from('user_profiles')
-        .update({ 
+        .update({
           language_preference: language
         })
         .eq('user_id', req.user.id)
@@ -60,8 +60,8 @@ class ElderlyController {
         return res.status(500).json({ error: 'Failed to update language preference' });
       }
 
-      res.json({ 
-        message: 'Language preference updated successfully', 
+      res.json({
+        message: 'Language preference updated successfully',
         language: language,
         profile: data
       });
@@ -77,8 +77,8 @@ class ElderlyController {
   static async getLinkingPIN(req, res) {
     try {
       const pin = await ElderlyServices.getLinkingPIN(req.user.id);
-      res.json({ 
-        message: 'Linking PIN retrieved successfully', 
+      res.json({
+        message: 'Linking PIN retrieved successfully',
         pin,
         instructions: 'Share this 6-digit PIN with your caregiver to link your accounts.'
       });
@@ -94,8 +94,8 @@ class ElderlyController {
   static async regenerateLinkingPIN(req, res) {
     try {
       const pin = await ElderlyServices.regenerateLinkingPIN(req.user.id);
-      res.json({ 
-        message: 'New linking PIN generated successfully', 
+      res.json({
+        message: 'New linking PIN generated successfully',
         pin,
         instructions: 'Your old PIN is no longer valid. Share this new 6-digit PIN with your caregiver.'
       });
@@ -124,7 +124,7 @@ class ElderlyController {
   static async updateLocation(req, res) {
     try {
       const { latitude, longitude, accuracy, speed, heading, altitude, tripId, helpRequestId, status } = req.body;
-      
+
       if (!latitude || !longitude) {
         return res.status(400).json({ error: 'Latitude and longitude are required' });
       }
@@ -148,9 +148,9 @@ class ElderlyController {
       // Store location in database
       const { data: locationRecord, error } = await supabase
         .from('elderly_locations')
-        .upsert(locationData, { 
+        .upsert(locationData, {
           onConflict: 'elderly_id',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         })
         .select()
         .single();
@@ -353,7 +353,7 @@ class ElderlyController {
           .select('id, origin, destination, trip_type, status, help_request_id, volunteer_id')
           .eq('id', locationData.trip_id)
           .single();
-        
+
         if (!error && trip) {
           tripContext = {
             tripId: trip.id,
@@ -402,17 +402,17 @@ class ElderlyController {
     try {
       // Check if elderly has moved significantly from last known safe location
       const lastSafeLocation = await ElderlyController.getLastSafeLocation(elderlyId);
-      
+
       if (lastSafeLocation) {
         const distance = ElderlyController.calculateDistance(location, lastSafeLocation);
-        
+
         // Alert if moved more than 5km from last safe location
         if (distance > 5000) {
           await ElderlyController.sendLocationAlert(
-            elderlyId, 
-            linkedCaregivers, 
+            elderlyId,
+            linkedCaregivers,
             'DISTANCE_ALERT',
-            `Elderly user has moved ${Math.round(distance/1000)}km from their usual area`
+            `Elderly user has moved ${Math.round(distance / 1000)}km from their usual area`
           );
         }
       }
@@ -422,7 +422,7 @@ class ElderlyController {
         await ElderlyController.sendLocationAlert(
           elderlyId,
           linkedCaregivers,
-          'ACCURACY_ALERT', 
+          'ACCURACY_ALERT',
           'GPS signal is weak - elderly may be indoors or in a challenging location'
         );
       }
@@ -457,15 +457,15 @@ class ElderlyController {
 
   static calculateDistance(point1, point2) {
     const R = 6371e3; // Earth's radius in meters
-    const φ1 = point1.lat * Math.PI/180;
-    const φ2 = point2.lat * Math.PI/180;
-    const Δφ = (point2.lat-point1.lat) * Math.PI/180;
-    const Δλ = (point2.lng-point1.lng) * Math.PI/180;
+    const φ1 = point1.lat * Math.PI / 180;
+    const φ2 = point2.lat * Math.PI / 180;
+    const Δφ = (point2.lat - point1.lat) * Math.PI / 180;
+    const Δλ = (point2.lng - point1.lng) * Math.PI / 180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // Distance in meters
   }
@@ -491,6 +491,28 @@ class ElderlyController {
       console.error('Error sending location alert:', error);
     }
   }
+
+
+
+  static async getRecentActivity(req, res) {
+    try {
+      var elderlyID = req.params.elderlyID;
+
+      console.log("Elderly ID: " + elderlyID);
+      
+
+      var data = await ElderlyServices.getRecentActivityByElderlyID(elderlyID);
+
+      res.json({
+        data
+      });
+
+    } catch (error) {
+      console.error("Error fetching recent activity:", error);
+      res.status(500).json({ error: error.message || 'Failed to get recent activity' });
+    }
+  }
+
 }
 
 module.exports = ElderlyController;

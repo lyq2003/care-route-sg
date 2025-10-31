@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 
 const ElderlyServices = {
@@ -28,23 +28,35 @@ const ElderlyServices = {
       return profile.linking_pin;
     }
 
-    // Generate new PIN
-    const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+    maxRetries = 5;
 
-    // Update profile with new PIN
-    const { data: updated, error: updateErr } = await supabase
-      .from('user_profiles')
-      .update({ linking_pin: newPin })
-      .eq('user_id', elderlyUserId)
-      .select('linking_pin')
-      .single();
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
 
-    if (updateErr) {
-      console.error('Error generating PIN:', updateErr);
-      throw new Error('Failed to generate linking PIN');
+      console.log(`Attempt ${attempt + 1}: Creating linking pin`);
+
+
+      // Generate new PIN
+      const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Update profile with new PIN
+      const { data: updated, error: updateErr } = await supabase
+        .from('user_profiles')
+        .update({ linking_pin: newPin })
+        .eq('user_id', elderlyUserId)
+        .select('linking_pin')
+        .single();
+
+      if (updateErr) {
+        console.error('Error generating PIN:', updateErr);
+        throw new Error('Failed to generate linking PIN');
+      } else {
+        return updated.linking_pin;
+      }
+
+
+
     }
 
-    return updated.linking_pin;
   },
 
   /**
@@ -112,6 +124,22 @@ const ElderlyServices = {
 
     return data;
   },
+
+
+  async getRecentActivityByElderlyID(elderlyID) {
+    const { data, error } = await supabaseAdmin
+      .from("help_request")
+      .select(`id, description, createdAt, help_request_status (statusName), help_request_assignedVolunteerId_fkey (username, phone_number)`)
+      .eq("requesterId", elderlyID)
+      .neq("helpRequestStatus", 1)
+      .not("assignedVolunteerId", "is", null);;
+
+    if (error) {
+      throw error
+    } else {
+      return data
+    }
+  }
 };
 
 module.exports = ElderlyServices;

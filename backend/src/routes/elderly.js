@@ -43,6 +43,9 @@ router.post('/location/update', requireAuth, ElderlyController.updateLocation);
 router.post('/trip/start', requireAuth, ElderlyController.startTripTracking);
 router.put('/trip/:tripId/complete', requireAuth, ElderlyController.completeTripTracking);
 
+
+router.get('/recentActivity/:elderlyID', requireAuth, ElderlyController.getRecentActivity);
+
 router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) => {
 
     try {

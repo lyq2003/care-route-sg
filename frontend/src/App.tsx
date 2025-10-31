@@ -13,6 +13,7 @@ import WelcomeScreen from './components/MainUI';
 import ElderlyUI from "./components/ElderlyUI";
 import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
+import AddReviewScreen from "./components/AddReviewScreen";
 import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
 import AdminUI from "./components/AdminUI";
@@ -108,9 +109,14 @@ const App = () => {
             <Route
               path="/request_help"
               element={
-                <RequestHelpScreen onBack={function (): void {
-                 
-                } }/>
+                <RequestHelpScreen/>
+              }
+            />
+
+            <Route
+              path="/add_review"
+              element={
+                <AddReviewScreen/>
               }
             />
 
