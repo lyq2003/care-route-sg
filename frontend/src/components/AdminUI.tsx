@@ -4,6 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -52,6 +60,7 @@ interface Report {
   id: string;
   reporterName: string;
   reportedUser: string;
+  reportedUserId: string;
   reportedRole: UserRole;
   reason: string;
   status: ReportStatus;
@@ -189,6 +198,7 @@ export default function AdminUI() {
           id: report.id,
           reporterName: report.reporter?.user_metadata?.name || report.reporter?.email?.split('@')[0] || 'Unknown User',
           reportedUser: report.reported?.user_metadata?.name || report.reported?.email?.split('@')[0] || 'Unknown User',
+          reportedUserId: report.reported_user_id,
           reportedRole: report.reported?.user_metadata?.role || 'unknown',
           reason: report.reason,
           status: report.status === 'PENDING' ? 'Pending' : 
@@ -1014,204 +1024,135 @@ export default function AdminUI() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground mb-6">Report Management</h2>
       
-      {/* Report Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">{reports.filter(r => r.status === "Pending").length}</div>
-          <div className="text-sm text-muted-foreground">Pending</div>
-        </Card>
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-600">{reports.filter(r => r.status === "In Progress").length}</div>
-          <div className="text-sm text-muted-foreground">In Progress</div>
-        </Card>
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{reports.filter(r => r.status === "Resolved").length}</div>
-          <div className="text-sm text-muted-foreground">Resolved</div>
-        </Card>
-        <Card className="p-4 text-center">
-          <div className="text-2xl font-bold text-red-600">{reports.filter(r => r.status === "Rejected").length}</div>
-          <div className="text-sm text-muted-foreground">Rejected</div>
-        </Card>
-      </div>
-
-      {/* Policy Notice */}
-      <Card className="p-4 mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Caregiver Account Policy</h4>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Caregiver accounts remain active and cannot be suspended or deactivated. 
-              When elderly accounts are banned/suspended, linked caregivers are notified but remain active to serve other elderly users.
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Pending Reports Section */}
       <Card className="p-6 shadow-sm border-border/50">
-        <h3 className="text-base font-semibold text-foreground mb-4">Reports Requiring Review</h3>
+        <h3 className="text-base font-semibold text-foreground mb-4">All Reports</h3>
         
-        {reports.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground mt-2">Loading reports...</p>
+          </div>
+        ) : reports.length === 0 ? (
           <div className="text-center py-12">
             <Flag className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No reports to review.</p>
+            <p className="text-muted-foreground">No reports found.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {reports.map((report) => (
-              <Card key={report.id} className={`p-5 shadow-sm border-border/50 ${
-                report.status === "In Progress" ? "bg-yellow-50 dark:bg-yellow-900/20" :
-                report.status === "Pending" ? "bg-blue-50 dark:bg-blue-900/20" :
-                "bg-muted/50"
-              }`}>
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        Report against {report.reportedUser}
-                      </h4>
-                      <div className="flex gap-2 mt-1">
-                        <Badge className={getRoleStyles(report.reportedRole)}>
-                          {report.reportedRole}
-                        </Badge>
-                        <Badge className={getStatusBadgeColor(report.status)}>
-                          {report.status}
-                        </Badge>
-                        {report.status === "In Progress" && (
-                          <Badge className="bg-yellow-100 text-yellow-800">
-                            <User className="w-3 h-3 mr-1" />
-                            Under Review by Admin
-                          </Badge>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Reported User ID</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reports.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell className="font-mono text-xs">{report.id.slice(0, 8)}...</TableCell>
+                    <TableCell className="font-mono text-xs">{report.reportedUserId?.slice(0, 8) || 'N/A'}...</TableCell>
+                    <TableCell className="max-w-xs truncate">{report.reason}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusBadgeColor(report.status)}>
+                        {report.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {report.status === "Pending" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStartReportReview(report.id)}
+                            disabled={actionLoading === report.id}
+                          >
+                            {actionLoading === report.id ? 'Processing...' : 'Start Review'}
+                          </Button>
                         )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    Reported by: <span className="font-medium">{report.reporterName}</span>
-                  </div>
-
-                  <div className="bg-muted/30 p-3 rounded-lg">
-                    <p className="text-sm text-foreground">{report.reason}</p>
-                  </div>
-
-                  {report.evidence && (
-                    <div className="flex items-center gap-2 text-sm text-blue-600">
-                      <AlertCircle className="w-4 h-4" />
-                      Evidence available: {report.evidence}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    {report.timestamp}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2 flex-wrap">
-                    {report.status === "Pending" && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStartReportReview(report.id)}
-                          disabled={isReviewingReport}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {isReviewingReport ? 'Starting Review...' : 'Start Review'}
-                        </Button>
-                      </>
-                    )}
-                    
-                    {report.status === "In Progress" && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedReport(report);
-                            setShowEvidenceModal(true);
-                          }}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Evidence
-                        </Button>
                         
-                        {/* Disciplinary Actions - Only for elderly and volunteer */}
-                        {(report.reportedRole === "elderly" || report.reportedRole === "volunteer") && (
+                        {report.status === "In Progress" && (
                           <>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-yellow-600 hover:text-yellow-700"
-                                  disabled={actionLoading === report.id}
-                                >
-                                  <UserX className="w-4 h-4 mr-2" />
-                                  Suspend User
-                                  <ChevronDown className="w-4 h-4 ml-2" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 7)}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">7 days (Minor)</span>
-                                    <span className="text-xs text-muted-foreground">For minor or first-time misconduct</span>
-                                  </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 30)}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">30 days (Moderate)</span>
-                                    <span className="text-xs text-muted-foreground">For moderate or repeated misconduct</span>
-                                  </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 90)}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">90 days (Serious)</span>
-                                    <span className="text-xs text-muted-foreground">For serious misconduct</span>
-                                  </div>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleReportAction('deactivate', report.id)}
+                              onClick={async () => {
+                                setActionLoading(report.id);
+                                try {
+                                  const response = await axios.post(`/admin/reports/${report.id}/resolve`, {
+                                    note: 'Report resolved by admin'
+                                  });
+                                  if (response.data.success) {
+                                    await fetchReports();
+                                    toast({
+                                      title: "Success",
+                                      description: "Report resolved successfully",
+                                    });
+                                  }
+                                } catch (error: any) {
+                                  console.error('Failed to resolve report:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: error.response?.data?.error || "Failed to resolve report",
+                                    variant: "destructive"
+                                  });
+                                } finally {
+                                  setActionLoading(null);
+                                }
+                              }}
                               disabled={actionLoading === report.id}
                             >
-                              <UserX className="w-4 h-4 mr-2" />
-                              Ban User
+                              {actionLoading === report.id ? 'Processing...' : 'Resolve'}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                setActionLoading(report.id);
+                                try {
+                                  const response = await axios.post(`/admin/reports/${report.id}/reject`, {
+                                    note: 'Report rejected by admin'
+                                  });
+                                  if (response.data.success) {
+                                    await fetchReports();
+                                    toast({
+                                      title: "Success",
+                                      description: "Report rejected successfully",
+                                    });
+                                  }
+                                } catch (error: any) {
+                                  console.error('Failed to reject report:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: error.response?.data?.error || "Failed to reject report",
+                                    variant: "destructive"
+                                  });
+                                } finally {
+                                  setActionLoading(null);
+                                }
+                              }}
+                              disabled={actionLoading === report.id}
+                            >
+                              {actionLoading === report.id ? 'Processing...' : 'Reject'}
                             </Button>
                           </>
                         )}
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-gray-600 hover:text-gray-700"
-                          onClick={() => handleReportAction('reject', report.id)}
-                          disabled={actionLoading === report.id}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Reject Report
-                        </Button>
-                      </>
-                    )}
-                    
-                    {report.status === "Resolved" && (
-                      <Badge className="bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Completed
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                        {report.status === "Resolved" && (
+                          <span className="text-sm text-muted-foreground">Completed</span>
+                        )}
+                        
+                        {report.status === "Rejected" && (
+                          <span className="text-sm text-muted-foreground">Rejected</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </Card>
