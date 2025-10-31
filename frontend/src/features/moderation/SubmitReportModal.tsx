@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { axiosInstance } from "../../components/axios";
 
 interface SubmitReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   reportedUserId?: string | null;
+  reportedUsername?: string | null;
   helpRequestId?: string | null;
 }
 
-const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, reportedUserId, helpRequestId }) => {
+const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, reportedUserId, reportedUsername, helpRequestId }) => {
   const [reason, setReason] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
@@ -20,7 +22,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     if (!reason) {
       toast({
         title: "Reason required",
@@ -31,16 +33,37 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
     }
     // Demo-only: log
     // eslint-disable-next-line no-console
-    console.log("Submitting report", { reportedUserId, helpRequestId, reason, description, file });
-    toast({
-      title: "Report submitted",
-      description: "Thank you for keeping the community safe.",
-    });
-    onClose();
-    // Reset form
-    setReason("");
-    setDescription("");
-    setFile(null);
+    try{
+      const response = await axiosInstance.post("/reports/",
+        {
+          reportedUserId,
+          helpRequestId,
+          reason,
+          description,
+        },
+        {
+          withCredentials: true
+        }
+      )
+      if (response.data.success){
+        console.log("Submitting report", { reportedUserId, helpRequestId, reason, description, file });
+        toast({
+          title: "Report submitted",
+          description: "Thank you for keeping the community safe.",
+        });
+        onClose();
+        // Reset form
+        setReason("");
+        setDescription("");
+        setFile(null);
+      } else{
+        console.error("Failed to send report:", response.data.message);
+        alert("Failed to submit report, please try again");
+      }
+    } catch(error){
+      console.error("Error submitting report: ", error);
+      alert("Error submitting report. Please try again.");
+    }
   };
 
   const handleFileRemove = () => {
@@ -56,7 +79,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
           <DialogTitle>Report User</DialogTitle>
           <DialogDescription>
             <div className="space-y-1">
-              <p>Reporting user: {reportedUserId || "Unknown"}</p>
+              <p>Reporting user: {reportedUsername || "Unknown"}</p>
               <p>Related request: {helpRequestId || "N/A"}</p>
               {infoMissing && (
                 <p className="text-xs text-muted-foreground">Some information is not available in this demo.</p>

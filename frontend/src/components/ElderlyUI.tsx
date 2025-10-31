@@ -199,9 +199,7 @@ export default function ElderlyUI() {
 
   // to do soon enough
   const onRequestHelp = () =>{
-
     navigate('/request_help');
-    
     
   }
 

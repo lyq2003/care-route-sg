@@ -176,6 +176,7 @@ export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
           isOpen={isReviewOpen}
           onClose={() => setIsReviewOpen(false)}
           recipientUserId={request && request[0] ? request[0].requesterid : null}
+          recipientUsername={request && request[0] ? request[0].username: null}
           helpRequestId={request && request[0] ? request[0].id : null}
         />
 
@@ -183,6 +184,7 @@ export default function AccepetedRequest({ setActiveTab, setSelectedRoute }) {
           isOpen={isReportOpen}
           onClose={() => setIsReportOpen(false)}
           reportedUserId={request && request[0] ? request[0].requesterid : null}
+          reportedUsername={request && request[0] ? request[0].username: null}
           helpRequestId={request && request[0] ? request[0].id : null}
         />
         </Card>

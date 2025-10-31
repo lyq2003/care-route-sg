@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { axiosInstance } from "../../components/axios";
 
 interface SubmitReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipientUserId?: string | null;
+  recipientUsername?: string | null;
   helpRequestId?: string | null;
 }
 
-const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, recipientUserId, helpRequestId }) => {
+const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, recipientUserId, recipientUsername, helpRequestId }) => {
   const [rating, setRating] = useState<number | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [text, setText] = useState<string>("");
@@ -20,7 +22,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, 
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!rating || rating < 1 || rating > 5) {
       toast({
         title: "Rating required",
@@ -29,18 +31,37 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, 
       });
       return;
     }
-    // Demo-only: log
-    // eslint-disable-next-line no-console
-    console.log("Submitting review", { recipientUserId, helpRequestId, rating, text });
-    toast({
-      title: "Review submitted!",
-      description: "Thank you for your feedback.",
-    });
-    onClose();
-    // Reset form
-    setRating(null);
-    setHoveredRating(null);
-    setText("");
+    try{
+      const response = await axiosInstance.post("/reviews/",
+        {
+          recipientUserId,
+          helpRequestId,
+          rating,
+          text,
+        },
+        {
+          withCredentials: true
+        }
+      )
+      if (response.data.success){
+        console.log("Submitting review", { recipientUserId, helpRequestId, rating, text });
+        toast({
+          title: "Review submitted!",
+          description: "Thank you for your feedback.",
+        });
+        onClose();
+        // Reset form
+        setRating(null);
+        setHoveredRating(null);
+        setText("");
+      } else{
+        console.error("Failed to send review:", response.data.message);
+        alert("Failed to submit review, please try again");
+      }
+    } catch(error){
+      console.error("Error submitting review: ", error);
+      alert("Error submitting review. Please try again.");
+    }
   };
 
   const infoMissing = !recipientUserId || !helpRequestId;
@@ -52,7 +73,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, 
           <DialogTitle>Leave a Review</DialogTitle>
           <DialogDescription>
             <div className="space-y-1">
-              <p>For user: {recipientUserId || "Unknown"}</p>
+              <p>For user: {recipientUsername || "Unknown"}</p>
               <p>Request ID: {helpRequestId || "N/A"}</p>
               {infoMissing && (
                 <p className="text-xs text-muted-foreground">Some information is not available in this demo.</p>
