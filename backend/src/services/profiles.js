@@ -41,10 +41,11 @@ async function getprofile(user_id) {
     .maybeSingle(); */
 
     // Added by Mallvin on 31/10/2025 to get user accessibility needs as well
-    const { data, error } = await supabase.from('user_profiles').select('*, user_accessibility_needs!inner (*)').eq('user_id', user_id).single();
-    console.log(data);
+    const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*, user_accessibility_needs(*)')
+    .eq('user_id', user_id)
     
-
     if (error) throw error;
     return data;
 }
