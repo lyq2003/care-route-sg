@@ -40,12 +40,16 @@ import {
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import RouteTracking from "./RouteTracking";
+import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
+import SubmitReportModal from "../features/moderation/SubmitReportModal";
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState("home");
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
     location: "",
     description: "",
@@ -1306,8 +1310,22 @@ export default function ElderlyUI() {
                     </Button>
                   </div>
 
-                  <Button variant="secondary" size="lg" className="w-full mt-4">
-                    {t('help.reviewVolunteer')}
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full mt-4"
+                    onClick={() => setIsReviewOpen(true)}
+                  >
+                    Leave Review
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="w-full mt-2"
+                    onClick={() => setIsReportOpen(true)}
+                  >
+                    Report Volunteer
                   </Button>
                 </Card>
 
@@ -1744,6 +1762,19 @@ export default function ElderlyUI() {
       {/* Main Content */}
       <div className="px-6 py-8 pb-24">
         {renderTabContent()}
+        <SubmitReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          recipientUserId={null}   // TODO: wire volunteer userId once available
+          helpRequestId={null}     // TODO: wire helpRequestId once available
+        />
+
+        <SubmitReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={null}    // TODO
+          helpRequestId={null}     // TODO
+        />
       </div>
 
       {/* Bottom Navigation */}
