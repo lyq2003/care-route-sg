@@ -13,5 +13,5 @@ router.put('/cancelRequest', requireAuth, VolunteerController.cancelRequest);
 router.put('/completeRequest', requireAuth, VolunteerController.completeRequest);
 router.post('/sendProgressUpdate', requireAuth, VolunteerController.sendProgressUpdate);
 router.get('/getAcceptedRequest', requireAuth, VolunteerController.getAcceptedRequest);
-
+router.get('/getCompletedRequest', requireAuth, VolunteerController.getCompletedRequest);
 module.exports = router;

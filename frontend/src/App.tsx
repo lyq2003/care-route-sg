@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -9,6 +11,7 @@ import SigninPage from './components/SignInScreen';
 import PrivateRoute from './features/auth/PrivateRoute';
 import WelcomeScreen from './components/MainUI';
 import ElderlyUI from "./components/ElderlyUI";
+import ChasLocation from "./features/location/chasLocation";
 import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
 import VolunteerUI from "./components/VolunteerUI";
@@ -68,6 +71,7 @@ const App = () => {
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ToastContainer position="top-right" autoClose={4000} style={{ zIndex: 9999 }} />
       <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -110,7 +114,7 @@ const App = () => {
                 } }/>
               }
             />
-
+            <Route path="/chasLocation" element={<ChasLocation/>}/>
             <Route path="/volunteer_dashboard"element={<VolunteerUI/>}/>
             <Route path="/request_filter" element={<RequestFileter/>}/>
             <Route

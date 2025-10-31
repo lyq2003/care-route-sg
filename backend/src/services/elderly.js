@@ -74,7 +74,7 @@ const ElderlyServices = {
    */
   async getLinkedCaregivers(elderlyUserId) {
     const { data, error } = await supabase
-      .from('caregiver_links')
+      .from('caregiver_link')
       .select('caregiver:user_profiles!caregiver_user_id (user_id, full_name, email, phone, avatar_url)')
       .eq('elderly_user_id', elderlyUserId);
 

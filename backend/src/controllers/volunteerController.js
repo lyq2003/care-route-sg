@@ -100,16 +100,14 @@ class VolunteerController {
             ]);
             const elderlySocketId = getReceiverSocketId(elderlyId);
             console.log("Elderly socket is:", elderlySocketId);
-            if (elderlySocketId) {
-                io.to(elderlySocketId).emit("notify", { message });
-            }
 
-            // Notify the volunteer about the cancellation
+
+            // Notify the elderly about the cancellation
             try {
-                await NotificationService.notifyVolunteerRequestCancelled(
+                await NotificationService.notifyHelpRequestCancelled(
+                    elderlyId,
                     volunteerId,
-                    elderlyName,
-                    requestId
+                    volunteerName
                 );
             } catch (notifError) {
                 console.error('Error sending volunteer cancel notification:', notifError);
@@ -226,6 +224,33 @@ class VolunteerController {
         }
     }
 
+    static async getCompletedRequest(req,res) {
+        try{
+            const volunteerId = req.user.id;
+            const acceptedRequest = await VolunteerServices.getCompletedRequest(volunteerId);
+
+            if (acceptedRequest === null) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'No completed requests found.',
+                    data: null
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Get completed request successfully',
+                data: acceptedRequest
+            });
+        }catch (err) {
+            console.error('Failed to get completed requests:', err.message);
+            res.status(500).json({ 
+            success: false, 
+            error: 'Failed to get completed requests',
+            details: err.message 
+            });
+        }
+    }
     static async completeRequest(req,res) {
         try{
             const {requestId, elderlyId} = req.body.params;

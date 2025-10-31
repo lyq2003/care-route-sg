@@ -26,7 +26,9 @@ class ReportService {
     return upload.single('file');
   }
 
-  async submitReport({ reporterUserId, reportedUserId, helpRequestId, reason, description }) {
+  // reporterRole now comes from controller (req.user.role)
+  async submitReport({ reporterUserId, reporterRole, reportedUserId, helpRequestId, reason, description }) {
+    // 1. Insert the report itself
     const { data, error } = await supabase
       .from('reports')
       .insert([
@@ -44,7 +46,7 @@ class ReportService {
 
     if (error) throw error;
 
-    // history
+    // 2. Insert status history row
     await supabase.from('report_status_history').insert([
       {
         report_id: data.id,
@@ -55,25 +57,20 @@ class ReportService {
       },
     ]);
 
-    // Notify admins about new report submission
+    // 3. Notify admins that someone submitted a report
+    // We used to query user_profiles to get "reporterName" and a nice role string.
+    // For demo: we avoid any DB lookups that assume user_profiles exists.
     try {
-      const { data: reporterProfile } = await supabase
-        .from('user_profiles')
-        .select('username, full_name, role')
-        .eq('user_id', reporterUserId)
-        .single();
-      
-      const reporterName = reporterProfile?.full_name || reporterProfile?.username || 'User';
-      const reporterRole = reporterProfile?.role || 'User';
-
+      const reporterName = 'User'; // fallback display name
+      const safeRole = reporterRole || 'User'; // fallback role
       await NotificationService.notifyAdminNewReportSubmitted(
         reporterName,
-        reporterRole,
+        safeRole,
         data.id
       );
     } catch (notifError) {
       console.error('Error sending admin report notification:', notifError);
-      // Don't fail the report submission if notification fails
+      // swallow notification failure to keep demo stable
     }
 
     return data;
@@ -105,7 +102,9 @@ class ReportService {
     return data;
   }
 
-  async beginReview({ reportId, adminUserId }) {
+  // adminRole now comes from controller (req.user.role)
+  async beginReview({ reportId, adminUserId, adminRole }) {
+    // 1. Load report
     const { data: report, error: fetchErr } = await supabase
       .from('reports')
       .select('*')
@@ -113,12 +112,14 @@ class ReportService {
       .single();
     if (fetchErr) throw fetchErr;
 
+    // 2. Check if already in progress
     if (report.status === ReportStatus.IN_PROGRESS) {
       const conflict = new Error('Report already in progress');
       conflict.statusCode = 409;
       throw conflict;
     }
 
+    // 3. Update report status
     const { data: updated, error } = await supabase
       .from('reports')
       .update({ status: ReportStatus.IN_PROGRESS })
@@ -127,77 +128,70 @@ class ReportService {
       .single();
     if (error) throw error;
 
+    // 4. Log history
     await supabase.from('report_status_history').insert([
       {
         report_id: reportId,
         from_status: report.status,
         to_status: ReportStatus.IN_PROGRESS,
         changed_by_user_id: adminUserId,
+        admin_note: null,
       },
     ]);
 
-    // Send notification to reporter based on their role
+    // 5. Notify the reporter
+    // Before: we queried user_profiles to branch on ELDERLY / CAREGIVER / VOLUNTEER.
+    // Now: we DO NOT query user_profiles at all.
+    // We'll just send a generic update. This is enough for demo.
     try {
-      const { data: reporterProfile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', report.reporter_user_id)
-        .single();
-      
-      if (reporterProfile?.role === 'ELDERLY') {
-        await NotificationService.notifyReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          ReportStatus.IN_PROGRESS
-        );
-      } else if (reporterProfile?.role === 'CAREGIVER') {
-        await NotificationService.notifyCaregiverReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          ReportStatus.IN_PROGRESS
-        );
-      } else if (reporterProfile?.role === 'VOLUNTEER') {
-        await NotificationService.notifyVolunteerReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          ReportStatus.IN_PROGRESS
-        );
-      }
+      await NotificationService.notifyReportUpdate(
+        report.reporter_user_id,
+        reportId,
+        ReportStatus.IN_PROGRESS
+      );
     } catch (notifError) {
       console.error('Error sending report update notification:', notifError);
-      // Don't fail the update if notification fails
     }
 
     return updated;
   }
 
-  async resolveReport({ reportId, adminUserId, note }) {
-    const result = await this.#closeReport({ reportId, adminUserId, toStatus: ReportStatus.RESOLVED, note });
-    
-    // Notify other admins about report resolution
+  async resolveReport({ reportId, adminUserId, adminRole, note }) {
+    // Reuse shared close logic
+    const result = await this.#closeReport({
+      reportId,
+      adminUserId,
+      adminRole,
+      toStatus: ReportStatus.RESOLVED,
+      note,
+    });
+
+    // After resolving, notify other admins.
+    // Before: we tried to read the admin profile to get a pretty name.
+    // Now: no DB call, just "Admin".
     try {
-      const { data: adminProfile } = await supabase
-        .from('user_profiles')
-        .select('username, full_name')
-        .eq('user_id', adminUserId)
-        .single();
-      
-      const resolvedBy = adminProfile?.full_name || adminProfile?.username || 'Admin';
-      
+      const resolvedBy = 'Admin';
       await NotificationService.notifyAdminReportResolved(reportId, resolvedBy);
     } catch (notifError) {
       console.error('Error sending admin report resolved notification:', notifError);
-      // Don't fail the operation if notification fails
     }
-    
+
     return result;
   }
 
-  async rejectReport({ reportId, adminUserId, note }) {
-    return this.#closeReport({ reportId, adminUserId, toStatus: ReportStatus.REJECTED, note });
+  async rejectReport({ reportId, adminUserId, adminRole, note }) {
+    // Reuse shared close logic
+    return this.#closeReport({
+      reportId,
+      adminUserId,
+      adminRole,
+      toStatus: ReportStatus.REJECTED,
+      note,
+    });
   }
 
-  async #closeReport({ reportId, adminUserId, toStatus, note }) {
+  async #closeReport({ reportId, adminUserId, adminRole, toStatus, note }) {
+    // 1. Load current report
     const { data: report, error: fetchErr } = await supabase
       .from('reports')
       .select('*')
@@ -205,6 +199,7 @@ class ReportService {
       .single();
     if (fetchErr) throw fetchErr;
 
+    // 2. Update status
     const { data: updated, error } = await supabase
       .from('reports')
       .update({ status: toStatus })
@@ -213,6 +208,7 @@ class ReportService {
       .single();
     if (error) throw error;
 
+    // 3. Insert into history
     await supabase.from('report_status_history').insert([
       {
         report_id: reportId,
@@ -223,39 +219,16 @@ class ReportService {
       },
     ]);
 
-    // Send notification to reporter based on their role
+    // 4. Notify the reporter (generic, no user_profiles lookup)
     try {
-      const { data: reporterProfile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', report.reporter_user_id)
-        .single();
-      
-      if (reporterProfile?.role === 'ELDERLY') {
-        await NotificationService.notifyReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          toStatus,
-          note
-        );
-      } else if (reporterProfile?.role === 'CAREGIVER') {
-        await NotificationService.notifyCaregiverReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          toStatus,
-          note
-        );
-      } else if (reporterProfile?.role === 'VOLUNTEER') {
-        await NotificationService.notifyVolunteerReportUpdate(
-          report.reporter_user_id,
-          reportId,
-          toStatus,
-          note
-        );
-      }
+      await NotificationService.notifyReportUpdate(
+        report.reporter_user_id,
+        reportId,
+        toStatus,
+        note
+      );
     } catch (notifError) {
       console.error('Error sending report update notification:', notifError);
-      // Don't fail the update if notification fails
     }
 
     return updated;
@@ -271,22 +244,34 @@ class ReportService {
     return data;
   }
 
-  // Admin-specific method to get all reports with full user details
+  // fixed code
   async getAllReportsForAdmin() {
-    const { data, error } = await supabaseAdmin
+    const { data:reports, error } = await supabase
       .from('reports')
       .select(`
         *,
-        reporter:auth.users!reporter_user_id(*),
-        reported:auth.users!reported_user_id(*),
-        attachments(*)
+        reporter:user_profiles!reporter_user_id(*),
+        reported:user_profiles!reported_user_id(*)
       `)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data;
+
+    const reportIds = reports.map(r => r.id);
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .in('parent_id', reportIds)
+      .eq('parent_type', 'report');
+
+    // Merge attachments into each report
+    const merged = reports.map(report => ({
+      ...report,
+      attachments: attachments.filter(a => a.parent_id === report.id),
+    }));
+
+    return merged;
   }
 }
 
 module.exports = new ReportService();
-

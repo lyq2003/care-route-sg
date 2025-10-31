@@ -31,11 +31,17 @@ const upload = multer({ storage: storage });
 
 router.get('/profile', requireAuth, ElderlyController.getProfile);
 router.put('/profile', requireAuth, ElderlyController.updateProfile);
+router.put('/profile/language', requireAuth, ElderlyController.updateLanguagePreference);
 
 // PIN Management routes
 router.get('/linking-pin', requireAuth, ElderlyController.getLinkingPIN);
 router.post('/linking-pin/regenerate', requireAuth, ElderlyController.regenerateLinkingPIN);
 router.get('/linked-caregivers', requireAuth, ElderlyController.getLinkedCaregivers);
+
+// Location tracking routes
+router.post('/location/update', requireAuth, ElderlyController.updateLocation);
+router.post('/trip/start', requireAuth, ElderlyController.startTripTracking);
+router.put('/trip/:tripId/complete', requireAuth, ElderlyController.completeTripTracking);
 
 router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) => {
 

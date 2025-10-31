@@ -9,7 +9,7 @@ exports.login = async (req,res)=>{
         const { email, password } = req.body
 
         if (!email || !password) {
-        return res.status(400).json({ message: "Phone and password are required" });
+        return res.status(400).json({ message: "Email and password are required" });
         }
 
         const {data,error} = await supabase.auth.signInWithPassword({
@@ -80,6 +80,31 @@ exports.signup = async (req,res) => {
         const {name, email, password, role, phone_number } = req.body
         if (!name || !email || !password || !role || !phone_number) {
             return res.status(400).json({ message: "All details are required" });
+        }
+
+        // Validate password strength
+        const passwordErrors = [];
+        if (password.length < 8) {
+            passwordErrors.push("Password must be at least 8 characters long");
+        }
+        if (!/[A-Z]/.test(password)) {
+            passwordErrors.push("Password must contain at least one uppercase letter");
+        }
+        if (!/[a-z]/.test(password)) {
+            passwordErrors.push("Password must contain at least one lowercase letter");
+        }
+        if (!/\d/.test(password)) {
+            passwordErrors.push("Password must contain at least one number");
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            passwordErrors.push("Password must contain at least one special character");
+        }
+
+        if (passwordErrors.length > 0) {
+            return res.status(400).json({ 
+                message: "Password does not meet requirements",
+                passwordErrors: passwordErrors
+            });
         }
 
         // Generate linking PIN for elderly users

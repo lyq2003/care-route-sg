@@ -7,6 +7,7 @@ class ReviewController {
     try {
       const authorUserId = req.user.id;
       const { recipientUserId, helpRequestId, rating, text } = req.body;
+      
       if (!recipientUserId || !helpRequestId || !rating) {
         return res.status(400).json({ error: 'recipientUserId, helpRequestId, rating are required' });
       }

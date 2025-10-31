@@ -8,15 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from 'react-i18next';
 import { 
   Home, 
   HelpCircle, 
   MapPin, 
   Star, 
   User, 
-  Volume2, 
   LogOut,
-  Pin,
   Phone,
   MessageSquare,
   Clock,
@@ -41,12 +40,16 @@ import {
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import RouteTracking from "./RouteTracking";
+import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
+import SubmitReportModal from "../features/moderation/SubmitReportModal";
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState("home");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [helpFormData, setHelpFormData] = useState({
     location: "",
     description: "",
@@ -69,6 +72,8 @@ export default function ElderlyUI() {
   const [showRouteTracking, setShowRouteTracking] = useState(false);
   const [routeHistory, setRouteHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [recentActivity, setRecentActivity] = useState<any[]>([
     {
       id: 1,
@@ -102,7 +107,6 @@ export default function ElderlyUI() {
     fullName: "",
     email: "",
     language: "English",
-    voiceAssistance: false,
     accessibilityNeeds: {
       wheelchair: false,
       visual: false,
@@ -122,6 +126,13 @@ export default function ElderlyUI() {
 
   const caregiverPin = "284751";
 
+  const languages = [
+    { code: "en", name: "English" },
+    { code: "zh", name: "Mandarin" },
+    { code: "ms", name: "Malay" },
+    { code: "ta", name: "Tamil" }
+  ];
+
   const handleHelpSubmit = () => {
     if (helpFormData.location && helpFormData.description && helpFormData.urgency) {
       setShowVolunteerMatch(true);
@@ -135,11 +146,28 @@ export default function ElderlyUI() {
         );
         const data = response.data.profile; 
 
+        // Determine current language code
+        let currentLanguageCode = 'en'; // Default to English
+        let currentLanguageName = 'English';
+        
+        if (data.language_preference) {
+          // User has a stored language preference (language code)
+          currentLanguageCode = data.language_preference;
+          const langObj = languages.find(lang => lang.code === data.language_preference);
+          currentLanguageName = langObj ? langObj.name : 'English';
+        } else if (data.language) {
+          // Backward compatibility: user has old language name stored
+          const langObj = languages.find(lang => lang.name === data.language);
+          if (langObj) {
+            currentLanguageCode = langObj.code;
+            currentLanguageName = langObj.name;
+          }
+        }
+
         setProfileData({
           fullName: data.username || "",
           email: data.email || "",
-          language: data.language || "English",  // Default to "English" if not available
-          voiceAssistance: data.voiceAssistance || false,
+          language: currentLanguageName,
           accessibilityNeeds: {
             wheelchair: data.accessibilityNeeds?.wheelchair || false,
             visual: data.accessibilityNeeds?.visual || false,
@@ -148,12 +176,15 @@ export default function ElderlyUI() {
             cognitive: data.accessibilityNeeds?.cognitive || false
           }
         });
+
+        // Set i18n language
+        i18n.changeLanguage(currentLanguageCode);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
     fetchProfile();
-    }, []);
+    }, [i18n]);
     const onSignOut = async () => {
       try{
         await axiosInstance.post(`/auth/logout`, {} ,{
@@ -162,15 +193,13 @@ export default function ElderlyUI() {
         window.location.href = '/login'; // Force full refresh
         } catch(err){
           console.error('Logout failed:', err);
-          alert('Logout failed. Please try again.');
+          alert(t('notifications.logoutFailed'));
         }
     }
 
   // to do soon enough
   const onRequestHelp = () =>{
-
     navigate('/request_help');
-    
     
   }
 
@@ -533,7 +562,77 @@ export default function ElderlyUI() {
 		}
 	};
 
-  
+	const handleUseCurrentLocation = () => {
+		if (!navigator.geolocation) {
+			toast({
+				title: "Location not supported",
+				description: "Your browser doesn't support location services.",
+				variant: "destructive"
+			});
+			return;
+		}
+
+		setIsGettingLocation(true);
+		
+		navigator.geolocation.getCurrentPosition(
+			async (position) => {
+				const { latitude, longitude } = position.coords;
+				setCurrentLocation({ lat: latitude, lng: longitude });
+				
+				// Convert coordinates to address using Geocoding API
+				if (googleLoaded && (window as any).google) {
+					const google = (window as any).google as typeof window.google;
+					const geocoder = new google.maps.Geocoder();
+					
+					try {
+						const results = await geocoder.geocode({ 
+							location: { lat: latitude, lng: longitude } 
+						});
+						
+						if (results.results && results.results.length > 0) {
+							const address = results.results[0].formatted_address;
+							setRouteFormData(prev => ({ ...prev, from: address }));
+							toast({
+								title: "Location set",
+								description: "Current location has been set as starting point."
+							});
+						}
+					} catch (error) {
+						console.error('Geocoding error:', error);
+						toast({
+							title: "Error",
+							description: "Could not convert location to address.",
+							variant: "destructive"
+						});
+					}
+				} else {
+					// Fallback to coordinates if geocoding not available
+					setRouteFormData(prev => ({ ...prev, from: `${latitude}, ${longitude}` }));
+					toast({
+						title: "Location set",
+						description: "Using coordinates as location."
+					});
+				}
+				
+				setIsGettingLocation(false);
+			},
+			(error) => {
+				console.error('Geolocation error:', error);
+				setIsGettingLocation(false);
+				toast({
+					title: "Location error",
+					description: error.message || "Could not get your current location.",
+					variant: "destructive"
+				});
+			},
+			{
+				enableHighAccuracy: true,
+				timeout: 10000,
+				maximumAge: 60000
+			}
+		);
+	};
+
 	const handleRouteSearch = async () => {
 		if (!routeFormData.from || !routeFormData.to) return;
 		if (!googleLoaded || !(window as any).google) {
@@ -671,6 +770,10 @@ export default function ElderlyUI() {
     status: "On the way"
   };
 
+  // Placeholder IDs for demo purposes
+  const matchedVolunteerId = "demo-volunteer-001";
+  const helpRequestId = "demo-help-001";
+
   const defaultRouteResults = [
     {
       id: 1,
@@ -717,13 +820,76 @@ export default function ElderlyUI() {
     }
   ];
 
-  const languages = ["English", "Mandarin", "Malay", "Tamil"];
+  // Handle language change
+  const handleLanguageChange = async (languageCode: string) => {
+    try {
+      // Get the language name for display
+      const languageName = languages.find(lang => lang.code === languageCode)?.name || "English";
+      
+      // Change the i18n language first
+      await i18n.changeLanguage(languageCode);
+      
+      // Update the profile data state
+      setProfileData(prev => ({
+        ...prev,
+        language: languageName
+      }));
+
+      // Save to backend
+      await axiosInstance.put('/elderly/profile/language', {
+        language: languageCode
+      }, { withCredentials: true });
+
+      // Show success message in the NEW language (target language)
+      const successMessages = {
+        'en': `Language changed to ${languageName}`,
+        'zh': `语言已更改为${languageName}`,
+        'ms': `Bahasa ditukar kepada ${languageName}`,
+        'ta': `மொழி ${languageName} ஆக மாற்றப்பட்டது`
+      };
+
+      const successTitles = {
+        'en': 'Success',
+        'zh': '成功',
+        'ms': 'Berjaya',
+        'ta': 'வெற்றி'
+      };
+
+      toast({
+        title: successTitles[languageCode] || successTitles['en'],
+        description: successMessages[languageCode] || successMessages['en'],
+      });
+    } catch (error) {
+      console.error('Error updating language:', error);
+      
+      // Get error message in the target language (the one user tried to switch to)
+      const errorMessages = {
+        'en': 'Failed to update language preference',
+        'zh': '更新语言偏好失败',
+        'ms': 'Gagal mengemaskini keutamaan bahasa',
+        'ta': 'மொழி விருப்பத்தை புதுப்பிக்க முடியவில்லை'
+      };
+
+      const errorTitles = {
+        'en': 'Error',
+        'zh': '错误',
+        'ms': 'Ralat',
+        'ta': 'பிழை'
+      };
+
+      toast({
+        title: errorTitles[languageCode] || errorTitles['en'],
+        description: errorMessages[languageCode] || errorMessages['en'],
+        variant: "destructive"
+      });
+    }
+  };
   const accessibilityOptions = [
-    { key: "wheelchair", label: "Wheelchair user", icon: Accessibility },
-    { key: "visual", label: "Visual impairment", icon: Eye },
-    { key: "hearing", label: "Hearing impairment", icon: Ear },
-    { key: "mobility", label: "Mobility assistance", icon: Heart },
-    { key: "cognitive", label: "Cognitive assistance", icon: Brain }
+    { key: "wheelchair", label: t('profile.wheelchairUser'), icon: Accessibility },
+    { key: "visual", label: t('profile.visualImpairment'), icon: Eye },
+    { key: "hearing", label: t('profile.hearingImpairment'), icon: Ear },
+    { key: "mobility", label: t('profile.mobilityAssistance'), icon: Heart },
+    { key: "cognitive", label: t('profile.cognitiveAssistance'), icon: Brain }
   ];
 
   const renderTabContent = () => {
@@ -740,26 +906,27 @@ export default function ElderlyUI() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-card-foreground">
-                      Welcome, {profileData.fullName}
+                      {t('home.welcome', { name: profileData.fullName })}
                     </h2>
-                    <p className="text-muted-foreground">How can we help you today?</p>
+                    <p className="text-muted-foreground">{t('home.howCanWeHelp')}</p>
                   </div>
                 </div>
               </div>
               
               <div className="flex gap-3">
                 <Button
-                  variant={voiceEnabled ? "success" : "outline"}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setVoiceEnabled(!voiceEnabled)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(caregiverPin);
+                    toast({
+                      title: t('notifications.pinCopied'),
+                      description: t('notifications.pinCopiedDescription'),
+                    });
+                  }}
                   className="flex-1"
                 >
-                  <Volume2 className="h-5 w-5" />
-                  Voice {voiceEnabled ? "On" : "Off"}
-                </Button>
-                
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Pin className="h-5 w-5" />
+                  <Copy className="h-5 w-5 mr-2" />
                   PIN: {caregiverPin}
                 </Button>
                 
@@ -775,14 +942,14 @@ export default function ElderlyUI() {
                 <div className="text-3xl font-bold text-primary mb-1">
                   {stats.totalRequests}
                 </div>
-                <p className="text-sm text-muted-foreground">Total Requests</p>
+                <p className="text-sm text-muted-foreground">{t('home.totalRequests')}</p>
               </Card>
               
               <Card className="p-4 text-center">
                 <div className="text-3xl font-bold text-success mb-1">
                   {stats.completed}
                 </div>
-                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-sm text-muted-foreground">{t('home.completed')}</p>
               </Card>
               
               <Card className="p-4 text-center">
@@ -792,20 +959,20 @@ export default function ElderlyUI() {
                   </span>
                   <Star className="h-5 w-5 text-warning fill-current" />
                 </div>
-                <p className="text-sm text-muted-foreground">Rating</p>
+                <p className="text-sm text-muted-foreground">{t('home.rating')}</p>
               </Card>
               
               <Card className="p-4 text-center">
                 <div className="text-3xl font-bold text-secondary mb-1">
                   {stats.caregiversLinked}
                 </div>
-                <p className="text-sm text-muted-foreground">Caregivers</p>
+                <p className="text-sm text-muted-foreground">{t('home.caregivers')}</p>
               </Card>
             </div>
 
             {/* Quick Actions */}
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-foreground">Quick Actions</h3>
+              <h3 className="text-xl font-semibold text-foreground">{t('home.quickActions')}</h3>
               
               <Button 
                 onClick={onRequestHelp}
@@ -814,7 +981,7 @@ export default function ElderlyUI() {
                 className="w-full"
               >
                 <HelpCircle className="h-6 w-6" />
-                Request Help Now
+                {t('home.requestHelpNow')}
               </Button>
               
               <Button 
@@ -824,27 +991,27 @@ export default function ElderlyUI() {
                 className="w-full"
               >
                 <MapPin className="h-6 w-6" />
-                Plan Smart Route
+                {t('home.planSmartRoute')}
               </Button>
             </div>
 
             {/* Recent Routes */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-foreground">Recent Routes</h3>
+                <h3 className="text-xl font-semibold text-foreground">{t('home.recentRoutes')}</h3>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={fetchRouteHistory}
                   disabled={loadingHistory}
                 >
-                  {loadingHistory ? "Loading..." : "Refresh"}
+                  {loadingHistory ? t('common.loading') : t('common.refresh')}
                 </Button>
               </div>
               
               {loadingHistory ? (
                 <Card className="p-4 text-center">
-                  <p className="text-muted-foreground">Loading route history...</p>
+                  <p className="text-muted-foreground">{t('home.loadingRouteHistory')}</p>
                 </Card>
               ) : routeHistory.length > 0 ? (
                 <div className="space-y-3">
@@ -1040,9 +1207,9 @@ export default function ElderlyUI() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Get Help</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('help.getHelp')}</h2>
               <p className="text-lg text-muted-foreground">
-                Request assistance from volunteers in your area
+                {t('help.requestAssistance')}
               </p>
             </div>
 
@@ -1050,37 +1217,37 @@ export default function ElderlyUI() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-lg font-medium">
-                    Where do you need help?
+                    {t('help.whereNeedHelp')}
                   </Label>
                   <Input
                     id="location"
                     value={helpFormData.location}
                     onChange={(e) => setHelpFormData({ ...helpFormData, location: e.target.value })}
                     className="h-14 text-lg"
-                    placeholder="e.g., Orchard Road MRT"
+                    placeholder={t('help.locationPlaceholder')}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-lg font-medium">
-                    Describe what help you need
+                    {t('help.describeHelp')}
                   </Label>
                   <Textarea
                     id="description"
                     value={helpFormData.description}
                     onChange={(e) => setHelpFormData({ ...helpFormData, description: e.target.value })}
                     className="min-h-24 text-lg"
-                    placeholder="Describe what help you need in detail..."
+                    placeholder={t('help.describeHelpPlaceholder')}
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-lg font-medium">Urgency Level</Label>
+                  <Label className="text-lg font-medium">{t('help.urgencyLevel')}</Label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: "low", label: "Low", variant: "outline" as const, color: "border-success text-success" },
-                      { value: "medium", label: "Medium", variant: "outline" as const, color: "border-warning text-warning" },
-                      { value: "high", label: "High", variant: "outline" as const, color: "border-destructive text-destructive" }
+                      { value: "low", label: t('help.low'), variant: "outline" as const, color: "border-success text-success" },
+                      { value: "medium", label: t('help.medium'), variant: "outline" as const, color: "border-warning text-warning" },
+                      { value: "high", label: t('help.high'), variant: "outline" as const, color: "border-destructive text-destructive" }
                     ].map((urgency) => (
                       <Button
                         key={urgency.value}
@@ -1096,11 +1263,11 @@ export default function ElderlyUI() {
 
                 <Button variant="outline" size="lg" className="w-full">
                   <Camera className="h-5 w-5" />
-                  Add Photo (Optional)
+                  {t('help.addPhoto')}
                 </Button>
 
                 <Button onClick={handleHelpSubmit} size="xl" className="w-full mt-8">
-                  Submit Help Request
+                  {t('help.submitHelpRequest')}
                 </Button>
               </div>
             ) : (
@@ -1108,28 +1275,28 @@ export default function ElderlyUI() {
                 <Card className="p-6 bg-success/5 border-success">
                   <div className="text-center mb-4">
                     <CheckCircle className="h-12 w-12 text-success mx-auto mb-2" />
-                    <h3 className="text-2xl font-bold text-success">Volunteer Matched!</h3>
+                    <h3 className="text-2xl font-bold text-success">{t('help.volunteerMatched')}</h3>
                   </div>
                   
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Volunteer:</span>
+                      <span className="font-medium">{t('help.volunteer')}</span>
                       <span className="text-lg">{volunteerData.name}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Phone:</span>
+                      <span className="font-medium">{t('help.phone')}</span>
                       <Button variant="link" className="p-0 h-auto">
                         {volunteerData.phone}
                       </Button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">ETA:</span>
+                      <span className="font-medium">{t('help.eta')}</span>
                       <span className="text-lg text-warning">{volunteerData.eta}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Status:</span>
+                      <span className="font-medium">{t('help.status')}</span>
                       <Badge variant="secondary" className="bg-warning text-warning-foreground">
-                        {volunteerData.status}
+                        {t('help.onTheWay')}
                       </Badge>
                     </div>
                   </div>
@@ -1137,17 +1304,31 @@ export default function ElderlyUI() {
                   <div className="flex gap-3 mt-6">
                     <Button variant="outline" className="flex-1">
                       <Phone className="h-5 w-5" />
-                      Call
+                      {t('help.call')}
                     </Button>
                     <Button variant="outline" className="flex-1">
                       <MessageSquare className="h-5 w-5" />
-                      Message
+                      {t('help.message')}
                     </Button>
                   </div>
 
-                  <Button variant="secondary" size="lg" className="w-full mt-4">
-                    Review Volunteer
-                  </Button>
+                  <div className="flex justify-end gap-3 mt-4">
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => setIsReviewOpen(true)}
+                    >
+                      Review Volunteer
+                    </Button>
+
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => setIsReportOpen(true)}
+                    >
+                      Report Volunteer
+                    </Button>
+                  </div>
                 </Card>
 
                 <Button 
@@ -1155,7 +1336,7 @@ export default function ElderlyUI() {
                   onClick={() => setShowVolunteerMatch(false)}
                   className="w-full"
                 >
-                  Request New Help
+                  {t('help.requestNewHelp')}
                 </Button>
               </div>
             )}
@@ -1166,18 +1347,40 @@ export default function ElderlyUI() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Smart Routes</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('routes.smartRoutes')}</h2>
               <p className="text-lg text-muted-foreground">
-                Find accessible routes across Singapore
+                {t('routes.findAccessibleRoutes')}
               </p>
             </div>
 
             {!showRouteResults ? (
               <div className="space-y-6">
                 <div className="space-y-2 relative">
-                  <Label htmlFor="from" className="text-lg font-medium">
-                    From
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="from" className="text-lg font-medium">
+                      {t('routes.from')}
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUseCurrentLocation}
+                      disabled={isGettingLocation}
+                      className="text-xs"
+                    >
+                      {isGettingLocation ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
+                          {t('routes.gettingLocation')}
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-3 w-3 mr-1" />
+                          {t('routes.useCurrentLocation')}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <Input
                     id="from"
                     value={routeFormData.from}
@@ -1187,7 +1390,7 @@ export default function ElderlyUI() {
                       logPredictions(v, "From"); 
                     }}
                     className="h-14 text-lg"
-                    placeholder="Current location or address"
+                    placeholder={t('routes.currentLocationOrAddress')}
                     ref={fromInputRef}
                     data-google-autocomplete="true"
                   />
@@ -1215,7 +1418,7 @@ export default function ElderlyUI() {
 
                 <div className="space-y-2 relative">
                   <Label htmlFor="to" className="text-lg font-medium">
-                    To
+                    {t('routes.to')}
                   </Label>
                   <Input
                     id="to"
@@ -1226,7 +1429,7 @@ export default function ElderlyUI() {
                       logPredictions(v, "To"); 
                     }}
                     className="h-14 text-lg"
-                    placeholder="Destination address"
+                    placeholder={t('routes.destinationAddress')}
                     ref={toInputRef}
                     data-google-autocomplete="true"
                   />
@@ -1255,7 +1458,7 @@ export default function ElderlyUI() {
                 <div className="flex gap-3 mt-8">
                   <Button onClick={handleRouteSearch} size="xl" className="flex-1">
                     <MapPin className="h-6 w-6" />
-                    Find Accessible Routes
+                    {t('routes.findAccessibleRoutesBtn')}
                   </Button>
                   <Button 
                     onClick={clearSmartRouteForm} 
@@ -1263,32 +1466,30 @@ export default function ElderlyUI() {
                     size="xl"
                     className="px-6"
                   >
-                    Clear
+                    {t('common.clear')}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="text-center">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-foreground mb-2">Route Options</h3>
-                      <p className="text-muted-foreground">
-                        Routes are sorted by accessibility and time - best options for elderly and wheelchair users appear first
-                      </p>
+                  <div className="text-center">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-foreground mb-2">{t('routes.routeOptions')}</h3>
+                        <p className="text-muted-foreground">
+                          {t('routes.routesSortedByAccessibility')}
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={clearSmartRouteForm} 
+                        variant="outline" 
+                        size="sm"
+                        className="ml-4"
+                      >
+                        {t('routes.newRoute')}
+                      </Button>
                     </div>
-                    <Button 
-                      onClick={clearSmartRouteForm} 
-                      variant="outline" 
-                      size="sm"
-                      className="ml-4"
-                    >
-                      New Route
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
+                  </div>                <div className="space-y-4">
                   {routeResults.map((route, index) => {
                     const Icon = route.icon;
                     const isRecommended = route.isRecommended;
@@ -1317,7 +1518,7 @@ export default function ElderlyUI() {
                                 <h4 className="text-xl font-semibold text-foreground">{route.mode}</h4>
                                 {isRecommended && (
                                   <Badge variant="default" className="bg-primary text-primary-foreground">
-                                    {isFirst ? 'Best Option' : 'Recommended'}
+                                    {isFirst ? t('routes.bestOption') : t('routes.recommended')}
                                   </Badge>
                                 )}
                               </div>
@@ -1346,7 +1547,7 @@ export default function ElderlyUI() {
                           }`}
                           onClick={() => handleRouteSelection(route)}
                         >
-                          {isRecommended ? 'Select Best Route' : 'Select This Route'}
+                          {isRecommended ? t('routes.selectBestRoute') : t('routes.selectThisRoute')}
                         </Button>
                       </Card>
                     );
@@ -1358,7 +1559,7 @@ export default function ElderlyUI() {
                   onClick={() => setShowRouteResults(false)}
                   className="w-full"
                 >
-                  Search New Route
+                  {t('routes.searchNewRoute')}
                 </Button>
               </div>
             )}
@@ -1369,9 +1570,9 @@ export default function ElderlyUI() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">My Reviews</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('reviews.myReviews')}</h2>
               <p className="text-lg text-muted-foreground">
-                Reviews you've written for volunteers
+                {t('reviews.reviewsWritten')}
               </p>
             </div>
 
@@ -1400,9 +1601,9 @@ export default function ElderlyUI() {
             ) : (
               <div className="text-center py-12">
                 <Star className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-xl text-muted-foreground">No reviews yet</p>
+                <p className="text-xl text-muted-foreground">{t('reviews.noReviews')}</p>
                 <p className="text-muted-foreground mt-2">
-                  Complete help requests to leave reviews for volunteers
+                  {t('reviews.completeHelpRequests')}
                 </p>
               </div>
             )}
@@ -1413,19 +1614,19 @@ export default function ElderlyUI() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.profileSettings')}</h2>
               <p className="text-lg text-muted-foreground">
-                Manage your account and preferences
+                {t('profile.manageAccount')}
               </p>
             </div>
 
             {/* Personal Information */}
             <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Personal Information</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-4">{t('profile.personalInformation')}</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-lg font-medium">
-                    Full Name
+                    {t('profile.fullName')}
                   </Label>
                   <Input
                     id="fullName"
@@ -1437,7 +1638,7 @@ export default function ElderlyUI() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-lg font-medium">
-                    Email Address
+                    {t('profile.emailAddress')}
                   </Label>
                   <Input
                     id="email"
@@ -1452,7 +1653,7 @@ export default function ElderlyUI() {
 
             {/* Linking PIN */}
             <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Caregiver Linking PIN</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-4">{t('profile.caregiverLinkingPin')}</h3>
               <div className="bg-muted/50 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-3xl font-mono font-bold text-primary">{caregiverPin}</span>
@@ -1467,46 +1668,34 @@ export default function ElderlyUI() {
                 </div>
               </div>
               <p className="text-muted-foreground">
-                Share this PIN with your caregivers to link your accounts
+                {t('profile.sharePinWithCaregivers')}
               </p>
             </Card>
 
             {/* Accessibility & Preferences */}
             <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Accessibility & Preferences</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-4">{t('profile.accessibilityPreferences')}</h3>
               
               <div className="space-y-6">
                 {/* Language Preference */}
                 <div className="space-y-3">
-                  <Label className="text-lg font-medium">Language Preference</Label>
+                  <Label className="text-lg font-medium">{t('profile.languagePreference')}</Label>
                   <div className="grid grid-cols-2 gap-3">
                     {languages.map((lang) => (
                       <Button
-                        key={lang}
-                        variant={profileData.language === lang ? "default" : "outline"}
-                        onClick={() => setProfileData({ ...profileData, language: lang })}
+                        key={lang.code}
+                        variant={profileData.language === lang.name ? "default" : "outline"}
+                        onClick={() => handleLanguageChange(lang.code)}
                       >
-                        {lang}
+                        {lang.name}
                       </Button>
                     ))}
                   </div>
                 </div>
 
-                {/* Voice Assistance */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-lg font-medium">Voice Assistance</Label>
-                    <p className="text-muted-foreground">Enable voice commands and audio feedback</p>
-                  </div>
-                  <Switch
-                    checked={profileData.voiceAssistance}
-                    onCheckedChange={(checked) => setProfileData({ ...profileData, voiceAssistance: checked })}
-                  />
-                </div>
-
                 {/* Accessibility Needs */}
                 <div className="space-y-3">
-                  <Label className="text-lg font-medium">Accessibility Needs</Label>
+                  <Label className="text-lg font-medium">{t('profile.accessibilityNeeds')}</Label>
                   <div className="space-y-3">
                     {accessibilityOptions.map((option) => {
                       const Icon = option.icon;
@@ -1540,7 +1729,7 @@ export default function ElderlyUI() {
 
             <Button size="xl" className="w-full">
               <Edit3 className="h-6 w-6" />
-              Save Settings
+              {t('profile.saveSettings')}
             </Button>
           </div>
         );
@@ -1575,17 +1764,30 @@ export default function ElderlyUI() {
       {/* Main Content */}
       <div className="px-6 py-8 pb-24">
         {renderTabContent()}
+        <SubmitReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          recipientUserId={matchedVolunteerId}
+          helpRequestId={helpRequestId}
+        />
+
+        <SubmitReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={matchedVolunteerId}
+          helpRequestId={helpRequestId}
+        />
       </div>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg">
         <div className="flex justify-around py-3">
           {[
-            { id: "home", icon: Home, label: "Home" },
-            { id: "help", icon: HelpCircle, label: "Get Help" },
-            { id: "routes", icon: MapPin, label: "Smart Routes" },
-            { id: "reviews", icon: Star, label: "My Reviews" },
-            { id: "profile", icon: User, label: "Profile" },
+            { id: "home", icon: Home, label: t('common.home') },
+            { id: "help", icon: HelpCircle, label: t('common.help') },
+            { id: "routes", icon: MapPin, label: t('common.routes') },
+            { id: "reviews", icon: Star, label: t('common.reviews') },
+            { id: "profile", icon: User, label: t('common.profile') },
           ].map((tab) => (
             <button
               key={tab.id}

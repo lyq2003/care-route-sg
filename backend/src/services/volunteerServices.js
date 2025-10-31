@@ -78,6 +78,22 @@ async function getAcceptedRequest(latitude,longitude,volunteerId){
     return data;
 }
 
+async function getCompletedRequest(volunteerId){
+    const { data, error } = await supabaseAdmin
+    .from("help_request")
+    .select(`*,
+            requester:user_profiles!help_request_requesterId_fkey (
+            user_id,
+            username,
+            phone_number
+            )`)
+    .eq('assignedVolunteerId',volunteerId)
+    .eq('helpRequestStatus',3)
+    .order('createdAt', {ascending: false});
+
+    if(error) throw error;
+    return data;
+}
 async function completeRequest(postId, volunteerId, elderlyId) {
     // Update request status to completed
     const {data, error} = await supabaseAdmin
@@ -154,4 +170,5 @@ module.exports = {
     getAcceptedRequest,
     cancelRequest,
     completeRequest,
+    getCompletedRequest
 }

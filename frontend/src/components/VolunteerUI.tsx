@@ -17,9 +17,12 @@ import {
 import { axiosInstance } from "./axios";
 import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
-import getProfile from "@/features/profile/getProfile";
+import {getProfile, getUserProfile} from "@/features/profile/getProfile";
 import AcceptedRequest from "../features/volunteer/VolunteerAcceptedRequest";
+import CompletedRequest from "@/features/volunteer/VolunteerFinishedRequest";
 import VolunteerProfile from "@/features/volunteer/VolunteerProfile";
+import VolunteerRoute from "./VolunteerRoute";
+
 // Max number of posts to be fetched every call
 const LIMIT=10;
 
@@ -33,25 +36,41 @@ export default function VolunteerUI() {
   const [helpRequests, setHelpRequests] = useState([]);
   const [volunteerData, setVolunteerData] = useState({
     name: "Unknown Volunteer",
+    phoneNumber: null,
     isVerified: false,
     totalHelped: 0,
     averageRating: 0,
     reviewCount: 0
   });
-  
+  const [selectedRoute, setSelectedRoute] = useState<{ from: any; to: any } | null>(null);
+
   // getting user info from getProfile
   const {profile} = getProfile();
+  // this is the data from user_profile
+  const {userProfile}= getUserProfile();
+  
+useEffect(() => {
+  console.log("userProfile is:", userProfile);
 
-  useEffect(()=>{
-    if(!profile) return;
-    setVolunteerData({
-      name: profile.data?.name || "Unknown Volunteer", // Fallback to "Unknown Volunteer" if name is undefined
-      isVerified: profile.data?.isVerified ?? false, // Default to false if not available
-      totalHelped: profile.data?.totalHelped || 0, // Default to 0 if not available
-      averageRating: profile.data?.averageRating || 0, // Default to 0 if not available
-      reviewCount: profile.data?.reviewCount || 0 // Default to 0 if not available
-    });
-  }, [profile]);
+  // Defensive checks
+  if (!userProfile || !userProfile.data || !userProfile.data.profile) {
+    console.log("Profile not ready yet");
+    return;
+  }
+
+  console.log("user data is:", userProfile.data.profile);
+
+  const p = userProfile.data.profile;
+  setVolunteerData({
+    name: p.username || "Unknown Volunteer",
+    phoneNumber: p.phone_number ?? "Unknown number",
+    isVerified: p.isVerified ?? false,
+    totalHelped: p.requests || 0,
+    averageRating: p.rating || 0,
+    reviewCount: p.review_count || 0
+  });
+}, [userProfile]);
+
 
   // Sending location to fetch posts based on nearest location
 
@@ -157,9 +176,20 @@ export default function VolunteerUI() {
       alert("Error accepting request. Please try again.");
     }
   };
+
   // todo
-  const handleViewRoute = (requestId: number) => {
-    console.log("Viewing route for request:", requestId);
+  const handleViewRoute = (latitude: number, longitude: number) => {
+    if (!location) {
+      alert("Unable to get your current location.");
+      return;
+    }
+
+    setSelectedRoute({
+      from: { lat: location.latitude, lng: location.longitude },
+      to: { lat: latitude, lng: longitude },
+    });
+
+    setActiveTab("route");
   };
 
   const getPriorityColor = (priority: string) => {
@@ -259,7 +289,7 @@ export default function VolunteerUI() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => handleViewRoute(request.id)}
+                        onClick={() => handleViewRoute(request.latitude, request.longitude)}
                         className="flex-1 text-primary border-primary/50"
                       >
                         <Navigation className="h-5 w-5 mr-2" />
@@ -274,11 +304,27 @@ export default function VolunteerUI() {
         );
 
       case "Accepted_request":
-        return <AcceptedRequest setActiveTab={setActiveTab}/>;
+        return <AcceptedRequest setActiveTab={setActiveTab}
+                setSelectedRoute={setSelectedRoute}/>;
+      
+      case "Completed_request":
+        return <CompletedRequest setActiveTab={setActiveTab}/>;
 
       case "profile":
         return <VolunteerProfile />;
 
+      case "route":
+        console.log(selectedRoute);
+        if (!selectedRoute) return null;
+
+        return (
+          <VolunteerRoute
+            selectedRoute={selectedRoute}
+            from={selectedRoute.from}
+            to={selectedRoute.to}
+            onBack={() => setActiveTab("dashboard")}
+          />
+        );
       default:
         return null;
     }
@@ -346,7 +392,8 @@ export default function VolunteerUI() {
         <div className="flex">
           {[
             { id: "dashboard", icon: Activity, label: "Dashboard" },
-            { id: "Accepted_request", icon: HelpCircle, label: "Accepted_request" },
+            { id: "Accepted_request", icon: HelpCircle, label: "Accepted request" },
+            { id: "Completed_request", icon: HelpCircle, label: "Completed request"},
             { id: "profile", icon: User, label: "Profile" }
           ].map((tab) => (
             <button
