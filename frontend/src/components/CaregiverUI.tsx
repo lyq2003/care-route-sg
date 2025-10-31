@@ -46,19 +46,9 @@ interface CaregiverProfile {
 
 interface ElderlyUser {
   user_id: string;
-  full_name: string;
-  email?: string;
-  phone?: string;
-  avatar_url?: string;
-  mobility_preference?: string;
-}
-
-interface HistoryItem {
-  id: string;
-  created_at: string;
-  status: string;
-  description: string;
-  assigned_volunteer_user_id?: string;
+  username: string;
+  phone_number?: string;
+  //mobility_preference?: string;
 }
 
 /* -------------------- Status Badge -------------------- */
@@ -99,7 +89,7 @@ export default function CaregiverUI() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [linkedElderly, setLinkedElderly] = useState<ElderlyUser[]>([]);
   const [selectedElderly, setSelectedElderly] = useState<ElderlyUser | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState([]);
   
   // PIN linking state
   const [pinInput, setPinInput] = useState("");
@@ -116,7 +106,7 @@ export default function CaregiverUI() {
   // Elderly profile edit state
   const [isEditingElderlyProfile, setIsEditingElderlyProfile] = useState(false);
   const [elderlyProfileForm, setElderlyProfileForm] = useState({
-    full_name: "",
+    username: "",
     phone: "",
     mobility_preference: "",
   });
@@ -248,7 +238,7 @@ export default function CaregiverUI() {
   }, []);
 
   // Fetch active trips when component mounts or when linkedElderly changes
-  useEffect(() => {
+  /*useEffect(() => {
     if (linkedElderly.length > 0) {
       fetchActiveTrips();
     }
@@ -261,7 +251,7 @@ export default function CaregiverUI() {
     } catch (error) {
       console.error('Error fetching active trips:', error);
     }
-  };
+  };*/
 
   const handleLocationUpdate = (location: any) => {
     // Update the elderly locations when received from map component
@@ -307,8 +297,9 @@ export default function CaregiverUI() {
         setSelectedElderly(caregiverResponse.data.linked_elderly[0]);
         // Set elderly profile form for editing
         const elderly = caregiverResponse.data.linked_elderly[0];
+        console.log("elderly is", elderly);
         setElderlyProfileForm({
-          full_name: elderly.full_name || "",
+          username: elderly.username || "",
           phone: elderly.phone || "",
           mobility_preference: elderly.mobility_preference || "",
         });
@@ -334,6 +325,7 @@ export default function CaregiverUI() {
     try {
       const { data } = await axios.get(`/caregiver/history/${elderlyUserId}`);
       setHistory(data || []);
+      console.log("history log:",history);
     } catch (err: any) {
       console.error("Failed to fetch history:", err);
     }
@@ -480,23 +472,18 @@ export default function CaregiverUI() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                        {elderly.full_name?.[0]?.toUpperCase() || "E"}
+                        {elderly.username?.[0]?.toUpperCase() || "E"}
                       </div>
                       <div>
-                        <div className="font-semibold">{elderly.full_name}</div>
+                        <div className="font-semibold">{elderly.username}</div>
                         <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-                          {elderly.phone && (
+                          {elderly.phone_number && (
                             <span className="flex items-center gap-1">
                               <Phone className="h-3 w-3" />
-                              {elderly.phone}
+                              {elderly.phone_number}
                             </span>
                           )}
-                          {elderly.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {elderly.email}
-                            </span>
-                          )}
+
                         </div>
                       </div>
                     </div>
@@ -532,7 +519,7 @@ export default function CaregiverUI() {
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold">
-              Activity History - {selectedElderly.full_name}
+              Activity History - {selectedElderly.username}
             </h3>
           </div>
 
@@ -543,26 +530,45 @@ export default function CaregiverUI() {
             </div>
           ) : (
             <div className="space-y-3">
-              {history.map((item) => (
-                <div key={item.id} className="p-4 rounded-lg border">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.description}</p>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(item.created_at).toLocaleDateString("en-SG", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+              {history.map((item) => {
+                // Map numeric status to readable text
+                const statusText = {
+                  1: "Pending",
+                  2: "In Progress",
+                  3: "Completed",
+                }[item.helpRequestStatus] || "Unknown";
+
+                return (
+                  <div key={item.id} className="p-4 rounded-lg border">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium">{item.description}</p>
+
+                        {/* Address line */}
+                        {item.address && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                             {item.address}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(item.createdAt).toLocaleDateString("en-SG", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </div>
+
+                      <StatusBadge status={statusText} />
                     </div>
-                    <StatusBadge status={item.status} />
                   </div>
-                </div>
-              ))}
+                );
+              })}
+
             </div>
           )}
         </Card>
@@ -609,7 +615,7 @@ export default function CaregiverUI() {
       const marker = new google.maps.Marker({
         position: { lat: location.lat, lng: location.lng },
         map: map,
-        title: selectedElderly.full_name,
+        title: selectedElderly.username,
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -626,7 +632,7 @@ export default function CaregiverUI() {
       const infoWindow = new google.maps.InfoWindow({
         content: `
           <div style="padding: 8px;">
-            <h3 style="margin: 0 0 4px 0; font-weight: bold;">${selectedElderly.full_name}</h3>
+            <h3 style="margin: 0 0 4px 0; font-weight: bold;">${selectedElderly.username}</h3>
             <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
             ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
           </div>
@@ -652,7 +658,7 @@ export default function CaregiverUI() {
         const marker = new google.maps.Marker({
           position: { lat: location.lat, lng: location.lng },
           map: map,
-          title: elderlyUser.full_name,
+          title: elderlyUser.username,
           icon: {
             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
               <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -669,7 +675,7 @@ export default function CaregiverUI() {
         const infoWindow = new google.maps.InfoWindow({
           content: `
             <div style="padding: 8px;">
-              <h3 style="margin: 0 0 4px 0; font-weight: bold;">${elderlyUser.full_name}</h3>
+              <h3 style="margin: 0 0 4px 0; font-weight: bold;">${elderlyUser.username}</h3>
               <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
               ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
             </div>
@@ -802,10 +808,10 @@ export default function CaregiverUI() {
           <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
             <div className="flex items-center gap-3 mb-2">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                {selectedElderly.full_name?.[0]?.toUpperCase() || "E"}
+                {selectedElderly.username?.[0]?.toUpperCase() || "E"}
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Tracking: {selectedElderly.full_name}</h3>
+                <h3 className="text-lg font-semibold">Tracking: {selectedElderly.username}</h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                   <span>Live Tracking Active</span>
@@ -825,7 +831,7 @@ export default function CaregiverUI() {
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-50 text-green-500" />
                 <p>No active requests at the moment</p>
-                <p className="text-sm">You'll be notified when {selectedElderly.full_name} creates a new help request</p>
+                <p className="text-sm">You'll be notified when {selectedElderly.username} creates a new help request</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1092,22 +1098,12 @@ export default function CaregiverUI() {
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-              <div className="text-lg text-foreground">{selectedElderly.full_name || "Not set"}</div>
+              <div className="text-lg text-foreground">{selectedElderly.username || "Not set"}</div>
             </div>
 
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-              <div className="text-lg text-foreground">{selectedElderly.phone || "Not set"}</div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Mobility Preference</Label>
-              <div className="text-lg text-foreground">
-                {selectedElderly.mobility_preference ? 
-                  selectedElderly.mobility_preference.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
-                  : "Not set"
-                }
-              </div>
+              <div className="text-lg text-foreground">{selectedElderly.phone_number || "Not set"}</div>
             </div>
           </div>
         </Card>

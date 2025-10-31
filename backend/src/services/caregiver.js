@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus'); // keep if you have it
 const NotificationService = require('./notificationService');
@@ -72,11 +72,17 @@ const CaregiverServices = {
     return link;
   },
 
-  // issue here
+  // issue solved
   async getLinkedElderly(caregiverUserId) {
     const { data, error } = await supabase
       .from('caregiver_link')
-      .select('elderly:user_profiles (user_id, full_name, email, phone, avatar_url, mobility_preference)')
+      .select(`
+        elderly:user_profiles!caregiver_link_elderly_user_id_fkey (
+          user_id,
+          username,
+          phone_number
+        )
+      `)
       .eq('caregiver_user_id', caregiverUserId);
     if (error) throw error;
     return (data || []).map(r => r.elderly);
@@ -117,14 +123,15 @@ const CaregiverServices = {
       .single();
     if (linkErr || !link) throw new Error('Not linked to this Elderly');
 
-    const { data, error } = await supabase
-      .from('help_requests')
-      .select('id, created_at, status, description, assigned_volunteer_user_id')
-      .eq('elderly_user_id', elderlyUserId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const { data:requests, error } = await supabaseAdmin
+      .from('help_request')
+      .select('*')
+      .eq('requesterId', elderlyUserId)
+      .order('createdAt', { ascending: false })
+
+    //console.log("requesthistory data:", elderlyUserId,link,requests )
     if (error) throw error;
-    return data || [];
+    return requests || [];
   },
 
   async updateProfile(caregiverUserId, updates = {}) {

@@ -78,12 +78,15 @@ class CaregiverController {
     try {
       const { elderlyUserId } = req.params;
       const { limit, offset } = req.query;
-      const data = await CaregiverServices.getRequestHistory(
+      const requests = await CaregiverServices.getRequestHistory(
         req.user.id, elderlyUserId,
         { limit: Number(limit) || 20, offset: Number(offset) || 0 }
       );
-      res.json(data);
-    } catch (e) { res.status(400).json({ error: e.message }); }
+      //console.log("Requesthistory data is:", requests)
+      res.json(requests);
+    } catch (e) {
+      console.error(e);
+      res.status(400).json({ error: e.message }); }
   }
 
   /**
@@ -208,7 +211,7 @@ class CaregiverController {
   /**
    * Get active trips for linked elderly users
    */
-  static async getActiveTrips(req, res) {
+  /*static async getActiveTrips(req, res) {
     try {
       const linkedElderly = await CaregiverServices.getLinkedElderly(req.user.id);
       const elderlyIds = linkedElderly.map(elderly => elderly.user_id);
@@ -256,7 +259,7 @@ class CaregiverController {
       console.error('Get active trips error:', err);
       res.status(500).json({ error: err.message || 'Failed to get active trips' });
     }
-  }
+  }*/
 }
 
 module.exports = CaregiverController;
