@@ -77,12 +77,23 @@ interface Report {
 
 interface Review {
   id: string;
-  reviewerName: string;
-  revieweeName: string;
+  author_user_id: string;
+  recipient_user_id: string;
   rating: number;
-  comment: string;
-  timestamp: string;
-  flagged: boolean;
+  text?: string;
+  comment?: string;
+  created_at: string;
+  flagged?: boolean;
+  author?: {
+    name?: string;
+    full_name?: string;
+    role?: UserRole;
+  };
+  recipient?: {
+    name?: string;
+    full_name?: string;
+    role?: UserRole;
+  };
 }
 
 export default function AdminUI() {
@@ -250,10 +261,27 @@ export default function AdminUI() {
   const fetchReviews = async () => {
     setIsLoadingReviews(true);
     try {
+      console.log('Fetching reviews from /admin/reviews...');
       const res = await axiosInstance.get('/admin/reviews');
-      setReviews((res.data && (res.data.data?.reviews || res.data)) || []);
+      console.log('Reviews API response:', res.data);
+      
+      if (res.data && res.data.success && res.data.data && res.data.data.reviews) {
+        setReviews(res.data.data.reviews);
+        console.log('Set reviews:', res.data.data.reviews.length, 'reviews');
+      } else if (res.data && Array.isArray(res.data)) {
+        setReviews(res.data);
+        console.log('Set reviews (direct array):', res.data.length, 'reviews');
+      } else {
+        console.log('No reviews found in response');
+        setReviews([]);
+      }
     } catch (error) {
-      toast({ title: "Failed to load reviews", variant: "destructive" });
+      console.error('Failed to fetch reviews:', error.response?.data || error.message);
+      toast({ 
+        title: "Failed to load reviews", 
+        description: error.response?.data?.error || error.message,
+        variant: "destructive" 
+      });
     } finally {
       setIsLoadingReviews(false);
     }
@@ -1211,21 +1239,73 @@ export default function AdminUI() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
+                  <TableHead>Author</TableHead>
                   <TableHead>Recipient</TableHead>
                   <TableHead>Rating</TableHead>
-                  <TableHead>Text</TableHead>
+                  <TableHead>Review Text</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reviews.map((r: any) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs">{String(r.id).slice(0,8)}...</TableCell>
-                    <TableCell className="font-mono text-xs">{r.recipient_user_id || r.recipientUserId || r.revieweeName || 'Unknown'}</TableCell>
-                    <TableCell>{r.rating}</TableCell>
-                    <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">{r.text || r.comment || ''}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.id}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium">
+                          {r.author?.name || r.author?.full_name || 'Unknown Author'}
+                        </span>
+                        <Badge className={`${getRoleStyles(r.author?.role || 'elderly')} text-xs px-2 py-1 w-fit`} variant="secondary">
+                          {r.author?.role || 'elderly'}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium">
+                          {r.recipient?.name || r.recipient?.full_name || 'Unknown Recipient'}
+                        </span>
+                        <Badge className={`${getRoleStyles(r.recipient?.role || 'elderly')} text-xs px-2 py-1 w-fit`} variant="secondary">
+                          {r.recipient?.role || 'elderly'}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium">{r.rating}/5</span>
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={`text-xs ${
+                                i < r.rating ? 'text-yellow-400' : 'text-gray-300'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="text-sm text-muted-foreground">
+                        {r.text || r.comment ? (
+                          <span className="line-clamp-2">
+                            {r.text || r.comment}
+                          </span>
+                        ) : (
+                          <span className="italic">No review text</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Unknown'}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(r.id)}>Delete</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(r.id)}>
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
