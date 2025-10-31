@@ -15,6 +15,6 @@ router.get('/history/:elderlyUserId', CaregiverController.requestHistory);
 // Location tracking routes
 router.get('/elderly/:elderlyUserId/location', CaregiverController.getElderlyLocation);
 router.get('/elderly/:elderlyUserId/location-history', CaregiverController.getElderlyLocationHistory);
-router.get('/active-trips', CaregiverController.getActiveTrips);
+//router.get('/active-trips', CaregiverController.getActiveTrips);
 
 module.exports = router;
