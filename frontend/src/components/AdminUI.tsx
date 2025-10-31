@@ -38,7 +38,7 @@ import {
   ChevronDown,
   LogOut
 } from "lucide-react";
-import { axiosInstance as axios } from "./axios";
+import { axiosInstance } from "./axios";
 
 type UserRole = "elderly" | "volunteer" | "caregiver" | "admin";
 type UserStatus = "active" | "suspended" | "deactivated";
@@ -86,6 +86,7 @@ export default function AdminUI() {
   const [users, setUsers] = useState<User[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -191,7 +192,7 @@ export default function AdminUI() {
   // Fetch reports
   const fetchReports = async () => {
     try {
-      const response = await axios.get('/admin/reports');
+      const response = await axiosInstance.get('/admin/reports');
       if (response.data.success) {
         // Transform backend data to match frontend interface
         const transformedReports = response.data.data.reports.map(report => ({
@@ -235,53 +236,14 @@ export default function AdminUI() {
 
   // Fetch reviews
   const fetchReviews = async () => {
+    setIsLoadingReviews(true);
     try {
-      console.log('Fetching reviews from /admin/reviews...');
-      const response = await axios.get('/admin/reviews');
-      
-      console.log('Reviews response:', response.data);
-      
-      if (response.data.success) {
-        const reviewsData = response.data.data.reviews || [];
-        console.log(`Found ${reviewsData.length} reviews`);
-        
-        if (reviewsData.length === 0) {
-          setReviews([]);
-          console.log('No reviews found in database');
-          return;
-        }
-        
-        const transformedReviews = reviewsData.map(review => ({
-          id: review.id,
-          reviewerName: review.author?.user_metadata?.name || review.author?.email?.split('@')[0] || 'Anonymous User',
-          revieweeName: `${review.recipient?.user_metadata?.name || review.recipient?.email?.split('@')[0] || 'Unknown User'} (${review.recipient?.user_metadata?.role || 'User'})`,
-          rating: review.rating,
-          comment: review.text || '',
-          timestamp: new Date(review.created_at).toLocaleString(),
-          flagged: review.flagged || false
-        }));
-        setReviews(transformedReviews);
-      } else {
-        console.error('API returned success: false', response.data);
-        throw new Error(response.data.error || 'Unknown API error');
-      }
+      const res = await axiosInstance.get('/admin/reviews');
+      setReviews((res.data && (res.data.data?.reviews || res.data)) || []);
     } catch (error) {
-      console.error('Failed to fetch reviews:', error);
-      
-      let errorMessage = "Failed to load reviews";
-      if (error.response?.status === 401) {
-        errorMessage = "Authentication required. Please login as admin";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Admin access required";
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast({ title: "Failed to load reviews", variant: "destructive" });
+    } finally {
+      setIsLoadingReviews(false);
     }
   };
 
@@ -292,6 +254,12 @@ export default function AdminUI() {
     fetchReports();
     fetchReviews();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "reviews" || activeTab === "Reviews") {
+      fetchReviews();
+    }
+  }, [activeTab]);
 
 
 
@@ -549,35 +517,13 @@ export default function AdminUI() {
     }
   };
 
-  const handleRemoveReview = async (reviewId: string) => {
-    const review = reviews.find(r => r.id === reviewId);
-    
-    if (!review) return;
-    
-    setActionLoading(reviewId);
+  const handleDeleteReview = async (reviewId: string) => {
     try {
-      const response = await axios.delete(`/admin/reviews/${reviewId}`, {
-        data: { reason: 'Review removed for policy violation' }
-      });
-      
-      if (response.data.success) {
-        // Refresh reviews data
-        await fetchReviews();
-        
-        toast({
-          title: "Review Removed",
-          description: `Review by ${review.reviewerName} has been permanently removed from the platform for policy violations.`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Failed to remove review:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to remove review",
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(null);
+      await axiosInstance.delete(`/admin/reviews/${reviewId}`);
+      toast({ title: "Review removed" });
+      fetchReviews();
+    } catch (error) {
+      toast({ title: "Failed to remove review", variant: "destructive" });
     }
   };
 
@@ -1159,82 +1105,41 @@ export default function AdminUI() {
     </div>
   );
 
-  const renderReviewModeration = () => (
+  const renderReviewsTable = () => (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-foreground mb-6">Review Moderation</h2>
-
-      {/* Policy Notice */}
-      <Card className="p-4 mb-6 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-orange-900 dark:text-orange-100 mb-1">Review Moderation</h4>
-            <p className="text-sm text-orange-800 dark:text-orange-200">
-              Remove reviews that contain inappropriate content, personal information, or are unrelated to the service provided. 
-              Removed reviews will be permanently deleted and will not be visible to any users.
-            </p>
-          </div>
-        </div>
-      </Card>
-      
+      <h2 className="text-xl font-semibold text-foreground mb-6">Reviews</h2>
       <Card className="p-6 shadow-sm border-border/50">
         <h3 className="text-base font-semibold text-foreground mb-4">All Reviews</h3>
-        
-        {reviews.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No reviews to moderate.</p>
-          </div>
+        {isLoadingReviews ? (
+          <div className="py-8 text-center text-muted-foreground">Loading reviews...</div>
+        ) : reviews.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">No reviews yet.</div>
         ) : (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <Card key={review.id} className="p-5 shadow-sm border-border/50 bg-muted/50">
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        {review.reviewerName} → {review.revieweeName}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span key={i} className={i < review.rating ? "text-yellow-500" : "text-gray-300"}>★</span>
-                          ))}
-                          <span className="text-sm text-muted-foreground ml-1">({review.rating}/5)</span>
-                        </div>
-                        {review.flagged && (
-                          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Reported
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-background p-3 rounded-lg border">
-                    <p className="text-sm text-foreground">"{review.comment}"</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    {review.timestamp}
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleRemoveReview(review.id)}
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Remove Review
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Recipient</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Text</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reviews.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{String(r.id).slice(0,8)}...</TableCell>
+                    <TableCell className="font-mono text-xs">{r.recipient_user_id || r.recipientUserId || r.revieweeName || 'Unknown'}</TableCell>
+                    <TableCell>{r.rating}</TableCell>
+                    <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">{r.text || r.comment || ''}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(r.id)}>Delete</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </Card>
@@ -1282,7 +1187,7 @@ export default function AdminUI() {
         {activeTab === "overview" && renderOverview()}
         {activeTab === "users" && renderUserManagement()}
         {activeTab === "reports" && renderReportManagement()}
-        {activeTab === "reviews" && renderReviewModeration()}
+        {activeTab === "reviews" && renderReviewsTable()}
       </div>
 
 
