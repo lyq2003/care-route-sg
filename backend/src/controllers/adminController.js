@@ -10,6 +10,26 @@ const ReportStatus = require('../domain/enum/ReportStatus');
 
 class AdminController {
   
+  // Helper function to calculate suspension time remaining
+  calculateSuspensionTimeRemaining(suspensionEndDate) {
+    if (!suspensionEndDate) return null;
+    
+    const now = new Date();
+    const endDate = new Date(suspensionEndDate);
+    const timeRemaining = endDate.getTime() - now.getTime();
+    
+    if (timeRemaining <= 0) {
+      return { expired: true, daysRemaining: 0, message: "Expired" };
+    }
+    
+    const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
+    return { 
+      expired: false, 
+      daysRemaining, 
+      message: `${daysRemaining} day${daysRemaining === 1 ? '' : 's'}` 
+    };
+  }
+  
   // Get dashboard statistics
   async getDashboardStats(req, res) {
     try {
@@ -66,10 +86,20 @@ class AdminController {
 
       const result = await adminService.getAllUsers(pageNum, limitNum, filters);
 
+      // Add suspension time remaining for suspended users
+      const usersWithSuspensionInfo = result.users.map(user => {
+        const userObj = user.toJSON ? user.toJSON() : user;
+        if (userObj.status === 'suspended' && userObj.suspensionEndDate) {
+          const suspensionInfo = this.calculateSuspensionTimeRemaining(userObj.suspensionEndDate);
+          userObj.suspensionTimeRemaining = suspensionInfo;
+        }
+        return userObj;
+      });
+
       res.status(200).json({
         success: true,
         data: {
-          users: result.users,
+          users: usersWithSuspensionInfo,
           pagination: {
             total: result.total,
             page: result.page,

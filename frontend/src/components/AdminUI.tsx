@@ -54,15 +54,22 @@ interface User {
   createdAt: string;
   profilePicture?: string;
   online?: boolean;
+  suspensionTimeRemaining?: {
+  expired: boolean;
+  daysRemaining: number;
+  message: string;
+  };
 }
 
 interface Report {
   id: string;
   reporterName: string;
+  reporterRole: UserRole;
   reportedUser: string;
   reportedUserId: string;
   reportedRole: UserRole;
   reason: string;
+  description?: string;
   status: ReportStatus;
   timestamp: string;
   evidence?: string;
@@ -123,29 +130,29 @@ export default function AdminUI() {
       const response = await axiosInstance.get('/users/');
       if (response.data) {
         const allUsers = response.data;
-        
-        // Calculate stats from the user data
-        const totalUsers = allUsers.length;
-        const activeUsers = allUsers.filter(user => 
-          (user.status || 'active') === 'active'
-        ).length;
-        const suspendedUsers = allUsers.filter(user => 
-          user.status === 'suspended'
-        ).length;
-        const deactivatedUsers = allUsers.filter(user => 
-          user.status === 'deactivated'
-        ).length;
-        
-        setStats({
-          totalUsers,
-          activeUsers,
-          suspendedUsers,
-          deactivatedUsers,
-          pendingReports: 0, // Will be updated when we implement reports
-          inProgressReports: 0,
-          resolvedReports: 0,
-          rejectedReports: 0
-        });
+      
+      // Calculate stats from the user data
+      const totalUsers = allUsers.length;
+      const activeUsers = allUsers.filter(user => 
+        (user.status || 'active') === 'active'
+      ).length;
+      const suspendedUsers = allUsers.filter(user => 
+        user.status === 'suspended'
+      ).length;
+      const deactivatedUsers = allUsers.filter(user => 
+        user.status === 'deactivated'
+      ).length;
+      
+      setStats({
+        totalUsers,
+        activeUsers,
+        suspendedUsers,
+        deactivatedUsers,
+        pendingReports: 0,
+        inProgressReports: 0,
+        resolvedReports: 0,
+        rejectedReports: 0
+       });
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -161,7 +168,7 @@ export default function AdminUI() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/users/');
+      const response = await axiosInstance.get('/users');
       if (response.data) {
         // Transform the user data to match our interface
         const transformedUsers = response.data.map(user => ({
@@ -194,14 +201,19 @@ export default function AdminUI() {
     try {
       const response = await axiosInstance.get('/admin/reports');
       if (response.data.success) {
+        // Debug: Log the raw report data to see what fields are available
+        console.log('Raw report data from backend:', response.data.data.reports[0]);
+        
         // Transform backend data to match frontend interface
         const transformedReports = response.data.data.reports.map(report => ({
           id: report.id,
-          reporterName: report.reporter?.user_metadata?.name || report.reporter?.email?.split('@')[0] || 'Unknown User',
-          reportedUser: report.reported?.user_metadata?.name || report.reported?.email?.split('@')[0] || 'Unknown User',
+          reporterName: report.reporter?.name || report.reporter?.full_name || report.reporter?.email?.split('@')[0] || 'Unknown User',
+          reporterRole: report.reporter?.role || 'elderly',
+          reportedUser: report.reported?.name || report.reported?.full_name || report.reported?.email?.split('@')[0] || 'Unknown User',
           reportedUserId: report.reported_user_id,
-          reportedRole: report.reported?.user_metadata?.role || 'unknown',
+          reportedRole: report.reported?.role || 'elderly',
           reason: report.reason,
+          description: report.description || '',
           status: report.status === 'PENDING' ? 'Pending' : 
                   report.status === 'IN_PROGRESS' ? 'In Progress' :
                   report.status === 'RESOLVED' ? 'Resolved' : 'Rejected',
@@ -296,26 +308,24 @@ export default function AdminUI() {
 
   // Calculate suspension time remaining
   const getSuspensionTimeRemaining = (user: User): string | null => {
-    if (user.status !== 'suspended') return null;
+    if (user.status !== 'suspended' || !user.suspensionTimeRemaining) return null;
     
-    // In a real implementation, this would come from user.suspensionEndDate
-    // For now, return a mock calculation based on user ID for demonstration
-    const mockEndDates = {
-      'user1': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
-      'user2': new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days
-      'user3': new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days
-    };
+    if (user.suspensionTimeRemaining.expired) {
+      return "Expired";
+    }
     
-    const suspensionEndDate = mockEndDates[user.userid as keyof typeof mockEndDates] || 
-                            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
-    
-    const now = new Date();
-    const timeRemaining = suspensionEndDate.getTime() - now.getTime();
-    
-    if (timeRemaining <= 0) return "Expires soon";
-    
-    const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
-    return `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining`;
+    return user.suspensionTimeRemaining.message;
+  };
+
+  // Get display status for user
+  const getDisplayStatus = (user: User): string => {
+    if (user.status === 'suspended') {
+      const timeRemaining = getSuspensionTimeRemaining(user);
+      return timeRemaining ? `Suspended for ${timeRemaining}` : 'Suspended';
+    } else if (user.status === 'deactivated') {
+      return 'Banned';
+    }
+    return 'Active';
   };
 
   // Handle user actions
@@ -394,7 +404,7 @@ export default function AdminUI() {
   const handleReactivateUser = async (userId: string) => {
     setActionLoading(userId);
     try {
-      const response = await axios.post(`/admin/users/${userId}/reactivate`);
+      const response = await axiosInstance.post(`/admin/users/${userId}/reactivate`);
       
       if (response.data.success) {
         await fetchUsers(); // Refresh user list
@@ -417,6 +427,12 @@ export default function AdminUI() {
   };
 
   // Report management functions
+  /*
+   * REPORT WORKFLOW:
+   * 1. All reports start in "Pending" state
+   * 2. Admin clicks "Begin Review" → Status changes to "In Progress"
+   * 3. Admin takes action (Suspend/Ban/Reject) → Status changes to "Resolved" or "Rejected"
+   */
   const handleStartReportReview = async (reportId: string) => {
     const report = reports.find(r => r.id === reportId);
     
@@ -435,7 +451,7 @@ export default function AdminUI() {
     setIsReviewingReport(true);
     try {
       // Set report status to "In Progress"
-      const response = await axios.post(`/admin/reports/${reportId}/start-review`);
+      const response = await axiosInstance.post(`/admin/reports/${reportId}/start-review`);
       
       if (response.data.success) {
         // Refresh reports data
@@ -481,8 +497,8 @@ export default function AdminUI() {
       const endpoint = action === 'reject' ? 
         `/admin/reports/${reportId}/reject` : 
         `/admin/reports/${reportId}/resolve`;
-      
-      const response = await axios.post(endpoint, {
+
+      const response = await axiosInstance.post(endpoint, {
         action: action !== 'reject' ? action : undefined,
         reason: `Admin action: ${action}${duration && action === 'suspend' ? ` for ${duration} days` : ''}`,
         duration: action === 'suspend' ? duration : undefined
@@ -828,26 +844,12 @@ export default function AdminUI() {
                         user.status === 'suspended' ? 'text-yellow-600' :
                         'text-red-600'
                       }`}>
-                        Account Status: {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                        Account Status: {getDisplayStatus(user)}
                       </span>
                     </div>
-                    {user.status === "suspended" && (
-                      <div className="flex items-center gap-2 text-yellow-600">
-                        <Clock className="w-5 h-5" />
-                        Unsuspends in: {getSuspensionTimeRemaining(user)}
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex gap-2 pt-3 flex-wrap">
-                    {/* Suspended accounts auto-unsuspend when duration expires */}
-                    {user.status === "suspended" && (
-                      <div className="px-3 py-2 text-sm bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        Auto-unsuspends: {getSuspensionTimeRemaining(user)}
-                      </div>
-                    )}
-                    
                     {/* Manual reactivation for banned/deactivated accounts with valid reasoning */}
                     {user.status === "deactivated" && (user.role === "elderly" || user.role === "volunteer") && (
                       <Button
@@ -858,7 +860,7 @@ export default function AdminUI() {
                         disabled={actionLoading === user.userid}
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />
-                        {actionLoading === user.userid ? 'Processing...' : 'Reactivate Account'}
+                        {actionLoading === user.userid ? 'Processing...' : 'Unban User'}
                       </Button>
                     )}
                     
@@ -866,7 +868,7 @@ export default function AdminUI() {
                     {user.role === "caregiver" && (
                       <div className="px-3 py-2 text-sm bg-blue-100 text-blue-800 rounded-lg flex items-center gap-1">
                         <UserCheck className="w-4 h-4" />
-                        Active
+                        Caregiver cannot be suspended/banned
                       </div>
                     )}
                   </div>
@@ -984,121 +986,210 @@ export default function AdminUI() {
             <p className="text-muted-foreground">No reports found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Reported User ID</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-mono text-xs">{report.id.slice(0, 8)}...</TableCell>
-                    <TableCell className="font-mono text-xs">{report.reportedUserId?.slice(0, 8) || 'N/A'}...</TableCell>
-                    <TableCell className="max-w-xs truncate">{report.reason}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(report.status)}>
-                        {report.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {report.status === "Pending" && (
+          <div className="space-y-6">
+            {reports.map((report) => (
+              <Card key={report.id} className="p-8 shadow-sm border-border/50">
+                <div className="space-y-6">
+                  {/* Header Row */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                        <Flag className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-foreground text-lg">Report #{report.id}</span>
+                          <Badge className={`${getStatusBadgeColor(report.status)} px-4 py-2 text-sm font-medium`}>
+                            {report.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{report.timestamp}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      {report.status === "Pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartReportReview(report.id)}
+                          disabled={actionLoading === report.id}
+                        >
+                          {actionLoading === report.id ? 'Processing...' : 'Begin Review'}
+                        </Button>
+                      )}
+                      
+                      {report.status === "In Progress" && (
+                        <>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-yellow-600 hover:text-yellow-700"
+                                disabled={actionLoading === report.id}
+                              >
+                                <UserX className="w-4 h-4 mr-1" />
+                                Suspend
+                                <ChevronDown className="w-4 h-4 ml-1" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 7)}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">7 days</span>
+                                  <span className="text-xs text-muted-foreground">Minor misconduct</span>
+                                </div>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 30)}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">30 days</span>
+                                  <span className="text-xs text-muted-foreground">Moderate misconduct</span>
+                                </div>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReportAction('suspend', report.id, 90)}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">90 days</span>
+                                  <span className="text-xs text-muted-foreground">Serious misconduct</span>
+                                </div>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleStartReportReview(report.id)}
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleReportAction('deactivate', report.id)}
                             disabled={actionLoading === report.id}
                           >
-                            {actionLoading === report.id ? 'Processing...' : 'Start Review'}
+                            <UserX className="w-4 h-4 mr-1" />
+                            {actionLoading === report.id ? 'Processing...' : 'Ban'}
                           </Button>
-                        )}
-                        
-                        {report.status === "In Progress" && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                setActionLoading(report.id);
-                                try {
-                                  const response = await axios.post(`/admin/reports/${report.id}/resolve`, {
-                                    note: 'Report resolved by admin'
-                                  });
-                                  if (response.data.success) {
-                                    await fetchReports();
-                                    toast({
-                                      title: "Success",
-                                      description: "Report resolved successfully",
-                                    });
-                                  }
-                                } catch (error: any) {
-                                  console.error('Failed to resolve report:', error);
-                                  toast({
-                                    title: "Error",
-                                    description: error.response?.data?.error || "Failed to resolve report",
-                                    variant: "destructive"
-                                  });
-                                } finally {
-                                  setActionLoading(null);
-                                }
-                              }}
-                              disabled={actionLoading === report.id}
-                            >
-                              {actionLoading === report.id ? 'Processing...' : 'Resolve'}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={async () => {
-                                setActionLoading(report.id);
-                                try {
-                                  const response = await axios.post(`/admin/reports/${report.id}/reject`, {
-                                    note: 'Report rejected by admin'
-                                  });
-                                  if (response.data.success) {
-                                    await fetchReports();
-                                    toast({
-                                      title: "Success",
-                                      description: "Report rejected successfully",
-                                    });
-                                  }
-                                } catch (error: any) {
-                                  console.error('Failed to reject report:', error);
-                                  toast({
-                                    title: "Error",
-                                    description: error.response?.data?.error || "Failed to reject report",
-                                    variant: "destructive"
-                                  });
-                                } finally {
-                                  setActionLoading(null);
-                                }
-                              }}
-                              disabled={actionLoading === report.id}
-                            >
-                              {actionLoading === report.id ? 'Processing...' : 'Reject'}
-                            </Button>
-                          </>
-                        )}
-                        
-                        {report.status === "Resolved" && (
-                          <span className="text-sm text-muted-foreground">Completed</span>
-                        )}
-                        
-                        {report.status === "Rejected" && (
-                          <span className="text-sm text-muted-foreground">Rejected</span>
-                        )}
+                          
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReportAction('reject', report.id)}
+                            disabled={actionLoading === report.id}
+                          >
+                            {actionLoading === report.id ? 'Processing...' : 'Reject'}
+                          </Button>
+                        </>
+                      )}
+                      
+                      {(report.status === "Resolved" || report.status === "Rejected") && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground bg-muted/50 rounded-md">
+                          {report.status === "Resolved" ? "Action Taken" : "No Action"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Reporter Info */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Reporter</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm font-medium">{report.reporterName}</span>
+                          <Badge className={getRoleStyles(report.reporterRole)} variant="secondary">
+                            {report.reporterRole}
+                          </Badge>
+                        </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Report Reason</Label>
+                        <div className="bg-muted/30 p-3 rounded-lg mt-1">
+                          <p className="text-sm font-medium">{report.reason}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                        <div className="bg-muted/20 p-3 rounded-lg mt-1 border border-border">
+                          <p className="text-sm text-foreground whitespace-pre-wrap">
+                            {report.description || 'No additional description provided'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {report.evidence && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Evidence</Label>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-1 border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                Evidence Available
+                              </span>
+                            </div>
+                            
+                            {/* Mock evidence display - you can replace this with actual evidence rendering */}
+                            <div className="space-y-3">
+                              <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <MessageSquare className="w-4 h-4 text-blue-600" />
+                                  <span className="text-xs font-medium">Screenshot Evidence</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Screenshots showing inappropriate behavior
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="bg-gray-100 dark:bg-gray-700 h-20 rounded border-2 border-dashed flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground">Image 1</span>
+                                  </div>
+                                  <div className="bg-gray-100 dark:bg-gray-700 h-20 rounded border-2 border-dashed flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground">Image 2</span>
+                                  </div>
+                                </div>
+                                <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
+                                  View Full Evidence
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reported User Info */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Reported User</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm font-medium">{report.reportedUser}</span>
+                          <Badge className={getRoleStyles(report.reportedRole)} variant="secondary">
+                            {report.reportedRole}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono mt-1">
+                          ID: {report.reportedUserId}
+                        </p>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Disciplinary Action Required
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          {report.status === "Pending" ? "Awaiting admin review and action" :
+                           report.status === "In Progress" ? "Review in progress - choose appropriate action" :
+                           report.status === "Resolved" ? "Disciplinary action has been taken" :
+                           "Report was rejected - no action taken"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </Card>
@@ -1160,7 +1251,7 @@ export default function AdminUI() {
             className="gap-2"
             onClick={async () => {
               try {
-                await axios.post('/auth/logout', {}, {
+                await axiosInstance.post('/auth/logout', {}, {
                   withCredentials: true,
                 });
                 window.location.href = '/login';
@@ -1183,7 +1274,7 @@ export default function AdminUI() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-6 py-6">
         {activeTab === "overview" && renderOverview()}
         {activeTab === "users" && renderUserManagement()}
         {activeTab === "reports" && renderReportManagement()}
@@ -1387,7 +1478,7 @@ export default function AdminUI() {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg">
-        <div className="max-w-4xl mx-auto flex justify-around items-center py-3">
+        <div className="max-w-7xl mx-auto flex justify-around items-center py-3">
           <button
             onClick={() => setActiveTab("overview")}
             className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
