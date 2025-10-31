@@ -18,7 +18,8 @@
     "refresh": "Refresh",
     "clear": "Clear",
     "submit": "Submit",
-    "repeat": "Repeat"
+    "repeat": "Repeat",
+    "chas": "Chas Clinics"
   },
   "home": {
     "welcome": "Good day, {{name}}!",
@@ -32,6 +33,7 @@
     "planSmartRoute": "Plan Smart Route",
     "recentRoutes": "Recent Routes",
     "recentActivity": "Recent Activity",
+    "noRecentActivity": "No Recent Activity",
     "noRecentRoutes": "No recent routes found",
     "completeRouteToSee": "Complete a route to see it here",
     "loadingRouteHistory": "Loading route history...",
@@ -46,6 +48,7 @@
     "personalInformation": "Personal Information",
     "fullName": "Full Name",
     "emailAddress": "Email Address",
+    "phoneNumber": "Phone Number",
     "caregiverLinkingPin": "Caregiver Linking PIN", 
     "sharePinWithCaregivers": "Share this PIN with your caregivers to link your accounts",
     "accessibilityPreferences": "Accessibility & Preferences",

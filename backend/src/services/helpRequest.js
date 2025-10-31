@@ -108,6 +108,30 @@ class HelpRequest {
   }
 
 
+  static async endHelpRequest(helpRequestId) {
+    try {
+
+      const { data, error } = await supabaseAdmin
+        .from('help_request')
+        .update({
+          helpRequestStatus: 3
+        })
+        .eq('id',helpRequestId)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating help request status to end:', error);
+      throw error;
+    }
+  }
+
+
 
   static async getCompletedHelpRequestswithVolunteer(requesterId) {
 

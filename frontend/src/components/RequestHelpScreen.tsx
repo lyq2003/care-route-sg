@@ -11,7 +11,10 @@ import { useNavigate  } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
 
 
+
+
 export default function RequestHelpScreen() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "submitted" | "matched">("form");
   const [formData, setFormData] = useState({
     location: "",
@@ -19,8 +22,11 @@ export default function RequestHelpScreen() {
     urgency: "medium" as "low" | "medium" | "high"
   });
 
+  const onBack = () => {
+    navigate(`/elderly_dashboard`);
+  }
+
   const [image, setImage] = useState<File | null>(null);
-  const navigate = useNavigate();
 
   const handleBack = () => {
     navigate(-1); 

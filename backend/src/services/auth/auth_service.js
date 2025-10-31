@@ -2,6 +2,7 @@ const profiles = require('../profiles');
 const { supabase }=require('../../config/supabase');
 const NotificationService = require('../notificationService');
 const Role = require('../../domain/enum/Role');
+const UserAccessibilityNeedsService = require("../userAccessibilityNeeds");
 
 // Login
 exports.login = async (req,res)=>{
@@ -158,6 +159,15 @@ exports.signup = async (req,res) => {
         } catch (adminNotifError) {
             console.error("Error sending admin notification:", adminNotifError);
             // Don't fail signup if admin notification fails
+        }
+
+
+        // Create record of user accessibility needs defaulted to false for all
+        try {
+            const result = await UserAccessibilityNeedsService.createUserAccessibilityNeeds(data.user.id);
+            
+        } catch (error) {
+            console.error("Error creating user accessbility needs:", error);
         }
 
         res.status(201).json({

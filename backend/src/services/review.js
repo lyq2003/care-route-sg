@@ -84,7 +84,7 @@ class ReviewService {
   async viewMyReviews(userId) {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select('*, reviews_recipient_user_id_fkey1 (username)')
       .eq('author_user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -123,35 +123,7 @@ class ReviewService {
     return data || []; // Ensure we return an empty array if data is null
   }
 
-  // Flag review for removal (admin or automated moderation)
-  async flagReview({ reviewId, reason = 'offensive language', flaggedBy = 'SYSTEM' }) {
-    const { data, error } = await supabase
-      .from('reviews')
-      .update({ 
-        flagged: true,
-        flag_reason: reason,
-        flagged_at: new Date().toISOString(),
-        flagged_by: flaggedBy
-      })
-      .eq('id', reviewId)
-      .select('*')
-      .single();
-    
-    if (error) throw error;
-
-    // Notify admins about flagged review
-    try {
-      const NotificationService = require('./notificationService');
-      await NotificationService.notifyAdminReviewFlagged(reviewId, reason);
-    } catch (notifError) {
-      console.error('Error sending admin review flagged notification:', notifError);
-      // Don't fail the flag operation if notification fails
-    }
-
-    return data;
-  }
-
-  // Remove flagged review (admin action)
+  // Remove review (admin action)
   async removeReview({ reviewId, adminUserId }) {
     const { data, error } = await supabase
       .from('reviews')

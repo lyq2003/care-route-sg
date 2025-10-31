@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 
 const ElderlyServices = {
@@ -28,23 +28,35 @@ const ElderlyServices = {
       return profile.linking_pin;
     }
 
-    // Generate new PIN
-    const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+    maxRetries = 5;
 
-    // Update profile with new PIN
-    const { data: updated, error: updateErr } = await supabase
-      .from('user_profiles')
-      .update({ linking_pin: newPin })
-      .eq('user_id', elderlyUserId)
-      .select('linking_pin')
-      .single();
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
 
-    if (updateErr) {
-      console.error('Error generating PIN:', updateErr);
-      throw new Error('Failed to generate linking PIN');
+      console.log(`Attempt ${attempt + 1}: Creating linking pin`);
+
+
+      // Generate new PIN
+      const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Update profile with new PIN
+      const { data: updated, error: updateErr } = await supabase
+        .from('user_profiles')
+        .update({ linking_pin: newPin })
+        .eq('user_id', elderlyUserId)
+        .select('linking_pin')
+        .single();
+
+      if (updateErr) {
+        console.error('Error generating PIN:', updateErr);
+        throw new Error('Failed to generate linking PIN');
+      } else {
+        return updated.linking_pin;
+      }
+
+
+
     }
 
-    return updated.linking_pin;
   },
 
   /**
@@ -73,17 +85,42 @@ const ElderlyServices = {
    * Get all caregivers linked to this elderly user
    */
   async getLinkedCaregivers(elderlyUserId) {
-    const { data, error } = await supabase
+    /* const { data, error } = await supabase
       .from('caregiver_link')
       .select('caregiver:user_profiles!caregiver_user_id (user_id, full_name, email, phone, avatar_url)')
-      .eq('elderly_user_id', elderlyUserId);
+      .eq('elderly_user_id', elderlyUserId); */
 
-    if (error) {
+      // Update after link was moved to user profiles on 31/10/2025
+      // Get pin
+      const { data: pinData, error: pinError } = await supabase
+      .from('user_profiles')
+      .select('linking_pin')
+      .eq('user_id', elderlyUserId)
+      .single();
+
+    if (pinError) {
+      console.error('Error fetching linked caregivers:', pinError);
+      throw pinError;
+    }
+    
+
+    const pin = pinData.linking_pin
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('linking_pin', pin)
+      .neq('user_id', elderlyUserId); // Exclude elderly
+
+
+      if (error) {
       console.error('Error fetching linked caregivers:', error);
       throw error;
     }
 
-    return (data || []).map(r => r.caregiver);
+
+    //return (data || []).map(r => r.caregiver);
+    return data
   },
 
   /**
@@ -112,7 +149,27 @@ const ElderlyServices = {
 
     return data;
   },
+
+
+  async getRecentActivityByElderlyID(elderlyID) {
+    const { data, error } = await supabaseAdmin
+      .from("help_request")
+      .select(`id, description, createdAt, help_request_status (statusName), help_request_assignedVolunteerId_fkey (user_id, username, phone_number)`)
+      .eq("requesterId", elderlyID)
+      //.neq("helpRequestStatus", 1)
+      //.not("assignedVolunteerId", "is", null);;
+
+    if (error) {
+      throw error
+    } else {
+      return data
+    }
+  }
+
+
+  
 };
+
 
 module.exports = ElderlyServices;
 

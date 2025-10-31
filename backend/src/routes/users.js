@@ -32,7 +32,7 @@ router.get('/profile', requireAuth, (req, res) => {
     language_perference: req.user.language_perference,
     linking_pin: req.user.linking_pin
   };
-  
+
   res.json(userProfile);
 });
 
@@ -40,13 +40,13 @@ router.get('/profile', requireAuth, (req, res) => {
 router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { name, email, phone_number } = req.body;
-    const updatedUser = await User.update(req.user.id, { 
-      name, 
-      email, 
+    const updatedUser = await User.update(req.user.id, {
+      name,
+      email,
       phone_number: phone_number || req.user.user_metadata?.phone_number
     });
-    
-    const userProfile={
+
+    const userProfile = {
       id: updatedUser.id,
       email: updatedUser.email,
       name: updatedUser.user_metadata?.name || updatedUser.user_metadata?.full_name,
@@ -57,11 +57,40 @@ router.put('/profile', requireAuth, async (req, res) => {
     }
 
     res.json(userProfile);
-    
+
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+
+
+router.put('/updatePersonalInfo', requireAuth, async (req, res) => {
+  try {
+    const { name, phone_number } = req.body;
+    const updatedUser = await User.updatePersonalInfo(req.user.id, name, phone_number)
+
+    const userProfile = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.user_metadata?.name || updatedUser.user_metadata?.full_name,
+      phone_number: updatedUser.user_metadata?.phone_number,
+      provider: updatedUser.user_metadata?.provider,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at
+    }
+
+    res.json({
+      message: 'User personal information updated successfully',
+      profile: userProfile
+    });
+
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+
 });
 
 // Delete current user account

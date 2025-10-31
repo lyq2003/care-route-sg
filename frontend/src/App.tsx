@@ -14,6 +14,7 @@ import ElderlyUI from "./components/ElderlyUI";
 import ChasLocation from "./features/location/chasLocation";
 import CaregiverUI from "./components/CaregiverUI";
 import RequestHelpScreen from "./components/RequestHelpScreen";
+import AddReviewScreen from "./components/AddReviewScreen";
 import VolunteerUI from "./components/VolunteerUI";
 import RequestFileter from "./components/RequestFilter";
 import AdminUI from "./components/AdminUI";
@@ -21,7 +22,7 @@ import RolesScreen from "./components/RolesScreen";
 import { AuthProvider } from './features/auth/authContext';
 import AuthSuccess from './features/auth/authsuccess';
 import { useAuthStore } from './store/useAuthStore';
-import { useNotificationStore }from './store/useNotificationStore';
+import { useNotificationStore } from './store/useNotificationStore';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -65,71 +66,77 @@ const App = () => {
       disconnectSocket();
     };
   }, []);
-  
+
   return (
     <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <ToastContainer position="top-right" autoClose={4000} style={{ zIndex: 9999 }} />
-      <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path='/auth/success' element={<AuthSuccess />} />
-          <Route
-            path='/login' element={ <SigninPage/>} />
-          <Route
-            path='/signup'
-            element={
-              <SignupPage
-                onBack={() => window.history.back()}
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <ToastContainer position="top-right" autoClose={4000} style={{ zIndex: 9999 }} />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path='/auth/success' element={<AuthSuccess />} />
+              <Route
+                path='/login' element={<SigninPage />} />
+              <Route
+                path='/signup'
+                element={
+                  <SignupPage
+                    onBack={() => window.history.back()}
+                  />
+                }
               />
-            }
-          />
-          <Route path="/roles" element={<RolesScreen />} />
-          <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/roles" element={<RolesScreen />} />
+              <Route path="/WelcomeScreen" element={<WelcomeScreen />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
 
-          <Route element={<PrivateRoute />}>
-            <Route
-              path="/elderly_dashboard"
-              element={
-                <ElderlyUI/>
-              }
-            />
+              <Route element={<PrivateRoute />}>
+                <Route
+                  path="/elderly_dashboard"
+                  element={
+                    <ElderlyUI />
+                  }
+                />
 
-            <Route
-              path="/caregiver_dashboard"
-              element={
-                <CaregiverUI/>
-              }
-            />
+                <Route
+                  path="/caregiver_dashboard"
+                  element={
+                    <CaregiverUI />
+                  }
+                />
 
-            <Route
-              path="/request_help"
-              element={
-                <RequestHelpScreen onBack={function (): void {
-                 
-                } }/>
-              }
-            />
-            <Route path="/chasLocation" element={<ChasLocation/>}/>
-            <Route path="/volunteer_dashboard"element={<VolunteerUI/>}/>
-            <Route path="/request_filter" element={<RequestFileter/>}/>
-            <Route
-              path="/admin_dashboard"
-              element={
-                <AdminUI/>
-              }
-            />
-            <Route path="roles" element={<RolesScreen />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+                <Route
+                  path="/request_help"
+                  element={
+                    <RequestHelpScreen />
+                  }
+                />
+
+                <Route
+                  path="/add_review"
+                  element={
+                    <AddReviewScreen />
+                  }
+                />
+
+                <Route path="/chasLocation" element={<ChasLocation />} />
+                <Route path="/volunteer_dashboard" element={<VolunteerUI />} />
+                <Route path="/request_filter" element={<RequestFileter />} />
+                <Route
+                  path="/admin_dashboard"
+                  element={
+                    <AdminUI />
+                  }
+                />
+                <Route path="roles" element={<RolesScreen />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };

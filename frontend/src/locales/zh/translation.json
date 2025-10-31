@@ -18,7 +18,8 @@
     "refresh": "刷新",
     "clear": "清除",
     "submit": "提交",
-    "repeat": "重复"
+    "repeat": "重复",
+    "chas": "查斯诊所"
   },
   "home": {
     "welcome": "欢迎，{{name}}",
@@ -32,6 +33,7 @@
     "planSmartRoute": "规划智能路线",
     "recentRoutes": "最近路线",
     "recentActivity": "最近活动",
+    "noRecentActivity": "最近没有活动",
     "noRecentRoutes": "未找到最近路线",
     "completeRouteToSee": "完成路线后在此查看"
   },
@@ -41,6 +43,7 @@
     "personalInformation": "个人信息",
     "fullName": "全名",
     "emailAddress": "电子邮件地址", 
+    "phoneNumber": "电话号码",
     "caregiverLinkingPin": "护理员关联PIN码",
     "sharePinWithCaregivers": "与您的护理员分享此PIN码以关联账户",
     "accessibilityPreferences": "无障碍和偏好设置",

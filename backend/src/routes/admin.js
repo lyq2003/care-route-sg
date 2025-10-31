@@ -13,13 +13,12 @@ const checkAdminRole = (req, res, next) => {
   // Check if user has admin role (check both session and user_metadata)
   const userRole = req.user.role || req.user.user_metadata?.role;
   
-  /*console.log('Admin role check:', {
-    
+  console.log('Admin role check:', {
     userId: req.user.id,
     sessionRole: req.user.role,
     metadataRole: req.user.user_metadata?.role,
     finalRole: userRole
-  });*/
+  });
   
   if (userRole !== Role.ADMIN) {
     return res.status(403).json({ 
@@ -60,7 +59,7 @@ router.post('/users/:userId/reactivate', adminController.reactivateUser);
 // POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
 router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
 
-// Report Management Routes
+// Report Management Routes (Admin-only access)
 // GET /api/admin/reports - Get all reports for admin review
 router.get('/reports', adminController.getAllReports);
 
@@ -73,12 +72,9 @@ router.post('/reports/:reportId/resolve', adminController.resolveReport);
 // POST /api/admin/reports/:reportId/reject - Reject a report
 router.post('/reports/:reportId/reject', adminController.rejectReport);
 
-// Review Management Routes
+// Review Management Routes (Admin-only access)
 // GET /api/admin/reviews - Get all reviews for admin moderation
 router.get('/reviews', adminController.getAllReviews);
-
-// POST /api/admin/reviews/:reviewId/flag - Flag review for removal
-router.post('/reviews/:reviewId/flag', adminController.flagReview);
 
 // DELETE /api/admin/reviews/:reviewId - Remove inappropriate review
 router.delete('/reviews/:reviewId', adminController.removeReview);
