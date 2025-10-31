@@ -9,7 +9,7 @@ import { MapPin, Clock, User, Filter, ArrowLeft, Check, Navigation } from "lucid
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import useLocation from "@/features/location/locationTracking";
-import getProfile from "@/features/profile/getProfile";
+import {getProfile} from "@/features/profile/getProfile";
 
 // Max number of posts to be fetched every call
 const LIMIT=10;

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Edit3, Save, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import getProfile from "@/features/profile/getProfile";
+import {getProfile} from "@/features/profile/getProfile";
 import { axiosInstance } from "../../components/axios";
 
 export default function VolunteerProfile() {

@@ -100,7 +100,6 @@ router.get('/getotherUsers', requireAuth, async(req,res) =>{
         res.status(500).json({success:false,error:'Failed to get users profile'});
     }
 }) 
-
 router.get('/',requireAuth,authController.profile);
 
 module.exports=router;
