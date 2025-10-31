@@ -563,11 +563,53 @@ export default function AdminUI() {
 
   const handleDeleteReview = async (reviewId: string) => {
     try {
-      await axiosInstance.delete(`/admin/reviews/${reviewId}`);
-      toast({ title: "Review removed" });
+      // Show loading toast
+      toast({ title: "Deleting review...", description: `Review ID: ${reviewId}` });
+      
+      const response = await axiosInstance.delete(`/admin/reviews/${reviewId}`);
+      
+      toast({ 
+        title: "Review removed successfully", 
+        description: `Review ${reviewId} has been deleted`,
+        variant: "default" 
+      });
       fetchReviews();
-    } catch (error) {
-      toast({ title: "Failed to remove review", variant: "destructive" });
+    } catch (error: any) {
+      // Show detailed error information in the toast
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+      const statusCode = error.response?.status || 'No status';
+      
+      // If authentication failed, redirect to login
+      if (statusCode === 401) {
+        toast({ 
+          title: "Session Expired", 
+          description: "Please log in again. Redirecting to login page...",
+          variant: "destructive" 
+        });
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+      
+      const errorDetails = error.response?.data?.debug || {};
+      
+      toast({ 
+        title: "Failed to remove review", 
+        description: `Error: ${errorMessage} (Status: ${statusCode})`,
+        variant: "destructive" 
+      });
+      
+      // Show a second toast with more details if available
+      if (Object.keys(errorDetails).length > 0) {
+        setTimeout(() => {
+          toast({
+            title: "Debug Info",
+            description: `User Role: ${errorDetails.userRole || 'unknown'}, Session Role: ${errorDetails.sessionRole || 'unknown'}`,
+            variant: "destructive"
+          });
+        }, 1000);
+      }
     }
   };
 

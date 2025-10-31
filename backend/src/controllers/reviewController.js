@@ -92,8 +92,9 @@ class ReviewController {
   removeReview = async (req, res) => {
     try {
       const { reviewId } = req.params;
-      const { reason } = req.body;
       const adminUserId = req.user.id;
+
+      console.log('Remove review request:', { reviewId, adminUserId });
 
       if (!reviewId) {
         return res.status(400).json({
@@ -111,13 +112,20 @@ class ReviewController {
         .single();
 
       if (error) {
+        console.error('Supabase delete error:', error);
         throw new Error(`Failed to remove review: ${error.message}`);
       }
 
-      // Log admin action
-      await adminService.logAdminAction(adminUserId, 'REMOVE_REVIEW', reviewId, { 
-        reason: reason || 'Review removed for policy violation' 
-      });
+      console.log('Review deleted successfully:', data);
+
+      // Try to log admin action, but don't fail if it doesn't work
+      try {
+        await adminService.logAdminAction(adminUserId, 'REMOVE_REVIEW', reviewId, { 
+          reason: 'Review removed for policy violation' 
+        });
+      } catch (logError) {
+        console.error('Failed to log admin action, but review was deleted:', logError);
+      }
 
       res.status(200).json({
         success: true,
