@@ -85,17 +85,42 @@ const ElderlyServices = {
    * Get all caregivers linked to this elderly user
    */
   async getLinkedCaregivers(elderlyUserId) {
-    const { data, error } = await supabase
+    /* const { data, error } = await supabase
       .from('caregiver_link')
       .select('caregiver:user_profiles!caregiver_user_id (user_id, full_name, email, phone, avatar_url)')
-      .eq('elderly_user_id', elderlyUserId);
+      .eq('elderly_user_id', elderlyUserId); */
 
-    if (error) {
+      // Update after link was moved to user profiles on 31/10/2025
+      // Get pin
+      const { data: pinData, error: pinError } = await supabase
+      .from('user_profiles')
+      .select('linking_pin')
+      .eq('user_id', elderlyUserId)
+      .single();
+
+    if (pinError) {
+      console.error('Error fetching linked caregivers:', pinError);
+      throw pinError;
+    }
+    
+
+    const pin = pinData.linking_pin
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('linking_pin', pin)
+      .neq('user_id', elderlyUserId); // Exclude elderly
+
+
+      if (error) {
       console.error('Error fetching linked caregivers:', error);
       throw error;
     }
 
-    return (data || []).map(r => r.caregiver);
+
+    //return (data || []).map(r => r.caregiver);
+    return data
   },
 
   /**
@@ -140,7 +165,11 @@ const ElderlyServices = {
       return data
     }
   }
+
+
+  
 };
+
 
 module.exports = ElderlyServices;
 

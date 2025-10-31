@@ -136,12 +136,20 @@ export default function ElderlyUI() {
     }
   });
 
-  const stats = {
+  /* const stats = {
     totalRequests: 12,
     completed: 10,
     rating: 4.8,
     caregiversLinked: 2
-  };
+  }; */
+
+
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    completed: 0,
+    rating: 0,
+    caregiversLinked: 0
+  });
 
 
   //const caregiverPin = "284751";
@@ -273,6 +281,98 @@ export default function ElderlyUI() {
     };
     return new Date(dateString).toLocaleDateString(undefined, options)
   }
+
+
+  const fetchStatistics = async () => {
+
+    // Get help requests
+    try {
+
+      var token = localStorage.getItem("auth-storage");
+
+      var tokenJSON = JSON.parse(token);
+
+      var elderlyID = tokenJSON.state.authUser.id;
+
+      const response = await axiosInstance.get('/elderly/recentActivity/' + elderlyID);
+
+      var data = response.data.data;
+
+      console.log(data);
+
+      var totalRequests = 0;
+      var completedRequests = 0;
+
+      for (let i = 0; i < data.length; i++) {
+
+        totalRequests += 1;
+
+
+        if (data[i].help_request_status.statusName == "Resolved" || data[i].help_request_status.statusName == "completed") {
+          completedRequests += 1;
+        }
+
+      }
+
+      setStats(prev => ({ ...prev, completed: completedRequests }));
+      
+      setStats(prev => ({ ...prev, totalRequests: totalRequests }));
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+
+    // Get caregivers
+    try {
+
+      const response = await axiosInstance.get('/elderly/linked-caregivers');
+
+      var data = response.data.data;
+
+      var caregiverCount = 0;
+
+      for (let i = 0; i < data.length; i++) {
+        caregiverCount++;
+      }
+
+      setStats(prev => ({ ...prev, caregiversLinked: caregiverCount }));
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+
+    // Reviews
+    try {
+
+      const response = await axiosInstance.get('/reviews/about-me');
+
+      var data = response.data.data;
+
+      var ratingSum = 0;
+
+      for (let i = 0; i < data.length; i++) {
+        ratingSum += data[i].rating;
+      }
+
+      var averageRating = ratingSum / data.length;
+
+      setStats(prev => ({ ...prev, rating: averageRating }));
+
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+
 
 
   const fetchLinkingPin = async () => {
@@ -939,6 +1039,7 @@ export default function ElderlyUI() {
     fetchLinkingPin();
     fetchRecentActivity();
     fetchReviews();
+    fetchStatistics();
   }, []);
 
   // Clean duplicates when recent activity updates (only once per update)

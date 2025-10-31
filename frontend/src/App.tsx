@@ -25,7 +25,6 @@ import { useAuthStore } from './store/useAuthStore';
 import { useNotificationStore } from './store/useNotificationStore';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AddReportScreen from "./components/AddReportScreen";
 
 const queryClient = new QueryClient();
 
@@ -119,14 +118,6 @@ const App = () => {
                   path="/add_review"
                   element={
                     <AddReviewScreen />
-                  }
-                />
-
-
-                <Route
-                  path="/add_report"
-                  element={
-                    <AddReportScreen />
                   }
                 />
 

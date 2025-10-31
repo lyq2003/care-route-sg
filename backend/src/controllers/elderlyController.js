@@ -111,7 +111,7 @@ class ElderlyController {
   static async getLinkedCaregivers(req, res) {
     try {
       const caregivers = await ElderlyServices.getLinkedCaregivers(req.user.id);
-      res.json({ caregivers });
+      res.json({ message: "Success", data: caregivers });
     } catch (err) {
       console.error('Get linked caregivers error:', err);
       res.status(500).json({ error: err.message || 'Failed to get linked caregivers' });
@@ -499,7 +499,7 @@ class ElderlyController {
       var elderlyID = req.params.elderlyID;
 
       console.log("Elderly ID: " + elderlyID);
-      
+
 
       var data = await ElderlyServices.getRecentActivityByElderlyID(elderlyID);
 
