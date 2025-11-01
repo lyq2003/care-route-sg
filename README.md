@@ -300,10 +300,20 @@ Language preference is stored in localStorage and persists across sessions.
 ## 👥 Authors
 
 Ching Shin Lu
+
+
 Wang Hao Stefano 
+
+
 Chong Kai Ying
+
+
 Khant Naing Lin
+
+
 Mallvin Rajamohan 
+
+
 Liu Yunqing
 
 ---
