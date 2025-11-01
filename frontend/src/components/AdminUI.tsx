@@ -46,7 +46,7 @@ import {
 import { axiosInstance } from "./axios";
 
 type UserRole = "elderly" | "volunteer" | "caregiver" | "admin";
-type UserStatus = "active" | "suspended" | "deactivated";
+type UserStatus = "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
 type ReportStatus = "Pending" | "In Progress" | "Resolved" | "Rejected";
 
 interface User {
@@ -60,10 +60,12 @@ interface User {
   profilePicture?: string;
   online?: boolean;
   suspensionTimeRemaining?: {
-  expired: boolean;
-  daysRemaining: number;
-  message: string;
+    expired: boolean;
+    daysRemaining: number;
+    message: string;
   };
+  suspensionReason?: string;
+  suspensionEndDate?: string;
 }
 
 interface Attachment {
@@ -186,13 +188,13 @@ export default function AdminUI() {
       // Calculate stats from the user data
       const totalUsers = allUsers.length;
       const activeUsers = allUsers.filter(user => 
-        (user.status || 'active') === 'active'
+        (user.user_metadata?.status || 'ACTIVE') === 'ACTIVE'
       ).length;
       const suspendedUsers = allUsers.filter(user => 
-        user.status === 'suspended'
+        user.user_metadata?.status === 'SUSPENDED'
       ).length;
       const deactivatedUsers = allUsers.filter(user => 
-        user.status === 'deactivated'
+        user.user_metadata?.status === 'DEACTIVATED'
       ).length;
       
       setStats({
@@ -223,17 +225,41 @@ export default function AdminUI() {
       const response = await axiosInstance.get('/users');
       if (response.data) {
         // Transform the user data to match our interface
-        const transformedUsers = response.data.map(user => ({
-          userid: user.id,
-          fullname: user.user_metadata?.displayName || user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown User',
-          email: user.email,
-          phone: user.user_metadata?.phone_number || user.user_metadata?.phone || 'Not provided',
-          role: user.user_metadata?.role || 'elderly', // Default to elderly if no role
-          status: user.user_metadata?.status || 'active', // Default to active if no status
-          createdAt: user.created_at || new Date().toISOString(),
-          profilePicture: user.user_metadata?.avatar_url || user.user_metadata?.avatar,
-          online: user.user_metadata?.online || false
-        }));
+        const transformedUsers = response.data.map(user => {
+          // Calculate suspension time remaining if user is suspended
+          let suspensionTimeRemaining = null;
+          if (user.user_metadata?.status === 'SUSPENDED' && user.user_metadata?.suspension_end_date) {
+            const endDate = new Date(user.user_metadata.suspension_end_date);
+            const now = new Date();
+            const timeRemaining = endDate.getTime() - now.getTime();
+            
+            if (timeRemaining <= 0) {
+              suspensionTimeRemaining = { expired: true, daysRemaining: 0, message: "Expired" };
+            } else {
+              const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
+              suspensionTimeRemaining = { 
+                expired: false, 
+                daysRemaining, 
+                message: `${daysRemaining} day${daysRemaining === 1 ? '' : 's'}` 
+              };
+            }
+          }
+
+          return {
+            userid: user.id,
+            fullname: user.user_metadata?.displayName || user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown User',
+            email: user.email,
+            phone: user.user_metadata?.phone_number || user.user_metadata?.phone || 'Not provided',
+            role: user.user_metadata?.role || 'elderly', // Default to elderly if no role
+            status: user.user_metadata?.status || 'ACTIVE', // Default to ACTIVE if no status
+            createdAt: user.created_at || new Date().toISOString(),
+            profilePicture: user.user_metadata?.avatar_url || user.user_metadata?.avatar,
+            online: user.user_metadata?.online || false,
+            suspensionTimeRemaining: suspensionTimeRemaining,
+            suspensionReason: user.user_metadata?.suspension_reason || null,
+            suspensionEndDate: user.user_metadata?.suspension_end_date || null
+          };
+        });
         setUsers(transformedUsers);
       }
     } catch (error) {
@@ -378,7 +404,7 @@ export default function AdminUI() {
 
   // Calculate suspension time remaining
   const getSuspensionTimeRemaining = (user: User): string | null => {
-    if (user.status !== 'suspended' || !user.suspensionTimeRemaining) return null;
+    if (user.status !== 'SUSPENDED' || !user.suspensionTimeRemaining) return null;
     
     if (user.suspensionTimeRemaining.expired) {
       return "Expired";
@@ -389,10 +415,10 @@ export default function AdminUI() {
 
   // Get display status for user
   const getDisplayStatus = (user: User): string => {
-    if (user.status === 'suspended') {
+    if (user.status === 'SUSPENDED') {
       const timeRemaining = getSuspensionTimeRemaining(user);
       return timeRemaining ? `Suspended for ${timeRemaining}` : 'Suspended';
-    } else if (user.status === 'deactivated') {
+    } else if (user.status === 'DEACTIVATED') {
       return 'Banned';
     }
     return 'Active';
@@ -642,17 +668,17 @@ export default function AdminUI() {
 
   const getStatusBadgeColor = (status: UserStatus | ReportStatus) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
       case "Resolved":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case "Pending":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
       case "In Progress":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "suspended":
+      case "SUSPENDED":
       case "Rejected":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-      case "deactivated":
+      case "DEACTIVATED":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
@@ -799,9 +825,9 @@ export default function AdminUI() {
               className="w-full p-2 border border-input rounded-md bg-background text-sm"
             >
               <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="deactivated">Banned</option>
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="DEACTIVATED">Banned</option>
             </select>
           </div>
 
@@ -896,10 +922,13 @@ export default function AdminUI() {
           </div>
         ) : (
           paginatedUsers.map((user) => (
-            <Card key={user.userid} className={`p-6 shadow-sm border-border/50 ${user.status === 'deactivated' ? 'opacity-60 bg-gray-50 dark:bg-gray-900/50' : ''}`}>
+            <Card key={user.userid} className={`p-6 shadow-sm border-border/50 ${
+              user.status === 'DEACTIVATED' ? 'opacity-60 bg-gray-50 dark:bg-gray-900/50' : 
+              user.status === 'SUSPENDED' ? 'opacity-80 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' : ''
+            }`}>
               <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-full ${user.status === 'deactivated' ? 'bg-gray-300' : 'bg-muted'} flex items-center justify-center`}>
-                  <User className={`w-6 h-6 ${user.status === 'deactivated' ? 'text-gray-500' : 'text-muted-foreground'}`} />
+                <div className={`w-12 h-12 rounded-full ${user.status === 'DEACTIVATED' ? 'bg-gray-300' : 'bg-muted'} flex items-center justify-center`}>
+                  <User className={`w-6 h-6 ${user.status === 'DEACTIVATED' ? 'text-gray-500' : 'text-muted-foreground'}`} />
                 </div>
                 
                 <div className="flex-1 space-y-4">
@@ -927,18 +956,40 @@ export default function AdminUI() {
                     <div className="flex items-center gap-2 font-medium">
                       <User className="w-5 h-5" />
                       <span className={`${
-                        user.status === 'active' ? 'text-green-600' :
-                        user.status === 'suspended' ? 'text-yellow-600' :
+                        user.status === 'ACTIVE' ? 'text-green-600' :
+                        user.status === 'SUSPENDED' ? 'text-yellow-600' :
                         'text-red-600'
                       }`}>
                         Account Status: {getDisplayStatus(user)}
                       </span>
                     </div>
+                    
+                    {/* Show suspension details if user is suspended */}
+                    {user.status === 'SUSPENDED' && user.suspensionReason && (
+                      <div className="ml-7 text-sm text-gray-600">
+                        <div>Reason: {user.suspensionReason}</div>
+                        {user.suspensionTimeRemaining && !user.suspensionTimeRemaining.expired && (
+                          <div>Time remaining: {user.suspensionTimeRemaining.message}</div>
+                        )}
+                        {user.suspensionEndDate && (
+                          <div>Expires: {new Date(user.suspensionEndDate).toLocaleDateString()}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-3 flex-wrap">
+                    {/* Show suspension status for suspended users */}
+                    {user.status === "SUSPENDED" && (user.role === "elderly" || user.role === "volunteer") && (
+                      <div className="px-3 py-2 text-sm bg-yellow-100 text-yellow-800 rounded-lg flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {user.suspensionTimeRemaining?.expired ? 'Suspension Expired' : 
+                         user.suspensionTimeRemaining ? `Suspended: ${user.suspensionTimeRemaining.message} remaining` : 'Currently Suspended'}
+                      </div>
+                    )}
+                    
                     {/* Show permanent ban status for banned users */}
-                    {user.status === "deactivated" && (user.role === "elderly" || user.role === "volunteer") && (
+                    {user.status === "DEACTIVATED" && (user.role === "elderly" || user.role === "volunteer") && (
                       <div className="px-3 py-2 text-sm bg-red-100 text-red-800 rounded-lg flex items-center gap-1">
                         <UserX className="w-4 h-4" />
                         User Permanently Banned
