@@ -431,18 +431,18 @@ export default function AdminUI() {
    * 
    * USER MANAGEMENT PAGE (Status Management):
    *    VIEW: See all users with role, status, and join date filters
-   *    STATUS MONITORING: View Active, Suspended, Deactivated users
+   *    STATUS MONITORING: View Active, Suspended, Banned users
    *    SUSPENSION COUNTDOWN: Show days remaining for suspended users (auto-unsuspend when expires)
-   *    REACTIVATION: Manual admin reactivation for deactivated accounts (appeals/admin decision)
+   *    PERMANENT BAN: Users who are banned have their accounts permanently deleted - NO RECOVERY
    *    
-   *    Scope: Only elderly and volunteer users can be suspended/deactivated
-   *    Note: Caregiver accounts remain permanently active - no suspension/deactivation allowed
-   *          When elderly is suspended/deactivated, caregivers receive notifications but remain active
+   *    Scope: Only elderly and volunteer users can be suspended/banned
+   *    Note: Caregiver accounts remain permanently active - no suspension/ban allowed
+   *          When elderly is suspended/banned, caregivers receive notifications but remain active
    * 
    * REPORTS PAGE (Disciplinary Actions):
    *    REVIEW REPORTS: Admin reviews submitted reports against users
    *    REPORT STATUS: Pending -> In Progress -> Resolved/Rejected
-   *    DISCIPLINARY ACTIONS: Suspend (auto-expires) or Deactivate (manual reactivation) based on report review
+   *    DISCIPLINARY ACTIONS: Suspend (auto-expires) or Ban (permanent deletion) based on report review
    *    SCOPE: Elderly and volunteer users only - caregivers cannot be subject to disciplinary actions
    */
 
@@ -464,31 +464,6 @@ export default function AdminUI() {
       toast({
         title: "Error",
         description: error.response?.data?.error || "Failed to deactivate user. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleReactivateUser = async (userId: string) => {
-    setActionLoading(userId);
-    try {
-      const response = await axiosInstance.post(`/admin/users/${userId}/reactivate`);
-      
-      if (response.data.success) {
-        await fetchUsers(); // Refresh user list
-        await fetchStats(); // Refresh stats
-        toast({
-          title: "Success",
-          description: "User reactivated successfully",
-        });
-      }
-    } catch (error: any) {
-      console.error('Failed to reactivate user:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to reactivate user. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -711,9 +686,9 @@ export default function AdminUI() {
           </Card>
 
           <Card className="p-6 text-center shadow-sm border-border/50">
-            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-orange-600" />
+            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-red-600" />
             <div className="text-3xl font-bold text-foreground mb-1">{stats.deactivatedUsers}</div>
-            <div className="text-sm text-muted-foreground">Deactivated Users</div>
+            <div className="text-sm text-muted-foreground">Banned Users</div>
           </Card>
         </div>
       </div>
@@ -826,7 +801,7 @@ export default function AdminUI() {
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
-              <option value="deactivated">Deactivated</option>
+              <option value="deactivated">Banned</option>
             </select>
           </div>
 
@@ -921,10 +896,10 @@ export default function AdminUI() {
           </div>
         ) : (
           paginatedUsers.map((user) => (
-            <Card key={user.userid} className="p-6 shadow-sm border-border/50">
+            <Card key={user.userid} className={`p-6 shadow-sm border-border/50 ${user.status === 'deactivated' ? 'opacity-60 bg-gray-50 dark:bg-gray-900/50' : ''}`}>
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <User className="w-6 h-6 text-muted-foreground" />
+                <div className={`w-12 h-12 rounded-full ${user.status === 'deactivated' ? 'bg-gray-300' : 'bg-muted'} flex items-center justify-center`}>
+                  <User className={`w-6 h-6 ${user.status === 'deactivated' ? 'text-gray-500' : 'text-muted-foreground'}`} />
                 </div>
                 
                 <div className="flex-1 space-y-4">
@@ -962,18 +937,12 @@ export default function AdminUI() {
                   </div>
 
                   <div className="flex gap-2 pt-3 flex-wrap">
-                    {/* Manual reactivation for banned/deactivated accounts with valid reasoning */}
+                    {/* Show permanent ban status for banned users */}
                     {user.status === "deactivated" && (user.role === "elderly" || user.role === "volunteer") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-green-600 hover:text-green-700"
-                        onClick={() => handleReactivateUser(user.userid)}
-                        disabled={actionLoading === user.userid}
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        {actionLoading === user.userid ? 'Processing...' : 'Unban User'}
-                      </Button>
+                      <div className="px-3 py-2 text-sm bg-red-100 text-red-800 rounded-lg flex items-center gap-1">
+                        <UserX className="w-4 h-4" />
+                        User Permanently Banned
+                      </div>
                     )}
                     
                     {/* Caregiver accounts remain permanently active */}
