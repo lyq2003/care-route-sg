@@ -2,7 +2,7 @@ const Elderly = require('../domain/elderly');
 const UserService = require('../services/user');
 const ElderlyServices = require('../services/elderly');
 const NotificationService = require('../services/notificationService');
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin} = require('../config/supabase');
 const { getReceiverSocketId, io } = require('../middleware/socket');
 
 class ElderlyController {
@@ -121,6 +121,7 @@ class ElderlyController {
   /**
    * Update elderly user's real-time location
    */
+  
   static async updateLocation(req, res) {
     try {
       const { latitude, longitude, accuracy, speed, heading, altitude, tripId, helpRequestId, status } = req.body;
@@ -434,20 +435,17 @@ class ElderlyController {
 
   static async getLastSafeLocation(elderlyId) {
     try {
-      const { data: location, error } = await supabase
+      const { data: location, error } = await supabaseAdmin
         .from('elderly_locations')
-        .select('latitude, longitude')
+        .select('*')
         .eq('elderly_id', elderlyId)
-        .eq('status', 'completed')
-        .order('timestamp', { ascending: false })
         .limit(1)
         .single();
-
+      console.log("Controller safe location:", location, elderlyId);
       if (error || !location) return null;
 
       return {
-        lat: location.latitude,
-        lng: location.longitude
+        location
       };
     } catch (error) {
       console.error('Error getting last safe location:', error);
@@ -498,7 +496,7 @@ class ElderlyController {
     try {
       var elderlyID = req.params.elderlyID;
 
-      console.log("Elderly ID: " + elderlyID);
+      //console.log("Elderly ID: " + elderlyID);
 
 
       var data = await ElderlyServices.getRecentActivityByElderlyID(elderlyID);
@@ -513,6 +511,21 @@ class ElderlyController {
     }
   }
 
+  static async getActiveRequest(req,res){
+    try{
+      var elderlyID = req.params.elderlyID;
+
+      var data = await ElderlyServices.getActiveRequestByElderlyID(elderlyID);
+      //console.log("GetActiveRequest:",data);
+      res.json({
+        data
+      });
+
+    } catch (error) {
+      console.error("Error fetching recent activity:", error);
+      res.status(500).json({ error: error.message || 'Failed to get recent activity' });
+    }
+  }
 }
 
 module.exports = ElderlyController;

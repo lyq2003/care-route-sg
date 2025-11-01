@@ -43,6 +43,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import RouteTracking from "./RouteTracking";
+import ElderlyLocationUpdater from "@/features/location/ElderlyLocationUpdater";
 import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
 import SubmitReportModal from "../features/moderation/SubmitReportModal";
 
@@ -1568,13 +1569,6 @@ export default function ElderlyUI() {
                 </Card>
 
               )}
-
-
-
-
-
-
-
             </div>
           </div>
         );
@@ -2125,9 +2119,14 @@ export default function ElderlyUI() {
   }
 
   return (
+    <>
+    <ElderlyLocationUpdater />
+
     <div className="min-h-screen bg-background">
+
       {/* Main Content */}
       <div className="px-6 py-8 pb-24">
+        
         {renderTabContent()}
         <SubmitReviewModal
           isOpen={isReviewOpen}
@@ -2170,5 +2169,6 @@ export default function ElderlyUI() {
         </div>
       </div>
     </div>
+    </>
   );
 }

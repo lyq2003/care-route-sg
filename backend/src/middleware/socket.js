@@ -1,7 +1,7 @@
 import http from "http";
 import express from"express";
 import { Server as SocketServer } from "socket.io";
-import supabase from '../config/supabase.js';
+import { supabase, supabaseAdmin } from '../config/supabase.js';
 
 const app = express();
 const server=http.createServer(app);
@@ -77,6 +77,47 @@ io.on('connection', (socket) => {
 
     if (elderlySocketId) {
       io.to(elderlySocketId).emit("notify", { message });
+    }
+  });
+
+  // update location for elderly
+  socket.on("update_location", async ({ elderlyId, elderlyName, latitude, longitude }) => {
+    //console.log(`Received location update from elderly ${elderlyId}:`,elderlyName,latitude, longitude);
+
+    // Save to DB (optional, if you want location history)
+    const { data, error: elderly_location_error } = await supabaseAdmin
+      .from("elderly_locations")
+      .upsert([
+        { elderly_id: elderlyId, latitude, longitude, updated_at: new Date() },
+      ], { onConflict: ['elderly_id'] });
+
+    if (elderly_location_error) {
+      console.error("Error inserting location:", elderly_location_error);
+    } else {
+      //console.log("Location inserted successfully:", data);
+    }
+
+    // Find all caregivers linked to this elderly
+    const { data: caregivers, error } = await supabase
+      .from("caregiver_link")
+      .select("caregiver_user_id")
+      .eq("elderly_user_id", elderlyId);
+
+    if (error) {
+      console.error("Error fetching caregivers:", error);
+      return;
+    }
+    
+    const caregiverSocket = getReceiverSocketId(caregivers[0].caregiver_user_id)
+    //console.log(caregiverSocket,caregivers );
+    if (caregiverSocket) {
+      io.to(caregiverSocket).emit("location_update", {
+        elderlyId,
+        elderlyName,
+        latitude,
+        longitude,
+        timestamp: new Date(),
+      });
     }
   });
 
