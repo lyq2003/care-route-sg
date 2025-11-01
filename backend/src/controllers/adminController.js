@@ -232,7 +232,7 @@ class AdminController {
     }
   }
 
-  // Deactivate user (For all Users except Admin and is indefinite until reactivated)
+  // Ban user permanently (deletes account permanently - cannot be recovered)
   async deactivateUser(req, res) {
     try {
       const { userId } = req.params;
@@ -258,7 +258,7 @@ class AdminController {
 
       res.status(200).json({
         success: true,
-        message: 'User deactivated successfully',
+        message: 'User banned permanently - account deleted',
         data: updatedUser
       });
     } catch (error) {
@@ -272,51 +272,6 @@ class AdminController {
       }
 
       if (error.message.includes('cannot be deactivated')) {
-        return res.status(400).json({
-          success: false,
-          error: error.message
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  }
-
-  // Reactivate user (manual admin reactivation for deactivated accounts)
-  async reactivateUser(req, res) {
-    try {
-      const { userId } = req.params;
-      const adminId = req.user.id;
-
-      // Validation
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          error: 'User ID is required'
-        });
-      }
-
-      const updatedUser = await adminService.reactivateUser(userId, adminId, 'Administrative action');
-
-      res.status(200).json({
-        success: true,
-        message: 'User reactivated successfully',
-        data: updatedUser
-      });
-    } catch (error) {
-      console.error('Reactivate user error:', error);
-      
-      if (error.message === 'User not found') {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
-      }
-
-      if (error.message.includes('cannot be reactivated')) {
         return res.status(400).json({
           success: false,
           error: error.message
