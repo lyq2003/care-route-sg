@@ -18,9 +18,10 @@ const requireAuth = async (req, res, next) => {
   const user = req.session.user;
   const userStatus = user.user_metadata?.status;
   
-  if (userStatus === 'suspended') {
+  if (userStatus === 'SUSPENDED') {
     const suspensionEndDate = user.user_metadata?.suspension_end_date;
     const suspensionReason = user.user_metadata?.suspension_reason || 'Administrative action';
+    const suspensionDuration = user.user_metadata?.suspension_duration || 'unknown';
     
     if (suspensionEndDate) {
       const endDate = new Date(suspensionEndDate);
@@ -31,17 +32,43 @@ const requireAuth = async (req, res, next) => {
         req.session.destroy();
         const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         return res.status(403).json({ 
-          error: `Your account is suspended. Reason: ${suspensionReason}. Suspension expires in ${daysRemaining} day(s).`
+          error: `Account Suspended`,
+          message: `Your account has been temporarily suspended for ${suspensionDuration} days.`,
+          details: {
+            reason: suspensionReason,
+            daysRemaining: daysRemaining,
+            expiresOn: endDate.toLocaleDateString(),
+            contactSupport: 'If you believe this is an error, please contact our support team.'
+          }
         });
+      } else {
+        // Suspension has expired - should be auto-unsuspended
+        console.log(`User ${user.id} suspension has expired, should be auto-unsuspended`);
       }
+    } else {
+      // No end date - indefinite suspension
+      req.session.destroy();
+      return res.status(403).json({ 
+        error: `Account Suspended`,
+        message: `Your account has been suspended indefinitely.`,
+        details: {
+          reason: suspensionReason,
+          contactSupport: 'Please contact our support team for more information.'
+        }
+      });
     }
   }
 
-  if (userStatus === 'deactivated' || userStatus === 'banned') {
+  if (userStatus === 'DEACTIVATED') {
     // Clear session and deny access
     req.session.destroy();
     return res.status(403).json({ 
-      error: 'Your account has been permanently deactivated. Please contact support for assistance.'
+      error: 'Account Permanently Deactivated',
+      message: 'Your account has been permanently deactivated and access cannot be restored.',
+      details: {
+        reason: user.user_metadata?.deactivation_reason || user.user_metadata?.ban_reason || 'Policy violation',
+        contactSupport: 'If you believe this is an error, please contact our support team with your account details.'
+      }
     });
   }
   
