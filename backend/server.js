@@ -1,6 +1,7 @@
 require('dotenv').config();
 const http = require('http');
 const express = require('express');
+const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
@@ -23,6 +24,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files for uploaded evidence
+app.use('/api/static', express.static(path.join(__dirname, 'src/services/uploads')));
 
 // Session configuration (espress-session)
 app.use(session({

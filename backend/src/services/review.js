@@ -82,13 +82,49 @@ class ReviewService {
   }
 
   async viewMyReviews(userId) {
-    const { data, error } = await supabase
+    // First get all reviews by this user
+    const { data: reviews, error: reviewsError } = await supabase
       .from('reviews')
-      .select('*, reviews_recipient_user_id_fkey1 (username)')
+      .select('*')
       .eq('author_user_id', userId)
       .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+    
+    if (reviewsError) throw reviewsError;
+    
+    if (!reviews || reviews.length === 0) {
+      return [];
+    }
+
+    // Get recipient user IDs
+    const recipientIds = [...new Set(reviews.map(r => r.recipient_user_id))];
+    
+    // Get recipient profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('user_id, username, full_name')
+      .in('user_id', recipientIds);
+    
+    if (profilesError) {
+      console.warn('Error fetching recipient profiles:', profilesError);
+    }
+    
+    // Create a map for quick lookup
+    const profileMap = {};
+    if (profiles) {
+      profiles.forEach(profile => {
+        profileMap[profile.user_id] = profile;
+      });
+    }
+    
+    // Enhance reviews with recipient data
+    const enhancedReviews = reviews.map(review => ({
+      ...review,
+      reviews_recipient_user_id_fkey1: profileMap[review.recipient_user_id] || {
+        username: 'Unknown User'
+      }
+    }));
+    
+    return enhancedReviews;
   }
 
   async viewReviewsAboutMe(userId) {
@@ -105,22 +141,78 @@ class ReviewService {
   async getAllReviewsForAdmin() {
     console.log('getAllReviewsForAdmin: Fetching all reviews for admin...');
     
-    const { data, error } = await supabase
+    // First get all reviews
+    const { data: reviews, error: reviewsError } = await supabase
       .from('reviews')
-      .select(`
-        *,
-        author:user_profiles!author_user_id(*),
-        recipient:user_profiles!recipient_user_id(*)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('getAllReviewsForAdmin error:', error);
-      throw error;
+    if (reviewsError) {
+      console.error('getAllReviewsForAdmin reviews error:', reviewsError);
+      throw reviewsError;
     }
+
+    if (!reviews || reviews.length === 0) {
+      console.log('getAllReviewsForAdmin: No reviews found');
+      return [];
+    }
+
+    // Get all unique user IDs from reviews
+    const userIds = [...new Set([
+      ...reviews.map(r => r.author_user_id),
+      ...reviews.map(r => r.recipient_user_id)
+    ])];
+
+    console.log(`getAllReviewsForAdmin: Found ${userIds.length} unique users to fetch`);
+
+    // Get user auth data and profiles
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      throw authError;
+    }
+
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .in('user_id', userIds);
+
+    if (profilesError) {
+      console.warn('Error fetching user profiles:', profilesError);
+    }
+
+    // Create user lookup map
+    const userMap = {};
+    authData.users.forEach(user => {
+      const profile = profilesData?.find(p => p.user_id === user.id);
+      userMap[user.id] = {
+        id: user.id,
+        email: user.email,
+        name: profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.displayName || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
+        full_name: profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.displayName || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
+        role: profile?.role || user.user_metadata?.role || 'elderly'
+      };
+    });
+
+    // Enhance reviews with user data
+    const enhancedReviews = reviews.map(review => ({
+      ...review,
+      author: userMap[review.author_user_id] || {
+        id: review.author_user_id,
+        name: 'Unknown User',
+        full_name: 'Unknown User',
+        role: 'elderly'
+      },
+      recipient: userMap[review.recipient_user_id] || {
+        id: review.recipient_user_id,
+        name: 'Unknown User', 
+        full_name: 'Unknown User',
+        role: 'elderly'
+      }
+    }));
     
-    console.log(`getAllReviewsForAdmin: Found ${data?.length || 0} reviews`);
-    return data || []; // Ensure we return an empty array if data is null
+    console.log(`getAllReviewsForAdmin: Returning ${enhancedReviews.length} enhanced reviews`);
+    return enhancedReviews;
   }
 
   // Remove review (admin action)
