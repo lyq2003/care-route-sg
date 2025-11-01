@@ -164,10 +164,21 @@ const ElderlyServices = {
     } else {
       return data
     }
+  },
+
+  async getActiveRequestByElderlyID(elderlyID){
+    const { data, error } = await supabaseAdmin
+      .from("help_request")
+      .select(`*, help_request_status (statusName), help_request_assignedVolunteerId_fkey (user_id, username, phone_number)`)
+      .eq("requesterId", elderlyID)
+      .in("helpRequestStatus",[1, 2])
+
+    if (error){
+      throw error
+    } else{
+      return data
+    }
   }
-
-
-  
 };
 
 

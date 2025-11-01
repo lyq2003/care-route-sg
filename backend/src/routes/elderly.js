@@ -43,9 +43,30 @@ router.post('/location/update', requireAuth, ElderlyController.updateLocation);
 router.post('/trip/start', requireAuth, ElderlyController.startTripTracking);
 router.put('/trip/:tripId/complete', requireAuth, ElderlyController.completeTripTracking);
 
+router.get('/location/:elderlyID', requireAuth, requireAuth, async (req, res) => {
+  const { elderlyID } = req.params;  // Extract elderlyID from the route parameter
+
+  try {
+    // Call the static method from ElderlyController to get the last safe location
+    const location = await ElderlyController.getLastSafeLocation(elderlyID);
+
+    console.log("location is:", location);
+    if (location) {
+      // If location data is found, send it as a response
+      return res.status(200).json(location);
+    } else {
+      // If no location is found, respond with a 404
+      return res.status(404).json({ message: 'No location found for the specified elderly ID' });
+    }
+  } catch (error) {
+    // Handle any unexpected errors
+    console.error('Error fetching last safe location:', error);
+    return res.status(500).json({ message: 'Server error while retrieving location' });
+  }
+});
 
 router.get('/recentActivity/:elderlyID', requireAuth, ElderlyController.getRecentActivity);
-
+router.get('/activeActivity/:elderlyID', requireAuth, ElderlyController.getActiveRequest);
 router.get('/getCompletedHelpRequestswithVolunteer/:userID', async (req, res) => {
 
     try {

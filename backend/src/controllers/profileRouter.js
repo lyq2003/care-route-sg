@@ -56,7 +56,7 @@ router.put('/updateRole', requireAuth, async(req,res) =>{
 router.get('/getId', requireAuth,async(req,res) =>{
     try{
         const user_id=req.user.id;
-        console.log("User_id is ", user_id)
+        //console.log("User_id is ", user_id)
         const profile= await profiles.getprofile(user_id);
         if (!profile) {
             return res.status(200).json({ 

@@ -28,8 +28,8 @@ const useLocation = () => {
     // Fetch the location immediately when the component mounts
     fetchLocation();
 
-    // Set an interval to fetch the location every 5 minutes (300,000 ms)
-    const intervalId = setInterval(fetchLocation, 300000);
+    // Set an interval to fetch the location every minute (60,000 ms)
+    const intervalId = setInterval(fetchLocation, 60000);
 
     // Cleanup the interval on component unmount
     return () => clearInterval(intervalId);

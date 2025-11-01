@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "../store/useAuthStore";
-
 import {
   Home,
   User,
@@ -111,7 +110,7 @@ export default function CaregiverUI() {
     mobility_preference: "",
   });
   const [isSavingElderlyProfile, setIsSavingElderlyProfile] = useState(false);
-
+  
   // Live tracking state
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -128,36 +127,18 @@ export default function CaregiverUI() {
   // WebSocket state
   const { socket } = useAuthStore();
 
-  /* -------------------- Data Fetching -------------------- */
+  // getting elderly location broadcasting
   useEffect(() => {
-    fetchCaregiverProfile();
-  }, []);
+    if (!socket && !selectedElderly) return;
+    console.log("Socjet is:", socket, "selectedElderly is:", selectedElderly);
+    const handleLocationUpdate = (data) => {
+      console.log("Elderly location update received:", data);
+      // You can now update a map marker, display on UI, etc.
 
-  useEffect(() => {
-    // Update profile form when profileData changes
-    setProfileForm({
-      name: profileData.fullName,
-      phone: profileData.phone,
-    });
-  }, [profileData]);
 
-  useEffect(() => {
-    if (selectedElderly) {
-      fetchHistory(selectedElderly.user_id);
-    }
-  }, [selectedElderly]);
-
-  // WebSocket listeners for real-time location updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleElderlyLocationUpdate = (data: any) => {
-      console.log('Received elderly location update:', data);
-      
-      // Update elderly locations state
       setElderlyLocations(prev => {
         const newMap = new Map(prev);
-        newMap.set(data.elderlyId, data.location);
+        newMap.set(data.elderlyId, { latitude: data.latitude, longitude: data.longitude });
         return newMap;
       });
 
@@ -182,8 +163,7 @@ export default function CaregiverUI() {
         title: "Location Update",
         description: `${data.elderlyName}'s location has been updated`,
       });
-    };
-
+    }
     const handleNotification = (data: any) => {
       console.log('Received notification:', data);
       
@@ -202,17 +182,67 @@ export default function CaregiverUI() {
         description: data.message,
       });
     };
-
-    // Add event listeners
-    socket.on('elderly_location_update', handleElderlyLocationUpdate);
+    socket.on("location_update", handleLocationUpdate);
     socket.on('notify', handleNotification);
 
-    // Cleanup
+    // when caregiver connects but elderly isn’t online, fetch fallback
+    const fetchLastKnownLocations = async () => {
+      console.log("selectedElderly is:", selectedElderly);
+
+      const elderlyID= selectedElderly.user_id
+      try {
+        const res = await axios.get("/elderly/location/"+elderlyID); 
+        // 👆 create this endpoint on your backend (explained below)
+        const locations = res.data.location;
+        console.log("Fetched last location is:",locations);
+        /*const locationMap = new Map();
+        locations.forEach(loc => {
+          locationMap.set(loc.elderly_id, {
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+          });
+        });*/
+        setElderlyLocations(prev => {
+        const newMap = new Map(prev);
+        newMap.set(elderlyID, { latitude: locations.latitude, longitude: locations.longitude , updated_at: locations.updated_at});
+        return newMap;
+      });
+        console.log("Fetched last elderly is:",elderlyLocations);
+      } catch (err) {
+        console.error("Failed to fetch last known locations:", err);
+      }
+    };
+
+    // Only fetch fallback if socket has no recent updates
+    //console.log("elderly location in frist",elderlyLocations)
+    if (elderlyLocations.size === 0) {
+      console.log("Fetch last know location is going on");
+      fetchLastKnownLocations();
+    }
     return () => {
-      socket.off('elderly_location_update', handleElderlyLocationUpdate);
+      socket.off("location_update", handleLocationUpdate);
       socket.off('notify', handleNotification);
     };
-  }, [socket, toast]);
+  }, [socket,toast,selectedElderly]);
+
+  /* -------------------- Data Fetching -------------------- */
+  useEffect(() => {
+    fetchCaregiverProfile();
+  }, []);
+
+  useEffect(() => {
+    // Update profile form when profileData changes
+    setProfileForm({
+      name: profileData.fullName,
+      phone: profileData.phone,
+    });
+  }, [profileData]);
+
+  useEffect(() => {
+    if (selectedElderly) {
+      fetchHistory(selectedElderly.user_id);
+    }
+  }, [selectedElderly]);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -252,15 +282,6 @@ export default function CaregiverUI() {
       console.error('Error fetching active trips:', error);
     }
   };*/
-
-  const handleLocationUpdate = (location: any) => {
-    // Update the elderly locations when received from map component
-    setElderlyLocations(prev => {
-      const newMap = new Map(prev);
-      newMap.set(location.elderlyId, location);
-      return newMap;
-    });
-  };
 
   const fetchCaregiverProfile = async () => {
     try {
@@ -362,6 +383,26 @@ export default function CaregiverUI() {
     }
   };
 
+  useEffect(()=>{
+    const fetchElderlyActiveRequest = async(elderlyID)=>{
+      try{
+        const response = await axios.get("/elderly/activeActivity/"+ elderlyID);
+        //console.log("fetched elderly requests are:", response);
+        setActiveRequests(response.data.data);
+        //console.log("active requests are", activeRequests);
+      } catch(error){
+        console.error("Error getting elderly active requests,", error);
+      }
+    }
+    if (selectedElderly) {
+      fetchElderlyActiveRequest(selectedElderly.user_id);
+    }
+  }, [selectedElderly]);
+  // useEffect to log activeRequests after it updates
+  useEffect(() => {
+    console.log("Updated active requests are:", activeRequests);
+  }, [activeRequests]);
+  
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
@@ -610,10 +651,11 @@ export default function CaregiverUI() {
       if (!selectedElderly) return; // No markers if no elderly selected
       
       const location = elderlyLocations.get(selectedElderly.user_id);
-      if (!location || !location.lat || !location.lng) return;
+      console.log("elderly location is:", elderlyLocations,selectedElderly.user_id);
+      if (!location || !location.latitude || !location.longitude) return;
       
       const marker = new google.maps.Marker({
-        position: { lat: location.lat, lng: location.lng },
+        position: { lat: location.latitude, lng: location.longitude },
         map: map,
         title: selectedElderly.username,
         icon: {
@@ -633,7 +675,7 @@ export default function CaregiverUI() {
         content: `
           <div style="padding: 8px;">
             <h3 style="margin: 0 0 4px 0; font-weight: bold;">${selectedElderly.username}</h3>
-            <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
+            <p style="margin: 0; color: #666;">Last updated: ${new Date(location.updated_at || Date.now()).toLocaleString()}</p>
             ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
           </div>
         `
@@ -676,7 +718,7 @@ export default function CaregiverUI() {
           content: `
             <div style="padding: 8px;">
               <h3 style="margin: 0 0 4px 0; font-weight: bold;">${elderlyUser.username}</h3>
-              <p style="margin: 0; color: #666;">Last updated: ${new Date(location.timestamp || Date.now()).toLocaleTimeString()}</p>
+              <p style="margin: 0; color: #666;">Last updated: ${new Date(location.updated_at || Date.now()).toLocaleTimeString()}</p>
               ${location.accuracy ? `<p style="margin: 0; color: #666; font-size: 12px;">Accuracy: ${Math.round(location.accuracy)}m</p>` : ''}
             </div>
           `
@@ -841,26 +883,30 @@ export default function CaregiverUI() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant="outline" className="bg-orange-100 dark:bg-orange-900">
-                            {request.status}
+                            {request.help_request_status.statusName}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
-                            {new Date(request.created_at).toLocaleTimeString("en-SG", {
-                              hour: "2-digit",
-                              minute: "2-digit",
+                            {new Date(request.createdAt).toLocaleDateString("en-SG", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                             })}
                           </span>
                         </div>
-                        <p className="font-medium mb-1">{request.description}</p>
+                        <p className="font-medium mb-1">Location: {request.address}</p>
+                        <p className="font-medium mb-1">Description: {request.description}</p>
                         {request.location && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <MapPin className="h-3 w-3" />
                             {request.location}
                           </div>
                         )}
-                        {request.volunteer_name && (
+                        {request.help_request_assignedVolunteerId_fkey && (
                           <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-2">
                             <UserCheck className="h-3 w-3" />
-                            <span>Volunteer: {request.volunteer_name}</span>
+                            <span>Volunteer: {request.help_request_assignedVolunteerId_fkey.username}</span>
                           </div>
                         )}
                       </div>
