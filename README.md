@@ -297,13 +297,14 @@ Language preference is stored in localStorage and persists across sessions.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-[Add your license information here]
-
 ## 👥 Authors
 
-[Add your team/author information here]
+Ching Shin Lu
+Wang Hao Stefano 
+Chong Kai Ying
+Khant Naing Lin
+Mallvin Rajamohan 
+Liu Yunqing
 
 ---
 
