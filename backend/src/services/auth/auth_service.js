@@ -35,6 +35,60 @@ exports.login = async (req,res)=>{
         if (profileError) console.warn("Profile not found:", profileError);
         else profile = profileData;
 
+        // Check if user is suspended or deactivated BEFORE creating session
+        const userStatus = user.user_metadata?.status;
+        
+        if (userStatus === 'SUSPENDED') {
+            const suspensionEndDate = user.user_metadata?.suspension_end_date;
+            const suspensionReason = user.user_metadata?.suspension_reason || 'Administrative action';
+            const suspensionDuration = user.user_metadata?.suspension_duration || 'unknown';
+            
+            if (suspensionEndDate) {
+                const endDate = new Date(suspensionEndDate);
+                const now = new Date();
+                
+                if (endDate > now) {
+                    // Still suspended - deny login
+                    const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    return res.status(403).json({ 
+                        error: `Account Suspended`,
+                        message: `Your account has been temporarily suspended for ${suspensionDuration} days.`,
+                        details: {
+                            reason: suspensionReason,
+                            daysRemaining: daysRemaining,
+                            expiresOn: endDate.toLocaleDateString(),
+                            contactSupport: 'If you believe this is an error, please contact our support team.'
+                        }
+                    });
+                } else {
+                    // Suspension has expired - should be auto-unsuspended
+                    console.log(`User ${user.id} suspension has expired, should be auto-unsuspended`);
+                }
+            } else {
+                // No end date - indefinite suspension
+                return res.status(403).json({ 
+                    error: `Account Suspended`,
+                    message: `Your account has been suspended indefinitely.`,
+                    details: {
+                        reason: suspensionReason,
+                        contactSupport: 'Please contact our support team for more information.'
+                    }
+                });
+            }
+        }
+
+        if (userStatus === 'DEACTIVATED') {
+            // Deny login for deactivated accounts
+            return res.status(403).json({ 
+                error: 'Account Permanently Deactivated',
+                message: 'Your account has been permanently deactivated and access cannot be restored.',
+                details: {
+                    reason: user.user_metadata?.deactivation_reason || user.user_metadata?.ban_reason || 'Policy violation',
+                    contactSupport: 'If you believe this is an error, please contact our support team with your account details.'
+                }
+            });
+        }
+
         
         // Set session data
         req.session.user ={ 
