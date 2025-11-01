@@ -246,17 +246,60 @@ class ReportService {
 
   // fixed code
   async getAllReportsForAdmin() {
-    const { data:reports, error } = await supabase
+    // First get all reports
+    const { data: reports, error: reportsError } = await supabase
       .from('reports')
-      .select(`
-        *,
-        reporter:user_profiles!reporter_user_id(*),
-        reported:user_profiles!reported_user_id(*)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (reportsError) {
+      console.error('getAllReportsForAdmin reports error:', reportsError);
+      throw reportsError;
+    }
 
+    if (!reports || reports.length === 0) {
+      console.log('getAllReportsForAdmin: No reports found');
+      return [];
+    }
+
+    // Get all unique user IDs from reports
+    const userIds = [...new Set([
+      ...reports.map(r => r.reporter_user_id),
+      ...reports.map(r => r.reported_user_id)
+    ])].filter(Boolean);
+
+    console.log(`getAllReportsForAdmin: Found ${userIds.length} unique users to fetch`);
+
+    // Get user auth data and profiles
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      throw authError;
+    }
+
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .in('user_id', userIds);
+
+    if (profilesError) {
+      console.warn('Error fetching user profiles:', profilesError);
+    }
+
+    // Create user lookup map
+    const userMap = {};
+    authData.users.forEach(user => {
+      const profile = profilesData?.find(p => p.user_id === user.id);
+      userMap[user.id] = {
+        id: user.id,
+        email: user.email,
+        name: profile?.full_name || profile?.username || user.user_metadata?.full_name || user.user_metadata?.displayName || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
+        full_name: profile?.full_name || profile?.username || user.user_metadata?.full_name || user.user_metadata?.displayName || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
+        role: profile?.role || user.user_metadata?.role || 'elderly'
+      };
+    });
+
+    // Get attachments for all reports
     const reportIds = reports.map(r => r.id);
     const { data: attachments } = await supabase
       .from('attachments')
@@ -264,13 +307,26 @@ class ReportService {
       .in('parent_id', reportIds)
       .eq('parent_type', 'report');
 
-    // Merge attachments into each report
-    const merged = reports.map(report => ({
+    // Enhance reports with user data and attachments
+    const enhancedReports = reports.map(report => ({
       ...report,
-      attachments: attachments.filter(a => a.parent_id === report.id),
+      reporter: userMap[report.reporter_user_id] || {
+        id: report.reporter_user_id,
+        name: 'Unknown User',
+        full_name: 'Unknown User', 
+        role: 'elderly'
+      },
+      reported: userMap[report.reported_user_id] || {
+        id: report.reported_user_id,
+        name: 'Unknown User',
+        full_name: 'Unknown User',
+        role: 'elderly'
+      },
+      attachments: attachments ? attachments.filter(a => a.parent_id === report.id) : []
     }));
 
-    return merged;
+    console.log(`getAllReportsForAdmin: Returning ${enhancedReports.length} enhanced reports`);
+    return enhancedReports;
   }
 }
 

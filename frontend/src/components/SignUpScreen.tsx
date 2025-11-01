@@ -245,16 +245,16 @@ export default function SignUpScreen({ onBack}: SignUpScreenProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-lg font-medium">
+          <Label htmlFor="phone_number" className="text-lg font-medium">
             Phone number
           </Label>
           <Input
-            id="password"
-            type="password"
+            id="phone_number"
+            type="tel"
             value={formData.phone_number}
             onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
             className="h-14 text-lg"
-            placeholder="Create a secure password"
+            placeholder="Enter your phone number"
             required
           />
         </div>

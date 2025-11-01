@@ -50,11 +50,8 @@ router.get('/users/:userId', adminController.getUserById);
 // POST /api/admin/users/:userId/suspend - Suspend user
 router.post('/users/:userId/suspend', adminController.suspendUser);
 
-// POST /api/admin/users/:userId/deactivate - Deactivate user
+// POST /api/admin/users/:userId/deactivate - Ban user permanently
 router.post('/users/:userId/deactivate', adminController.deactivateUser);
-
-// POST /api/admin/users/:userId/reactivate - Reactivate deactivated user (manual admin action)
-router.post('/users/:userId/reactivate', adminController.reactivateUser);
 
 // POST /api/admin/users/:userId/unsuspend - Unsuspend user (automatic when duration expires)
 router.post('/users/:userId/unsuspend', adminController.unsuspendUser);
