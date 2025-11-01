@@ -8,6 +8,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const ElderlyController = require('../controllers/elderlyController');
+const ReportService = require('../services/report');
+
 
 // For file upload when creating help request
 // Create uploads folder if it doesn't exist
@@ -122,7 +124,33 @@ router.post('/endRequest', requireAuth, async (req, res) => {
     } catch (error) {
         console.log(error);
 
-        console.error('Error creating help request:', error);
+        console.error('Error ending help request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+
+    }
+
+});
+
+
+
+router.post('/cancelRequest', requireAuth, async (req, res) => {
+
+    try {
+
+        var helpRequestId = req.body.helpRequestId;
+
+
+        const result = await HelpRequest.cancelHelpRequest(helpRequestId);
+
+        res.json({
+            message: 'Successfully cancelled help request',
+            result: result
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        console.error('Error cancelling help request:', error);
         res.status(500).json({ error: 'Internal server error' });
 
     }

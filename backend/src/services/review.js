@@ -95,8 +95,6 @@ class ReviewService {
       return [];
     }
 
-    console.log(reviews);
-
     // Get recipient user IDs
     const recipientIds = [...new Set(reviews.map(r => r.recipient_user_id))];
     
@@ -109,8 +107,6 @@ class ReviewService {
     if (profilesError) {
       console.warn('Error fetching recipient profiles:', profilesError);
     }
-
-    console.log(profiles);
     
     // Create a map for quick lookup
     const profileMap = {};

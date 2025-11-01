@@ -22,7 +22,14 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
 
   if (!isOpen) return null;
 
-  const handleSubmit = async() => {
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!reason) {
       toast({
         title: "Reason required",
@@ -33,8 +40,25 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
     }
     // Demo-only: log
     // eslint-disable-next-line no-console
-    try{
-      const response = await axiosInstance.post("/reports/",
+
+
+
+    const submitFormData = new FormData();
+    submitFormData.append("reportedUserId", reportedUserId);
+    submitFormData.append("helpRequestId", helpRequestId);
+    submitFormData.append("reason", reason);
+    submitFormData.append("description", description);
+    submitFormData.append("file", null);
+
+    
+    
+
+    if (file) {
+      submitFormData.append("file", file);
+    }
+
+    try {
+      /* const response = await axiosInstance.post("/reports/",
         {
           reportedUserId,
           helpRequestId,
@@ -44,8 +68,17 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
         {
           withCredentials: true
         }
-      )
-      if (response.data.success){
+      ) */
+
+      const response = await axiosInstance.post("/reports/",
+        submitFormData, {
+        withCredentials: true, headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+
+      if (response.data.success) {
         console.log("Submitting report", { reportedUserId, helpRequestId, reason, description, file });
         toast({
           title: "Report submitted",
@@ -56,11 +89,11 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
         setReason("");
         setDescription("");
         setFile(null);
-      } else{
+      } else {
         console.error("Failed to send report:", response.data.message);
         alert("Failed to submit report, please try again");
       }
-    } catch(error){
+    } catch (error) {
       console.error("Error submitting report: ", error);
       alert("Error submitting report. Please try again.");
     }
@@ -127,9 +160,10 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({ isOpen, onClose, 
                 </div>
                 <input
                   type="file"
+                  name="file"
                   className="hidden"
                   accept="image/*,.pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  onChange={handleFileChange}
                 />
               </label>
               {file ? (

@@ -1,26 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare } from "lucide-react";
+import { ArrowLeft, MapPin, AlertTriangle, Clock, Upload, Phone, MessageSquare, CheckCircle } from "lucide-react";
 import { axiosInstance as axios } from "./axios";
-import { useNavigate  } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useLocation from "../features/location/locationTracking";
+import { useTranslation } from 'react-i18next';
+import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
+import SubmitReportModal from "../features/moderation/SubmitReportModal";
+import { useAuthStore } from "../store/useAuthStore";
 
 
 
 
 export default function RequestHelpScreen() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation()
+
   const [step, setStep] = useState<"form" | "submitted" | "matched">("form");
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [formData, setFormData] = useState({
     location: "",
     description: "",
     urgency: "medium" as "low" | "medium" | "high"
   });
+
+
+  const [matchedVolunteer, setMatchedVolunteer] = useState({
+    id: "",
+    name: "",
+    phone: "",
+    rating: 0,
+    helpRequestId: ""
+  });
+
+  // Placeholder IDs for demo purposes
+  /* const matchedVolunteerId = "demo-volunteer-001";
+  const helpRequestId = "demo-help-001"; */
 
   const onBack = () => {
     navigate(`/elderly_dashboard`);
@@ -29,17 +50,60 @@ export default function RequestHelpScreen() {
   const [image, setImage] = useState<File | null>(null);
 
   const handleBack = () => {
-    navigate(-1); 
+    navigate(-1);
   };
+
+
+  const handleNewRequest = () => {
+
+    window.location.reload();
+
+  }
+
+
+
+  // WebSocket state
+  const { socket } = useAuthStore();
+
+  // WebSocket listeners for match with volunteer event
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNotification = (data: any) => {
+      console.log('Received notification:', data);
+
+      var metadata = data.metadata;
+
+      var volunteerId = metadata.volunteerId;
+      var volunteerName = metadata.volunteerName;
+      var volunteerPhoneNumber = metadata.volunteerPhoneNumber;
+      var volunteerRating = metadata.averageRating;
+      var helpRequestId = metadata.helpRequestId
+
+      setMatchedVolunteer({
+        id: volunteerId,
+        name: volunteerName,
+        phone: volunteerPhoneNumber,
+        rating: volunteerRating,
+        helpRequestId: helpRequestId
+      });
+
+      setStep("matched");
+
+    };
+
+
+    // Add event listener for "notify" event emitted by acceptRequest in volunteerController when a volunteer accepts as help request 
+    socket.on('notify', handleNotification);
+
+    // Cleanup
+    return () => {
+      socket.off('notify', handleNotification);
+    };
+  }, [socket]);
+
   // getting user live location from useLocation
   const { location, error: locationError } = useLocation();
-  
-  const [matchedVolunteer] = useState({
-    name: "Sarah Tan",
-    phone: "+65 9876 5432",
-    eta: "15 minutes",
-    rating: 4.9,
-  });
 
   const urgencyLevels = [
     {
@@ -104,7 +168,7 @@ export default function RequestHelpScreen() {
 
 
       console.log(response);
-      
+
 
       if (response.status == 200) {
         setStep("submitted");
@@ -112,9 +176,12 @@ export default function RequestHelpScreen() {
         // TODO: make matching dynamic and not hardcoded to simulate
 
         // Simulate matching process
-        setTimeout(() => {
+        /* setTimeout(() => {
           setStep("matched");
-        }, 3000);
+        }, 3000); */
+
+
+
       }
     } catch (error: any) {
       // TODO: handle error -> use case 2.2 EX 1
@@ -161,97 +228,106 @@ export default function RequestHelpScreen() {
 
   if (step === "matched") {
     return (
-      <div className="min-h-screen bg-background px-6 py-8">
+      <div className="space-y-6">
+
+        <div className="px-6 py-8 pb-24">
+          <SubmitReviewModal
+            isOpen={isReviewOpen}
+            onClose={() => setIsReviewOpen(false)}
+            recipientUserId={matchedVolunteer.id}
+            helpRequestId={matchedVolunteer.helpRequestId}
+          />
+
+          <SubmitReportModal
+            isOpen={isReportOpen}
+            onClose={() => setIsReportOpen(false)}
+            reportedUserId={matchedVolunteer.id}
+            helpRequestId={matchedVolunteer.helpRequestId}
+          />
+        </div>
+
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Help is Coming!</h1>
+          <h1 className="text-2xl font-bold text-foreground">Help Found</h1>
         </div>
 
-        <div className="space-y-6">
-          <Card className="p-6 bg-success/5 border-success/20">
-            <div className="text-center mb-6">
-              <div className="bg-success/10 rounded-full p-6 w-fit mx-auto mb-4">
-                <Phone className="h-8 w-8 text-success" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                Volunteer Matched!
-              </h2>
-              <p className="text-muted-foreground">
-                A caring volunteer is on their way to help you.
-              </p>
-            </div>
+        <Card className="p-6 bg-success/5 border-success">
+          <div className="text-center mb-4">
+            <CheckCircle className="h-12 w-12 text-success mx-auto mb-2" />
+            <h3 className="text-2xl font-bold text-success">{t('help.volunteerMatched')}</h3>
+          </div>
 
-            <div className="bg-card rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/10 rounded-full p-3">
-                  <Phone className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-card-foreground mb-1">
-                    {matchedVolunteer.name}
-                  </h3>
-                  <p className="text-muted-foreground mb-2">
-                    Phone: {matchedVolunteer.phone}
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="bg-warning/10 text-warning">
-                      ETA: {matchedVolunteer.eta}
-                    </Badge>
-                    <Badge variant="outline" className="bg-success/10 text-success">
-                      ⭐ {matchedVolunteer.rating}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{t('help.volunteer')}</span>
+              <span className="text-lg">{matchedVolunteer.name}</span>
             </div>
-
-            <div className="flex gap-3">
-              <Button variant="success" size="lg" className="flex-1">
-                <Phone className="h-5 w-5" />
-                Call Volunteer
-              </Button>
-              <Button variant="outline" size="lg" className="flex-1">
-                <MessageSquare className="h-5 w-5" />
-                Send Message
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{t('help.phone')}</span>
+              <Button variant="link" className="p-0 h-auto">
+                {matchedVolunteer.phone}
               </Button>
             </div>
-          </Card>
-
-          <Card className="p-4">
-            <h3 className="font-semibold text-card-foreground mb-2">Your Request</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Location:</span>
-                <span className="text-card-foreground">{formData.location}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <span className="text-muted-foreground">Description:</span>
-                <span className="text-card-foreground">{formData.description}</span>
-              </div>
+            {/* <div className="flex items-center justify-between">
+              <span className="font-medium">{t('help.eta')}</span>
+              <span className="text-lg text-warning">{matchedVolunteer.eta}</span>
+            </div> */}
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{t('help.status')}</span>
+              <Badge variant="secondary" className="bg-warning text-warning-foreground">
+                {t('help.onTheWay')}
+              </Badge>
             </div>
-          </Card>
+          </div>
 
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            onClick={() => setStep("form")}
-          >
-            Cancel Request
-          </Button>
-        </div>
+          {/* <div className="flex gap-3 mt-6">
+            <Button variant="outline" className="flex-1">
+              <Phone className="h-5 w-5" />
+              {t('help.call')}
+            </Button>
+            <Button variant="outline" className="flex-1">
+              <MessageSquare className="h-5 w-5" />
+              {t('help.message')}
+            </Button>
+          </div> */}
+
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setIsReviewOpen(true)}
+            >
+              Review Volunteer
+            </Button>
+
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => setIsReportOpen(true)}
+            >
+              Report Volunteer
+            </Button>
+          </div>
+        </Card>
+
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleNewRequest}
+        >
+          {t('help.requestNewHelp')}
+        </Button>
       </div>
+
     );
   }
 
   return (
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={handleBack}>
+        <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-6 w-6" />
         </Button>
         <h1 className="text-2xl font-bold text-foreground">Request Help</h1>
@@ -335,6 +411,17 @@ export default function RequestHelpScreen() {
           Submit Help Request
         </Button>
       </form>
+
+
+
+
+
+
     </div>
   );
+
+
+
+
+
 }

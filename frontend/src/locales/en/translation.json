@@ -2,7 +2,7 @@
   "common": {
     "home": "Home",
     "help": "Help",
-    "routes": "Routes", 
+    "routes": "Routes",
     "reviews": "Reviews",
     "profile": "Profile",
     "success": "Success",
@@ -19,14 +19,15 @@
     "clear": "Clear",
     "submit": "Submit",
     "repeat": "Repeat",
-    "chas": "Chas Clinics"
+    "chas": "Chas Clinics",
+    "reports": "Reports"
   },
   "home": {
     "welcome": "Good day, {{name}}!",
     "howCanWeHelp": "How can we help you today?",
     "totalRequests": "Total Requests",
     "completed": "Completed",
-    "rating": "Rating", 
+    "rating": "Rating",
     "caregivers": "Caregivers",
     "quickActions": "Quick Actions",
     "requestHelpNow": "Request Help Now",
@@ -49,7 +50,7 @@
     "fullName": "Full Name",
     "emailAddress": "Email Address",
     "phoneNumber": "Phone Number",
-    "caregiverLinkingPin": "Caregiver Linking PIN", 
+    "caregiverLinkingPin": "Caregiver Linking PIN",
     "sharePinWithCaregivers": "Share this PIN with your caregivers to link your accounts",
     "accessibilityPreferences": "Accessibility & Preferences",
     "languagePreference": "Language Preference",
@@ -57,7 +58,7 @@
     "wheelchairUser": "Wheelchair user",
     "visualImpairment": "Visual impairment",
     "hearingImpairment": "Hearing impairment",
-    "mobilityAssistance": "Mobility assistance", 
+    "mobilityAssistance": "Mobility assistance",
     "cognitiveAssistance": "Cognitive assistance",
     "saveSettings": "Save Settings"
   },
@@ -83,7 +84,8 @@
     "call": "Call",
     "message": "Message",
     "reviewVolunteer": "Review Volunteer",
-    "requestNewHelp": "Request New Help"
+    "requestNewHelp": "Request New Help",
+    "cancelRequest": "Cancel Request"
   },
   "routes": {
     "smartRoutes": "Smart Routes",
@@ -110,6 +112,11 @@
     "reviewsWritten": "Reviews you've written for volunteers",
     "noReviews": "No reviews yet",
     "completeHelpRequests": "Complete help requests to leave reviews for volunteers"
+  },
+  "reports": {
+    "myReports": "My Reports",
+    "reportsWritten": "Reports you've written for volunteers",
+    "noReports": "No reports yet"
   },
   "navigation": {
     "trackLive": "Track Live",
