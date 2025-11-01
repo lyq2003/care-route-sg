@@ -292,135 +292,75 @@ class AdminService {
     }
   }
 
-  // Deactivate user (updates both Auth metadata and profile status)
+  // Ban user permanently (deletes account permanently - cannot be recovered)
   async deactivateUser(userId, reason, adminId) {
     try {
-      // First get the user to validate
+      // First get the user to validate and store info for logging
       const user = await this.getUserById(userId);
       
       // Check if user is manageable by admin (not an admin themselves)
       if (!user.isManageableByAdmin()) {
-        throw new Error(`Cannot deactivate admin users. Only elderly and volunteer users can be deactivated.`);
+        throw new Error(`Cannot ban admin users. Only elderly and volunteer users can be banned.`);
       }
       
       if (!user.canBeDeactivated()) {
-        throw new Error(`User cannot be deactivated. Current status: ${user.status}, role: ${user.role}. Only elderly and volunteer users can be deactivated. Caregivers remain permanently active.`);
+        throw new Error(`User cannot be banned. Current status: ${user.status}, role: ${user.role}. Only elderly and volunteer users can be banned. Caregivers remain permanently active.`);
       }
 
-      const deactivatedAt = new Date().toISOString();
+      const bannedAt = new Date().toISOString();
       
-      // Get current user data to preserve existing metadata
-      const { data: currentUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-      
-      // Update auth user metadata using admin client
-      const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...currentUser.user.user_metadata,
-          status: UserStatus.DEACTIVATED,
-          deactivated_at: deactivatedAt,
-          deactivation_reason: reason
-        }
-      });
+      // Store user info for logging before deletion
+      const userInfo = {
+        id: user.userid,
+        email: user.email,
+        fullname: user.fullname,
+        role: user.role,
+        reason: reason,
+        bannedAt: bannedAt,
+        bannedBy: adminId
+      };
 
-      if (authError) {
-        throw new Error(`Failed to update auth user: ${authError.message}`);
-      }
-
-      // Also update profile table if profile exists
-      const { error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .update({ 
-          status: UserStatus.DEACTIVATED,
-          updated_at: deactivatedAt 
-        })
-        .eq('user_id', userId);
-
-      if (profileError) {
-        console.warn('Failed to update profile status:', profileError);
-        // Don't throw error - auth update is primary
-      }
-
-      // Log admin action
-      await this.logAdminAction(adminId, 'DEACTIVATE_USER', userId, { reason });
-
-      // Send notification to user based on their role
+      // Send notification to user before deleting account
       try {
-        const updatedUser = await this.getUserById(userId);
-        if (updatedUser.role === Role.ELDERLY || updatedUser.role === 'ELDERLY') {
+        if (user.role === Role.ELDERLY || user.role === 'ELDERLY') {
           await NotificationService.notifyAccountDeactivated(userId, reason);
-        } else if (updatedUser.role === Role.CAREGIVER || updatedUser.role === 'CAREGIVER') {
+        } else if (user.role === Role.CAREGIVER || user.role === 'CAREGIVER') {
           await NotificationService.notifyCaregiverAccountDeactivated(userId, reason);
-        } else if (updatedUser.role === Role.VOLUNTEER || updatedUser.role === 'VOLUNTEER') {
+        } else if (user.role === Role.VOLUNTEER || user.role === 'VOLUNTEER') {
           await NotificationService.notifyVolunteerAccountDeactivated(userId, reason);
         }
       } catch (notifError) {
-        console.error('Error sending deactivation notification:', notifError);
-        // Don't fail the deactivation if notification fails
+        console.error('Error sending ban notification:', notifError);
+        // Continue with ban even if notification fails
       }
 
-      // Return updated user
-      return await this.getUserById(userId);
-    } catch (error) {
-      throw error;
-    }
-  }
+      // Log admin action BEFORE deletion (since user will be gone after)
+      await this.logAdminAction(adminId, 'BAN_USER_PERMANENT', userId, userInfo);
 
-  // Reactivate user (manual admin reactivation for deactivated accounts)
-  async reactivateUser(userId, adminId, reason) {
-    try {
-      // First get the user to validate
-      const user = await this.getUserById(userId);
-      
-      // Check if user is manageable by admin (not an admin themselves)
-      if (!user.isManageableByAdmin()) {
-        throw new Error(`Cannot reactivate admin users. Only elderly and volunteer users can be reactivated.`);
-      }
-      
-      if (!user.canBeReactivated()) {
-        throw new Error(`User cannot be reactivated. Current status: ${user.status}, role: ${user.role}. Only deactivated elderly and volunteer users can be reactivated.`);
-      }
-
-      const reactivatedAt = new Date().toISOString();
-      
-      // Get current user data to preserve existing metadata
-      const { data: currentUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-      
-      // Update auth user metadata using admin client
-      const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...currentUser.user.user_metadata,
-          status: UserStatus.ACTIVE,
-          deactivated_at: null,
-          deactivation_reason: null,
-          reactivated_at: reactivatedAt,
-          reactivated_by: adminId,
-          reactivation_reason: reason
-        }
-      });
-
-      if (authError) {
-        throw new Error(`Failed to update auth user: ${authError.message}`);
-      }
-
-      // Also update profile table if profile exists
-      const { error: profileError } = await supabaseAdmin
+      // Delete from user_profiles table first
+      const { error: profileDeleteError } = await supabaseAdmin
         .from('user_profiles')
-        .update({ 
-          status: UserStatus.ACTIVE,
-          updated_at: reactivatedAt 
-        })
+        .delete()
         .eq('user_id', userId);
 
-      if (profileError) {
-        console.warn('Failed to update profile status:', profileError);
-        // Don't throw error - auth update is primary
+      if (profileDeleteError) {
+        console.warn('Failed to delete user profile:', profileDeleteError);
+        // Continue with auth deletion even if profile deletion fails
       }
 
-      // Log admin action with reason
-      await this.logAdminAction(adminId, 'REACTIVATE_USER', userId, { reason });
+      // Delete from Supabase Auth (this permanently deletes the user)
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
-      // Return updated user
-      return await this.getUserById(userId);
+      if (authDeleteError) {
+        throw new Error(`Failed to permanently delete user: ${authDeleteError.message}`);
+      }
+
+      // Return success with user info (user is now deleted)
+      return {
+        success: true,
+        message: 'User permanently banned and deleted',
+        deletedUser: userInfo
+      };
     } catch (error) {
       throw error;
     }
