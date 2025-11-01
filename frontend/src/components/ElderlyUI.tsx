@@ -282,6 +282,20 @@ export default function ElderlyUI() {
   const isPDF = (mimeType) => {
     return mimeType === "application/pdf";
   }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-destructive text-destructive-foreground";
+      case "medium":
+        return "bg-warning text-warning-foreground";
+      case "low":
+        return "bg-success text-success-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
   const formatDate = (dateString) => {
     const options: Intl.DateTimeFormatOptions = {
       /* weekday: "long", */
@@ -449,7 +463,9 @@ export default function ElderlyUI() {
             "time": data[i].createdAt,
             "volunteer": data[i].help_request_assignedVolunteerId_fkey.username,
             "volunteerID": data[i].help_request_assignedVolunteerId_fkey.user_id,
-            "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number
+            "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number,
+            "urgency": data[i].urgency,
+            "address": data[i].address
           }
         } else {
           activityObj = {
@@ -458,6 +474,8 @@ export default function ElderlyUI() {
             "description": data[i].description,
             "status": data[i].help_request_status.statusName,
             "time": data[i].createdAt,
+            "urgency": data[i].urgency,
+            "address": data[i].address
           }
         }
 
@@ -579,13 +597,14 @@ export default function ElderlyUI() {
     console.log('📋 Converted route activities:', routeActivities);
 
     // Keep existing non-route activities and add route activities
-    setRecentActivity(prev => {
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    /* setRecentActivity(prev => {
       console.log('📋 Previous recent activity:', prev);
       const nonRouteActivities = prev.filter(activity => activity.type !== "route");
       const newActivity = [...routeActivities, ...nonRouteActivities].slice(0, 10); // Limit to 10 most recent
       console.log('📋 New recent activity:', newActivity);
       return newActivity;
-    });
+    }); */
   };
 
   const getTimeAgo = (dateString: string) => {
@@ -613,7 +632,8 @@ export default function ElderlyUI() {
       setRouteHistory(prev => prev.filter(route => route.id !== routeId));
 
       // Update recent activity by removing the deleted route
-      setRecentActivity(prev => prev.filter(activity => activity.id !== `route_${routeId}`));
+      // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+      //setRecentActivity(prev => prev.filter(activity => activity.id !== `route_${routeId}`));
 
       // Show success message
       toast({
@@ -646,7 +666,8 @@ export default function ElderlyUI() {
       isRecommended: route.isRecommended
     };
 
-    setRecentActivity(prev => {
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    /* setRecentActivity(prev => {
       // Remove any existing active navigation for this route
       const filteredActivities = prev.filter(activity =>
         !(activity.type === "route" &&
@@ -656,7 +677,7 @@ export default function ElderlyUI() {
 
       // Add the new completion activity at the top
       return [newActivity, ...filteredActivities].slice(0, 10);
-    });
+    }); */
 
     // Refresh route history to get the latest data from database
     fetchRouteHistory();
@@ -681,7 +702,8 @@ export default function ElderlyUI() {
     };
 
     console.log('New navigation activity created:', newActivity);
-    setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    //setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
   };
 
   const handleActiveNavigationClick = (activity: any) => {
@@ -1527,6 +1549,8 @@ export default function ElderlyUI() {
               {recentActivity.length > 0 ? (
                 <div className="space-y-3">
                   {recentActivity.map((activity) => (
+
+
                     <Card
                       key={activity.id}
                       className={`p-4 ${activity.type === "route" && activity.status === "active"
@@ -1539,6 +1563,7 @@ export default function ElderlyUI() {
                         }
                       }}
                     >
+
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1556,10 +1581,7 @@ export default function ElderlyUI() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            {formatDate(activity.time)}
-                          </div>
+
                           {activity.type === "route" && activity.mode && (
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -1615,7 +1637,7 @@ export default function ElderlyUI() {
 
                       {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
                         <div>
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex gap-2 mt-1">
                             <p className="text-sm mt-1">
                               Phone Number: {activity.phone_number}
                             </p>
@@ -1643,6 +1665,7 @@ export default function ElderlyUI() {
 
 
                             setIsReviewOpen(true);
+
                           }}>
                             <Star className="h-4 w-4" />
                             Review
