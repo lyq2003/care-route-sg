@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>domain/User.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Admin.html">Admin</a><ul class='methods'><li data-type='method'><a href="Admin.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Admin.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Admin.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Admin.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Admin.html#isActive">isActive</a></li><li data-type='method'><a href="Admin.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Admin.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Admin.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Admin.html#.validate">validate</a></li></ul></li><li><a href="AdminController.html">AdminController</a><ul class='methods'><li data-type='method'><a href="AdminController.html#announceServiceOutage">announceServiceOutage</a></li><li data-type='method'><a href="AdminController.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminController.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminController.html#getAllReports">getAllReports</a></li><li data-type='method'><a href="AdminController.html#getAllReviews">getAllReviews</a></li><li data-type='method'><a href="AdminController.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminController.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminController.html#getUserById">getUserById</a></li><li data-type='method'><a href="AdminController.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminController.html#reassignVolunteer">reassignVolunteer</a></li><li data-type='method'><a href="AdminController.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="AdminController.html#removeReview">removeReview</a></li><li data-type='method'><a href="AdminController.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="AdminController.html#startReportReview">startReportReview</a></li><li data-type='method'><a href="AdminController.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminController.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="AdminService.html">AdminService</a><ul class='methods'><li data-type='method'><a href="AdminService.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminService.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminService.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminService.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminService.html#logAdminAction">logAdminAction</a></li><li data-type='method'><a href="AdminService.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminService.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminService.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="Caregiver.html">Caregiver</a><ul class='methods'><li data-type='method'><a href="Caregiver.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Caregiver.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Caregiver.html#isActive">isActive</a></li><li data-type='method'><a href="Caregiver.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Caregiver.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Caregiver.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Caregiver.html#.validate">validate</a></li></ul></li><li><a href="CaregiverController.html">CaregiverController</a><ul class='methods'><li data-type='method'><a href="CaregiverController.html#.getActiveTrips">getActiveTrips</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocation">getElderlyLocation</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocationHistory">getElderlyLocationHistory</a></li><li data-type='method'><a href="CaregiverController.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverController.html#.linkByPIN">linkByPIN</a></li><li data-type='method'><a href="CaregiverController.html#.me">me</a></li><li data-type='method'><a href="CaregiverController.html#.requestHistory">requestHistory</a></li><li data-type='method'><a href="CaregiverController.html#.submitReport">submitReport</a></li><li data-type='method'><a href="CaregiverController.html#.updateElderlyProfile">updateElderlyProfile</a></li><li data-type='method'><a href="CaregiverController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="Elderly.html">Elderly</a><ul class='methods'><li data-type='method'><a href="Elderly.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Elderly.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Elderly.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Elderly.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Elderly.html#canGenerateLinkPIN">canGenerateLinkPIN</a></li><li data-type='method'><a href="Elderly.html#generateNewPIN">generateNewPIN</a></li><li data-type='method'><a href="Elderly.html#isActive">isActive</a></li><li data-type='method'><a href="Elderly.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Elderly.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Elderly.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Elderly.html#.validate">validate</a></li></ul></li><li><a href="ElderlyController.html">ElderlyController</a><ul class='methods'><li data-type='method'><a href="ElderlyController.html#.completeTripTracking">completeTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="ElderlyController.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.startTripTracking">startTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.updateLanguagePreference">updateLanguagePreference</a></li><li data-type='method'><a href="ElderlyController.html#.updateLocation">updateLocation</a></li><li data-type='method'><a href="ElderlyController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="HelpRequest.html">HelpRequest</a><ul class='methods'><li data-type='method'><a href="HelpRequest.html#.createRequest">createRequest</a></li><li data-type='method'><a href="HelpRequest.html#.getCompletedHelpRequestswithVolunteer">getCompletedHelpRequestswithVolunteer</a></li></ul></li><li><a href="NotificationService.html">NotificationService</a><ul class='methods'><li data-type='method'><a href="NotificationService.html#broadcastToAllUsers">broadcastToAllUsers</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountCreated">notifyAccountCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountDeactivated">notifyAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountSuspended">notifyAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountUnsuspended">notifyAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewReportSubmitted">notifyAdminNewReportSubmitted</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewUserRegistered">notifyAdminNewUserRegistered</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReportResolved">notifyAdminReportResolved</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReviewFlagged">notifyAdminReviewFlagged</a></li><li data-type='method'><a href="NotificationService.html#notifyAllAdmins">notifyAllAdmins</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountDeactivated">notifyCaregiverAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountSuspended">notifyCaregiverAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountUnsuspended">notifyCaregiverAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverElderlyLinked">notifyCaregiverElderlyLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestCompleted">notifyCaregiverHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestInitiated">notifyCaregiverHelpRequestInitiated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestMatched">notifyCaregiverHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverLinked">notifyCaregiverLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverProgressUpdate">notifyCaregiverProgressUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverReportUpdate">notifyCaregiverReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyFeatureUpdate">notifyFeatureUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCancelled">notifyHelpRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCompleted">notifyHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCreated">notifyHelpRequestCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestMatched">notifyHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyReportUpdate">notifyReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyReviewReminder">notifyReviewReminder</a></li><li data-type='method'><a href="NotificationService.html#notifyScheduledMaintenance">notifyScheduledMaintenance</a></li><li data-type='method'><a href="NotificationService.html#notifyServiceOutage">notifyServiceOutage</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountDeactivated">notifyVolunteerAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountSuspended">notifyVolunteerAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountUnsuspended">notifyVolunteerAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerNewRequestNearby">notifyVolunteerNewRequestNearby</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerReportUpdate">notifyVolunteerReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestAssigned">notifyVolunteerRequestAssigned</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCancelled">notifyVolunteerRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCompleted">notifyVolunteerRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#sendAdminNotification">sendAdminNotification</a></li><li data-type='method'><a href="NotificationService.html#sendCaregiverNotification">sendCaregiverNotification</a></li><li data-type='method'><a href="NotificationService.html#sendNotification">sendNotification</a></li><li data-type='method'><a href="NotificationService.html#sendVolunteerNotification">sendVolunteerNotification</a></li></ul></li><li><a href="ReportController.html">ReportController</a></li><li><a href="ReportService.html">ReportService</a><ul class='methods'><li data-type='method'><a href="ReportService.html#addEvidence">addEvidence</a></li><li data-type='method'><a href="ReportService.html#beginReview">beginReview</a></li><li data-type='method'><a href="ReportService.html#getAllReportsForAdmin">getAllReportsForAdmin</a></li><li data-type='method'><a href="ReportService.html#getEvidenceUploadMiddleware">getEvidenceUploadMiddleware</a></li><li data-type='method'><a href="ReportService.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="ReportService.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="ReportService.html#submitReport">submitReport</a></li><li data-type='method'><a href="ReportService.html#viewMyReports">viewMyReports</a></li></ul></li><li><a href="ReviewController.html">ReviewController</a></li><li><a href="ReviewService.html">ReviewService</a><ul class='methods'><li data-type='method'><a href="ReviewService.html#editReview">editReview</a></li><li data-type='method'><a href="ReviewService.html#flagReview">flagReview</a></li><li data-type='method'><a href="ReviewService.html#getAllReviewsForAdmin">getAllReviewsForAdmin</a></li><li data-type='method'><a href="ReviewService.html#removeReview">removeReview</a></li><li data-type='method'><a href="ReviewService.html#submitReview">submitReview</a></li><li data-type='method'><a href="ReviewService.html#viewMyReviews">viewMyReviews</a></li><li data-type='method'><a href="ReviewService.html#viewReviewsAboutMe">viewReviewsAboutMe</a></li></ul></li><li><a href="RouteHistoryService.html">RouteHistoryService</a><ul class='methods'><li data-type='method'><a href="RouteHistoryService.html#.deleteRouteHistory">deleteRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteHistory">getRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteStatistics">getRouteStatistics</a></li><li data-type='method'><a href="RouteHistoryService.html#.saveRouteHistory">saveRouteHistory</a></li></ul></li><li><a href="User.html">User</a><ul class='methods'><li data-type='method'><a href="User.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="User.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="User.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="User.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="User.html#isActive">isActive</a></li><li data-type='method'><a href="User.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="User.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="User.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="User.html#.findById">findById</a></li><li data-type='method'><a href="User.html#.getAll">getAll</a></li><li data-type='method'><a href="User.html#.update">update</a></li><li data-type='method'><a href="User.html#.validate">validate</a></li></ul></li><li></li><li></li><li><a href="Volunteer.html">Volunteer</a><ul class='methods'><li data-type='method'><a href="Volunteer.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Volunteer.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Volunteer.html#isActive">isActive</a></li><li data-type='method'><a href="Volunteer.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Volunteer.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Volunteer.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Volunteer.html#.validate">validate</a></li></ul></li><li><a href="VolunteerController.html">VolunteerController</a><ul class='methods'><li data-type='method'><a href="VolunteerController.html#.acceptRequest">acceptRequest</a></li><li data-type='method'><a href="VolunteerController.html#.cancelRequest">cancelRequest</a></li><li data-type='method'><a href="VolunteerController.html#.completeRequest">completeRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getAcceptedRequest">getAcceptedRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getFilteredRequests">getFilteredRequests</a></li><li data-type='method'><a href="VolunteerController.html#.getPendingRequest">getPendingRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="VolunteerController.html#.sendProgressUpdate">sendProgressUpdate</a></li><li data-type='method'><a href="VolunteerController.html#.updateProfile">updateProfile</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="CaregiverServices.html">CaregiverServices</a><ul class='methods'><li data-type='method'><a href="CaregiverServices.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverServices.html#.linkToElderlyByPIN">linkToElderlyByPIN</a></li></ul></li><li><a href="ElderlyServices.html">ElderlyServices</a><ul class='methods'><li data-type='method'><a href="ElderlyServices.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyServices.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="VolunteerServices.html">VolunteerServices</a></li></ul><h3>Global</h3><ul><li><a href="global.html#acceptRequest">acceptRequest</a></li><li><a href="global.html#completeRequest">completeRequest</a></li><li><a href="global.html#deleteProfile">deleteProfile</a></li><li><a href="global.html#getAllUsers">getAllUsers</a></li><li><a href="global.html#getPendingRequests">getPendingRequests</a></li><li><a href="global.html#getProfile">getProfile</a></li><li><a href="global.html#sanitize">sanitize</a></li><li><a href="global.html#updateProfile">updateProfile</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">domain/User.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// src/models/User.js
+const UserStatus = require('./enum/UserStatus');
+const Role = require('./enum/Role');
+
+/**
+ * Base User domain model
+ * Represents a user in the CareRoute system with common properties and behaviors
+ * All user roles (Elderly, Caregiver, Volunteer, Admin) extend this class
+ * 
+ * @class User
+ * @example
+ * const user = new User({
+ *   userid: '123',
+ *   fullname: 'John Doe',
+ *   email: 'john@example.com',
+ *   phone: '+6512345678',
+ *   role: Role.ELDERLY,
+ *   status: UserStatus.ACTIVE
+ * });
+ */
+class User {
+  /**
+   * Creates a new User instance
+   * @param {Object} options - User configuration object
+   * @param {string} options.userid - Unique user identifier
+   * @param {string} options.fullname - User's full name
+   * @param {string} options.phone - User's phone number
+   * @param {string} options.email - User's email address
+   * @param {string} [options.passwordHash] - Hashed password (not stored in domain model)
+   * @param {string} [options.profilePicture] - URL to user's profile picture
+   * @param {UserStatus} [options.status=UserStatus.ACTIVE] - Account status
+   * @param {Role} options.role - User role (ELDERLY, CAREGIVER, VOLUNTEER, ADMIN)
+   * @param {Date} [options.createdAt=new Date()] - Account creation timestamp
+   * @param {Date} [options.updatedAt=new Date()] - Last update timestamp
+   * @param {Date} [options.suspendedAt=null] - Suspension start timestamp
+   * @param {string} [options.suspensionReason=null] - Reason for suspension
+   * @param {number} [options.suspensionDuration=0] - Suspension duration in days
+   * @param {Date} [options.suspensionEndDate=null] - Suspension end date
+   * @param {Date} [options.deactivatedAt=null] - Deactivation timestamp
+   * @param {string} [options.deactivationReason=null] - Reason for deactivation
+   * @param {Date} [options.bannedAt=null] - Ban timestamp
+   * @param {string} [options.banReason=null] - Reason for ban
+   * @param {boolean} [options.online=false] - Online status flag
+   */
+  constructor({
+    userid,
+    fullname,
+    phone,
+    email,
+    passwordHash,
+    profilePicture,
+    status = UserStatus.ACTIVE,
+    role,
+    createdAt = new Date(),
+    updatedAt = new Date(),
+
+    // Admin tracking fields
+    suspendedAt = null,
+    suspensionReason = null,
+    suspensionDuration = 0,   // default 0 days
+    suspensionEndDate = null,
+    deactivatedAt = null,
+    deactivationReason = null,
+    bannedAt = null,
+    banReason = null,
+
+    // Profile fields
+    online = false,
+  }) {
+    this.userid = userid;
+    this.fullname = fullname;
+    this.phone = phone;
+    this.email = email;
+    this.passwordHash = passwordHash;
+    this.profilePicture = profilePicture;
+
+    this.status = status;  // expects value from UserStatus enum
+    this.role = role;      // expects value from Role enum
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+
+    // Admin tracking fields
+    this.suspendedAt = suspendedAt;
+    this.suspensionReason = suspensionReason;
+    this.suspensionDuration = suspensionDuration;
+    this.suspensionEndDate = suspensionEndDate;
+    this.deactivatedAt = deactivatedAt;
+    this.deactivationReason = deactivationReason;
+    this.bannedAt = bannedAt;
+    this.banReason = banReason;
+
+    // Profile
+    this.online = online;
+  }
+
+  // ---- Domain checks ----
+  
+  /**
+   * Checks if user can be suspended
+   * Only active Elderly and Volunteer users can be suspended
+   * @returns {boolean} True if user can be suspended
+   */
+  canBeSuspended() {
+    return this.status === UserStatus.ACTIVE &amp;&amp;
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
+  }
+
+  /**
+   * Checks if user can be deactivated
+   * Only active Elderly and Volunteer users can be deactivated
+   * @returns {boolean} True if user can be deactivated
+   */
+  canBeDeactivated() {
+    return this.status === UserStatus.ACTIVE &amp;&amp;
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
+  }
+
+  /**
+   * Checks if user can be reactivated
+   * Only deactivated Elderly and Volunteer users can be reactivated
+   * @returns {boolean} True if user can be reactivated
+   */
+  canBeReactivated() {
+    return this.status === UserStatus.DEACTIVATED &amp;&amp;
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
+  }
+
+  /**
+   * Checks if user can be unsuspended
+   * Only suspended Elderly and Volunteer users can be unsuspended
+   * @returns {boolean} True if user can be unsuspended
+   */
+  canBeUnsuspended() {
+    return this.status === UserStatus.SUSPENDED &amp;&amp;
+           (this.role === Role.ELDERLY || this.role === Role.VOLUNTEER);
+  }
+
+  /**
+   * Checks if user can be managed by admin
+   * Admins cannot be managed by other admins
+   * @returns {boolean} True if user is manageable by admin
+   */
+  isManageableByAdmin() {
+    return this.role !== Role.ADMIN;
+  }
+
+  /**
+   * Checks if user status is ACTIVE
+   * @returns {boolean} True if user is active
+   */
+  isActive() { return this.status === UserStatus.ACTIVE; }
+  
+  /**
+   * Checks if user status is SUSPENDED
+   * @returns {boolean} True if user is suspended
+   */
+  isSuspended() { return this.status === UserStatus.SUSPENDED; }
+  
+  /**
+   * Checks if user status is DEACTIVATED
+   * @returns {boolean} True if user is deactivated
+   */
+  isDeactivated() { return this.status === UserStatus.DEACTIVATED; }
+
+  // ---- Validation ----
+  
+  /**
+   * Validates user data
+   * @static
+   * @param {Object} userData - User data to validate
+   * @param {string} userData.email - User email (required)
+   * @param {string} userData.fullname - User full name (required, min 2 chars)
+   * @param {string} userData.phone - User phone number (required)
+   * @param {UserStatus} [userData.status] - User status (must be valid enum value)
+   * @param {Role} [userData.role] - User role (must be valid enum value)
+   * @returns {Object} Validation result with isValid flag and errors array
+   * @returns {boolean} returns.isValid - True if validation passed
+   * @returns {string[]} returns.errors - Array of validation error messages
+   * @example
+   * const result = User.validate({
+   *   email: 'user@example.com',
+   *   fullname: 'John Doe',
+   *   phone: '+6512345678'
+   * });
+   * if (!result.isValid) {
+   *   console.log(result.errors);
+   * }
+   */
+  static validate(userData) {
+    const errors = [];
+
+    if (!userData.email) {
+      errors.push('Email is required');
+    }
+    if (!userData.fullname || userData.fullname.trim().length &lt; 2) {
+      errors.push('Full name is required and must be at least 2 characters');
+    }
+    if (!userData.phone) {
+      errors.push('Phone number is required');
+    }
+    if (userData.status &amp;&amp; !Object.values(UserStatus).includes(userData.status)) {
+      errors.push(`Invalid status. Must be one of: ${Object.values(UserStatus).join(', ')}`);
+    }
+    if (userData.role &amp;&amp; !Object.values(Role).includes(userData.role)) {
+      errors.push(`Invalid role. Must be one of: ${Object.values(Role).join(', ')}`);
+    }
+
+    return { isValid: errors.length === 0, errors };
+  }
+}
+
+module.exports = User;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Nov 01 2025 20:03:33 GMT+0800 (Singapore Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
