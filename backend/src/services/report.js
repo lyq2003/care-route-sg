@@ -19,7 +19,8 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage });
+
+const upload = multer({ storage: storage });
 
 class ReportService {
   getEvidenceUploadMiddleware() {
@@ -27,7 +28,8 @@ class ReportService {
   }
 
   // reporterRole now comes from controller (req.user.role)
-  async submitReport({ reporterUserId, reporterRole, reportedUserId, helpRequestId, reason, description }) {
+  async submitReport({ reporterUserId, reporterRole, reportedUserId, helpRequestId, reason, description, uploadedFilename, mimeType }) {
+        
     // 1. Insert the report itself
     const { data, error } = await supabase
       .from('reports')
@@ -39,6 +41,8 @@ class ReportService {
           reason,
           description: description || null,
           status: ReportStatus.PENDING,
+          file: uploadedFilename,
+          mimeType: mimeType
         },
       ])
       .select('*')
@@ -235,13 +239,49 @@ class ReportService {
   }
 
   async viewMyReports(userId) {
-    const { data, error } = await supabase
+    const { data: reports, error: reportsError } = await supabase
       .from('reports')
       .select('*')
       .eq('reporter_user_id', userId)
       .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+
+    if (reportsError) throw reportsError;
+    
+    if (!reports || reports.length === 0) {
+      return [];
+    }
+
+    // Get recipient user IDs
+    const reportedIds = [...new Set(reports.map(r => r.reported_user_id))];
+    
+    // Get recipient profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('user_id, username')
+      .in('user_id', reportedIds);
+    
+    if (profilesError) {
+      console.warn('Error fetching recipient profiles:', profilesError);
+    }
+    
+    // Create a map for quick lookup
+    const profileMap = {};
+    if (profiles) {
+      profiles.forEach(profile => {
+        profileMap[profile.user_id] = profile;
+      });
+    }
+    
+    // Enhance reviews with recipient data
+    const enchanedReports = reports.map(report => ({
+      ...report,
+      reports_reported_user_id_fkey1: profileMap[report.reported_user_id] || {
+        username: 'Unknown User'
+      }
+    }));
+    
+    return enchanedReports;
+
   }
 
   // fixed code

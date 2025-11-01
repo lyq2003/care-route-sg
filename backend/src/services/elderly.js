@@ -154,7 +154,7 @@ const ElderlyServices = {
   async getRecentActivityByElderlyID(elderlyID) {
     const { data, error } = await supabaseAdmin
       .from("help_request")
-      .select(`id, description, createdAt, help_request_status (statusName), help_request_assignedVolunteerId_fkey (user_id, username, phone_number)`)
+      .select(`*, help_request_status (statusName), help_request_assignedVolunteerId_fkey (user_id, username, phone_number)`)
       .eq("requesterId", elderlyID)
       //.neq("helpRequestStatus", 1)
       //.not("assignedVolunteerId", "is", null);;

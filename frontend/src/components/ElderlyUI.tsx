@@ -38,13 +38,15 @@ import {
   Bike,
   Flag,
   Check,
-  Hospital
+  Hospital,
+  OctagonAlert
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "./axios";
 import RouteTracking from "./RouteTracking";
 import SubmitReviewModal from "../features/moderation/SubmitReviewModal";
 import SubmitReportModal from "../features/moderation/SubmitReportModal";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function ElderlyUI() {
   const navigate = useNavigate()
@@ -93,6 +95,7 @@ export default function ElderlyUI() {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([/* 
     {
       id: 1,
@@ -175,7 +178,7 @@ export default function ElderlyUI() {
         );
 
 
-        const data = response.data.profile;
+        const data = response.data.profile[0];
 
         // Determine current language code
         let currentLanguageCode = 'en'; // Default to English
@@ -197,6 +200,7 @@ export default function ElderlyUI() {
 
 
         var userAssessibilityNeeds = data.user_accessibility_needs[0]
+
 
 
         setProfileData({
@@ -271,6 +275,26 @@ export default function ElderlyUI() {
     }
   };
 
+  const isImage = (mimeType) => {
+    return mimeType.startsWith("image/");
+  }
+
+  const isPDF = (mimeType) => {
+    return mimeType === "application/pdf";
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-destructive text-destructive-foreground";
+      case "medium":
+        return "bg-warning text-warning-foreground";
+      case "low":
+        return "bg-success text-success-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
 
   const formatDate = (dateString) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -315,7 +339,7 @@ export default function ElderlyUI() {
       }
 
       setStats(prev => ({ ...prev, completed: completedRequests }));
-      
+
       setStats(prev => ({ ...prev, totalRequests: totalRequests }));
 
 
@@ -354,16 +378,24 @@ export default function ElderlyUI() {
 
       var data = response.data.data;
 
-      var ratingSum = 0;
+      console.log(data);
 
-      for (let i = 0; i < data.length; i++) {
-        ratingSum += data[i].rating;
+      if (data.length == 0) {
+        setStats(prev => ({ ...prev, rating: 0 }));
+      } else {
+        var ratingSum = 0;
+
+        for (let i = 0; i < data.length; i++) {
+          ratingSum += data[i].rating;
+        }
+
+        var averageRating = ratingSum / data.length;
+
+        console.log("averageRating: " + averageRating);
+
+
+        setStats(prev => ({ ...prev, rating: averageRating }));
       }
-
-      var averageRating = ratingSum / data.length;
-
-      setStats(prev => ({ ...prev, rating: averageRating }));
-
 
 
     } catch (error) {
@@ -431,7 +463,9 @@ export default function ElderlyUI() {
             "time": data[i].createdAt,
             "volunteer": data[i].help_request_assignedVolunteerId_fkey.username,
             "volunteerID": data[i].help_request_assignedVolunteerId_fkey.user_id,
-            "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number
+            "phone_number": data[i].help_request_assignedVolunteerId_fkey.phone_number,
+            "urgency": data[i].urgency,
+            "address": data[i].address
           }
         } else {
           activityObj = {
@@ -440,6 +474,8 @@ export default function ElderlyUI() {
             "description": data[i].description,
             "status": data[i].help_request_status.statusName,
             "time": data[i].createdAt,
+            "urgency": data[i].urgency,
+            "address": data[i].address
           }
         }
 
@@ -466,7 +502,7 @@ export default function ElderlyUI() {
 
       var data = response.data.data;
 
-      //console.log(data);
+      console.log(data);
 
 
 
@@ -497,6 +533,51 @@ export default function ElderlyUI() {
 
   }
 
+
+  const fetchReports = async () => {
+
+    try {
+
+      const response = await axiosInstance.get('/reports/me/');
+
+      var data = response.data.data;
+
+      /* console.log("fetchReports");
+      console.log(data); */
+
+
+
+
+      var tempReportsArr = [];
+
+      for (let i = 0; i < data.length; i++) {
+
+        var reportObj = {
+          "id": data[i].id,
+          "description": data[i].description,
+          "reason": data[i].reason,
+          "reportedUsername": data[i].reports_reported_user_id_fkey1.username,
+          "status": data[i].status,
+          "date": data[i].created_at,
+          "help_request_id": data[i].help_request_id,
+          "file": data[i].file,
+          "mimeType": data[i].mimeType
+        }
+
+        tempReportsArr.push(reportObj);
+
+      }
+
+
+      setReports(tempReportsArr);
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+
   const updateRecentActivityFromRouteHistory = (routeHistory) => {
     console.log('🔄 updateRecentActivityFromRouteHistory called with:', routeHistory);
 
@@ -516,13 +597,14 @@ export default function ElderlyUI() {
     console.log('📋 Converted route activities:', routeActivities);
 
     // Keep existing non-route activities and add route activities
-    setRecentActivity(prev => {
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    /* setRecentActivity(prev => {
       console.log('📋 Previous recent activity:', prev);
       const nonRouteActivities = prev.filter(activity => activity.type !== "route");
       const newActivity = [...routeActivities, ...nonRouteActivities].slice(0, 10); // Limit to 10 most recent
       console.log('📋 New recent activity:', newActivity);
       return newActivity;
-    });
+    }); */
   };
 
   const getTimeAgo = (dateString: string) => {
@@ -550,7 +632,8 @@ export default function ElderlyUI() {
       setRouteHistory(prev => prev.filter(route => route.id !== routeId));
 
       // Update recent activity by removing the deleted route
-      setRecentActivity(prev => prev.filter(activity => activity.id !== `route_${routeId}`));
+      // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+      //setRecentActivity(prev => prev.filter(activity => activity.id !== `route_${routeId}`));
 
       // Show success message
       toast({
@@ -583,7 +666,8 @@ export default function ElderlyUI() {
       isRecommended: route.isRecommended
     };
 
-    setRecentActivity(prev => {
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    /* setRecentActivity(prev => {
       // Remove any existing active navigation for this route
       const filteredActivities = prev.filter(activity =>
         !(activity.type === "route" &&
@@ -593,7 +677,7 @@ export default function ElderlyUI() {
 
       // Add the new completion activity at the top
       return [newActivity, ...filteredActivities].slice(0, 10);
-    });
+    }); */
 
     // Refresh route history to get the latest data from database
     fetchRouteHistory();
@@ -618,7 +702,8 @@ export default function ElderlyUI() {
     };
 
     console.log('New navigation activity created:', newActivity);
-    setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
+    // Commented out by Mallvin on 1/11/2025 to just show help request in recent activity
+    //setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]); // Keep only 10 most recent
   };
 
   const handleActiveNavigationClick = (activity: any) => {
@@ -993,6 +1078,27 @@ export default function ElderlyUI() {
 
   }
 
+
+  const handleCancelHelpRequest = async (helpRequestId) => {
+
+    try {
+
+      const response = await axiosInstance.post('/elderly/cancelRequest', {
+        helpRequestId: helpRequestId
+      }, { withCredentials: true });
+
+      console.log(response);
+
+      location.reload()
+
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+
   const handleAddReview = (helpRequestID, volunteerID) => {
     navigate('/add_review', {
       state: {
@@ -1039,6 +1145,7 @@ export default function ElderlyUI() {
     fetchLinkingPin();
     fetchRecentActivity();
     fetchReviews();
+    fetchReports();
     fetchStatistics();
   }, []);
 
@@ -1077,8 +1184,16 @@ export default function ElderlyUI() {
   };
 
   // Placeholder IDs for demo purposes
-  const matchedVolunteerId = "demo-volunteer-001";
-  const helpRequestId = "demo-help-001";
+  /*   const matchedVolunteerId = "demo-volunteer-001";
+    const helpRequestId = "demo-help-001"; */
+
+  //var moderateVolunteerId = null;
+  //var moderateVolunteerUsername = null;
+  //var helpRequestIdForModeration = null;
+
+  const [moderateVolunteerId, setModerateVolunteerId] = useState("");
+  const [moderateVolunteerUsername, setModerateVolunteerUsername] = useState("");
+  const [helpRequestIdForModeration, setHelpRequestIdForModeration] = useState("");
 
   const defaultRouteResults = [
     {
@@ -1434,6 +1549,8 @@ export default function ElderlyUI() {
               {recentActivity.length > 0 ? (
                 <div className="space-y-3">
                   {recentActivity.map((activity) => (
+
+
                     <Card
                       key={activity.id}
                       className={`p-4 ${activity.type === "route" && activity.status === "active"
@@ -1446,6 +1563,7 @@ export default function ElderlyUI() {
                         }
                       }}
                     >
+
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1463,10 +1581,7 @@ export default function ElderlyUI() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            {formatDate(activity.time)}
-                          </div>
+
                           {activity.type === "route" && activity.mode && (
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -1509,9 +1624,20 @@ export default function ElderlyUI() {
                         </Badge>
                       </div>
 
-                      {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
+
+                      {activity.status === "Pending" && (
                         <div>
                           <div className="flex gap-2 mt-3">
+                            <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleCancelHelpRequest(activity.id)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {activity.status === "active" || activity.status === "In Progress" && activity.volunteer && (
+                        <div>
+                          <div className="flex gap-2 mt-1">
                             <p className="text-sm mt-1">
                               Phone Number: {activity.phone_number}
                             </p>
@@ -1527,11 +1653,35 @@ export default function ElderlyUI() {
 
                       {(activity.status === "Resolved" || activity.status === "completed") && (
                         <div className="flex gap-2 mt-3">
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleAddReview(activity.id, activity.volunteerID)}>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+
+                            /* moderateVolunteerId = activity.volunteerID;
+                            helpRequestIdForModeration = activity.id;
+                            moderateVolunteerUsername = activity.volunteer; */
+
+                            setModerateVolunteerId(activity.volunteerID);
+                            setHelpRequestIdForModeration(activity.id);
+                            setModerateVolunteerUsername(activity.volunteer);
+
+
+                            setIsReviewOpen(true);
+
+                          }}>
                             <Star className="h-4 w-4" />
                             Review
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleAddReport(activity.id, activity.volunteerID)}>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+
+                            /* moderateVolunteerId = activity.volunteerID;
+                            helpRequestIdForModeration = activity.id;
+                            moderateVolunteerUsername = activity.volunteer; */
+
+                            setModerateVolunteerId(activity.volunteerID);
+                            setHelpRequestIdForModeration(activity.id);
+                            setModerateVolunteerUsername(activity.volunteer);
+
+                            setIsReportOpen(true);
+                          }}>
                             <Flag className="h-4 w-4" />
                             Report
                           </Button>
@@ -1579,7 +1729,8 @@ export default function ElderlyUI() {
           </div>
         );
 
-      case "help":
+      /* Request help is in RequestHelpScreen.tsx */
+      /* case "help":
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -1717,7 +1868,7 @@ export default function ElderlyUI() {
               </div>
             )}
           </div>
-        );
+        ); */
 
       case "routes":
         return (
@@ -1983,6 +2134,82 @@ export default function ElderlyUI() {
           </div>
         );
 
+
+      case "reports":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('reports.myReports')}</h2>
+              <p className="text-lg text-muted-foreground">
+                {t('reports.reportsWritten')}
+              </p>
+            </div>
+
+            {reports.length > 0 ? (
+              <div className="space-y-4">
+                {reports.map((report) => (
+                  <Card key={report.id} className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="text-xl font-semibold text-foreground">Reported: {report.reportedUsername}</h4>
+                        <p className="text-muted-foreground">{formatDate(report.date)}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-foreground">Reason: {report.reason}</p>
+
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="text-foreground">Description: {report.description}</p>
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="text-foreground">Status: {report.status}</p>
+                    </div>
+
+                    {report.file ? (
+                      <div className="mt-4">
+
+                        <div>
+                          <p className="text-foreground">File:</p>
+                        </div>
+
+                        {isPDF(report.mimeType) ? (
+                          <embed src={`${API_BASE_URL}/api/static/${report.file}`} type="application/pdf" width="100%" height="600px" />
+
+
+
+                        ) : isImage(report.mimeType) ? (
+                          <img src={`${API_BASE_URL}/api/static/${report.file}`} alt="Uploaded image" style={{ width: "30%", height: "30%" }} />
+
+                        ) : (
+                          <p>Unsupported file type</p>
+                        )}
+
+                      </div>
+                    ) : (
+
+                      <div>
+                        <p className="text-foreground">File: No evidence uploaded</p>
+                      </div>
+
+                    )}
+
+                  </Card>
+                ))}
+              </div>
+
+            ) : (
+              <div className="text-center py-12">
+                <OctagonAlert className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-xl text-muted-foreground">{t('reports.Reports')}</p>
+              </div>
+            )}
+          </div>
+        );
+
       case "profile":
         return (
           <div className="space-y-6">
@@ -2132,15 +2359,17 @@ export default function ElderlyUI() {
         <SubmitReviewModal
           isOpen={isReviewOpen}
           onClose={() => setIsReviewOpen(false)}
-          recipientUserId={matchedVolunteerId}
-          helpRequestId={helpRequestId}
+          recipientUserId={moderateVolunteerId}
+          helpRequestId={helpRequestIdForModeration}
+          recipientUsername={moderateVolunteerUsername}
         />
 
         <SubmitReportModal
           isOpen={isReportOpen}
           onClose={() => setIsReportOpen(false)}
-          reportedUserId={matchedVolunteerId}
-          helpRequestId={helpRequestId}
+          reportedUserId={moderateVolunteerId}
+          helpRequestId={helpRequestIdForModeration}
+          reportedUsername={moderateVolunteerUsername}
         />
       </div>
 
@@ -2153,6 +2382,7 @@ export default function ElderlyUI() {
             { id: "routes", icon: MapPin, label: t('common.routes') },
             { id: "chas", icon: Hospital, label: t('common.chas') },
             { id: "reviews", icon: Star, label: t('common.reviews') },
+            { id: "reports", icon: OctagonAlert, label: t('common.reports') },
             { id: "profile", icon: User, label: t('common.profile') },
           ].map((tab) => (
             <button

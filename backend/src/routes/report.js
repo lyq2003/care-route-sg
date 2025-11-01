@@ -5,7 +5,7 @@ const ReportController = require('../controllers/reportController');
 const ReportService = require('../services/report');
 
 // User: submit a report
-router.post('/', requireAuth, ReportController.submitReport);
+router.post('/', ReportService.getEvidenceUploadMiddleware(), requireAuth , ReportController.submitReport);
 
 // User/Admin: upload evidence file to a report (multipart/form-data, field: file)
 router.post('/:reportId/evidence', requireAuth, ReportService.getEvidenceUploadMiddleware(), ReportController.addEvidence);

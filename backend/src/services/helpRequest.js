@@ -131,6 +131,29 @@ class HelpRequest {
     }
   }
 
+  static async cancelHelpRequest(helpRequestId) {
+    try {
+
+      const { data, error } = await supabaseAdmin
+        .from('help_request')
+        .update({
+          helpRequestStatus: 4
+        })
+        .eq('id',helpRequestId)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating help request status to cancel:', error);
+      throw error;
+    }
+  }
+
 
 
   static async getCompletedHelpRequestswithVolunteer(requesterId) {

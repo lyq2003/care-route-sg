@@ -23,6 +23,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
+
     if (!rating || rating < 1 || rating > 5) {
       toast({
         title: "Rating required",

@@ -101,7 +101,7 @@ class ReviewService {
     // Get recipient profiles
     const { data: profiles, error: profilesError } = await supabase
       .from('user_profiles')
-      .select('user_id, username, full_name')
+      .select('user_id, username')
       .in('user_id', recipientIds);
     
     if (profilesError) {
