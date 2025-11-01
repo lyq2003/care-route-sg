@@ -8,6 +8,10 @@ import zhTranslation from './locales/zh/translation.json';
 import msTranslation from './locales/ms/translation.json';
 import taTranslation from './locales/ta/translation.json';
 
+/**
+ * Translation resources for all supported languages
+ * Supports: English (en), Chinese (zh), Malay (ms), Tamil (ta)
+ */
 const resources = {
   en: {
     translation: enTranslation
@@ -23,6 +27,17 @@ const resources = {
   }
 };
 
+/**
+ * i18n Configuration
+ * 
+ * Initializes i18next with:
+ * - Browser language detection (localStorage, navigator, HTML tag)
+ * - React integration
+ * - Supported languages: English, Chinese, Malay, Tamil
+ * - Fallback language: English
+ * 
+ * Language preference is stored in localStorage under 'elderlyUI_language'
+ */
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

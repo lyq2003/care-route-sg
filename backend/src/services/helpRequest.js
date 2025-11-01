@@ -3,10 +3,52 @@ const NotificationService = require('./notificationService');
 
 // Using supabaseAdmin to bypass RLS (Row Level Security)
 
-
-
+/**
+ * Help Request service class
+ * Handles creation and retrieval of help requests from elderly users
+ * Manages notifications to caregivers and volunteers when requests are created
+ * 
+ * @class HelpRequest
+ * @example
+ * // Create a new help request
+ * const request = await HelpRequest.createRequest(
+ *   'elderly-123',
+ *   103.8198, // longitude
+ *   1.3521,   // latitude
+ *   '123 Main St, Singapore',
+ *   'Need help going to clinic',
+ *   'HIGH',
+ *   'image-url.jpg'
+ * );
+ */
 class HelpRequest {
 
+  /**
+   * Creates a new help request for an elderly user
+   * Automatically notifies linked caregivers and nearby volunteers
+   * 
+   * @static
+   * @param {string} requesterId - ID of the elderly user requesting help
+   * @param {number} longitude - Longitude coordinate of request location
+   * @param {number} latitude - Latitude coordinate of request location
+   * @param {string} address - Address or description of the location
+   * @param {string} description - Description of the help needed
+   * @param {string} urgency - Urgency level (e.g., 'HIGH', 'MEDIUM', 'LOW')
+   * @param {string} [image] - Optional image URL attached to the request
+   * @returns {Promise<Array>} Created help request data
+   * @throws {Error} If database insertion fails
+   * 
+   * @example
+   * const request = await HelpRequest.createRequest(
+   *   'user-123',
+   *   103.8198,
+   *   1.3521,
+   *   '123 Orchard Road',
+   *   'Need assistance going to clinic',
+   *   'HIGH',
+   *   'https://example.com/image.jpg'
+   * );
+   */
   static async createRequest(requesterId, longitude, latitude,address,description, urgency, image) {
     const { data, error } = await supabaseAdmin
       .from("help_request")
@@ -109,6 +151,19 @@ class HelpRequest {
 
 
 
+  /**
+   * Gets all completed help requests for a user that had a volunteer assigned
+   * Useful for showing reviewable completed requests
+   * 
+   * @static
+   * @param {string} requesterId - ID of the elderly user
+   * @returns {Promise<Array>} Array of completed help requests with assigned volunteers
+   * @throws {Error} If database query fails
+   * 
+   * @example
+   * const completedRequests = await HelpRequest.getCompletedHelpRequestswithVolunteer('elderly-123');
+   * // Returns requests where assignedVolunteerId is not null
+   */
   static async getCompletedHelpRequestswithVolunteer(requesterId) {
 
     const { data, error } = await supabaseAdmin

@@ -6,14 +6,37 @@ import ElderlyUI from "@/components/ElderlyUI";
 import RequestHelpScreen from "@/components/RequestHelpScreen";
 import { useToast } from "@/hooks/use-toast";
 
+/**
+ * Available screen states for navigation
+ */
 type Screen = "welcome" | "signin" | "signup" | "dashboard" | "request-help";
 
+/**
+ * User object structure
+ */
 interface User {
+  /** User's full name */
   name: string;
+  /** User type/role */
   userType: string;
+  /** User's phone number */
   phone: string;
 }
 
+/**
+ * Index/Home Page Component
+ * 
+ * Main entry point that manages screen navigation and user state.
+ * This is a simplified version - the actual app uses React Router.
+ * Handles:
+ * - Screen state management (welcome, signin, signup, dashboard, request-help)
+ * - User authentication state
+ * - Navigation between screens
+ * - Mock authentication for demo purposes
+ * 
+ * @component
+ * @returns {JSX.Element} Current screen based on state
+ */
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
   const [user, setUser] = useState<User | null>(null);

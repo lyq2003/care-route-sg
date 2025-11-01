@@ -1,6 +1,32 @@
 const { supabaseAdmin } = require('../config/supabase');
 
+/**
+ * User Service
+ * Handles user data operations using Supabase Auth and user_profiles table
+ * Provides CRUD operations for user management
+ * 
+ * @class User
+ * @static
+ * @example
+ * // Get all users
+ * const users = await User.getAll();
+ * 
+ * // Find user by ID
+ * const user = await User.findById('user-123');
+ */
 class User {
+    /**
+     * Get all users from Supabase Auth
+     * Merges data from Supabase Auth with user_profiles table
+     * 
+     * @static
+     * @returns {Promise<Array>} Array of user objects with merged profile data
+     * @throws {Error} If user retrieval fails
+     * 
+     * @example
+     * const users = await User.getAll();
+     * console.log(`Total users: ${users.length}`);
+     */
     static async getAll() {
       try {
         // Get all users from Supabase Auth
@@ -45,6 +71,19 @@ class User {
       }
     }
     
+    /**
+     * Find user by ID
+     * Retrieves user from Supabase Auth by user ID
+     * 
+     * @static
+     * @param {string} id - User ID to find
+     * @returns {Promise<Object>} User object from Supabase Auth
+     * @throws {Error} If user not found or retrieval fails
+     * 
+     * @example
+     * const user = await User.findById('user-123');
+     * console.log(user.email);
+     */
     static async findById(id){
         try {
             const {data, error} = await supabaseAdmin.auth.admin.getUserById(id);
@@ -122,7 +161,27 @@ class User {
     }
   }
   
-  static async update(id, userData) {
+    /**
+     * Update user data
+     * Updates user information in Supabase Auth and user_metadata
+     * 
+     * @static
+     * @param {string} id - User ID to update
+     * @param {Object} userData - User data to update
+     * @param {string} [userData.email] - User email
+     * @param {string} [userData.name] - User name
+     * @param {string} [userData.avatar] - Avatar URL
+     * @param {string} [userData.phone_number] - Phone number
+     * @returns {Promise<Object>} Updated user object
+     * @throws {Error} If update fails
+     * 
+     * @example
+     * const updated = await User.update('user-123', {
+     *   name: 'John Doe',
+     *   email: 'john@example.com'
+     * });
+     */
+    static async update(id, userData) {
     try {
       const { email, name, avatar, phone_number } = userData;
       

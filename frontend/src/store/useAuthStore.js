@@ -4,6 +4,25 @@ import { axiosInstance } from "../components/axios";
 import { io } from "socket.io-client";
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
+/**
+ * Authentication Store (Zustand)
+ * 
+ * Manages global authentication state using Zustand with persistence.
+ * Handles:
+ * - User authentication state (authUser)
+ * - Authentication checking (isCheckingAuth)
+ * - Online users list
+ * - Socket.IO connection management
+ * - Login/logout operations
+ * 
+ * State is persisted to localStorage for session continuity.
+ * 
+ * @namespace useAuthStore
+ * @example
+ * ```tsx
+ * const { authUser, checkAuth, logout, connectSocket } = useAuthStore();
+ * ```
+ */
 export const useAuthStore = create(persist(
     (set,get) =>({
         authUser:null,
@@ -11,6 +30,12 @@ export const useAuthStore = create(persist(
         onlineUsers: [],
         socket: null,
 
+        /**
+         * Check authentication status by querying user profile
+         * Connects socket if user is authenticated
+         * @async
+         * @returns {Promise<void>}
+         */
         checkAuth: async () => {
             try {
             const res = await axiosInstance.get("/users/profile");
@@ -35,6 +60,12 @@ export const useAuthStore = create(persist(
             }
         },
 
+        /**
+         * Logout user and disconnect socket
+         * Clears authentication state
+         * @async
+         * @returns {Promise<void>}
+         */
         logout: async () => {
             try {
             await axiosInstance.post("/auth/logout");
@@ -45,6 +76,13 @@ export const useAuthStore = create(persist(
             }
         },
     
+        /**
+         * Connect Socket.IO client to backend
+         * Sends user ID, username, and role as connection query params
+         * Listens for online users updates
+         * Only connects if user is authenticated and socket not already connected
+         * @returns {void}
+         */
         connectSocket: () => {
             const { authUser,socket } = get();
             const userId = authUser?.id; 
@@ -95,6 +133,11 @@ export const useAuthStore = create(persist(
             set({socket:newSocket});
         },
 
+        /**
+         * Disconnect Socket.IO client from backend
+         * Clears socket instance from state
+         * @returns {void}
+         */
         disconnectSocket: () => {
             const socket=get().socket;
             if (socket?.connected) {

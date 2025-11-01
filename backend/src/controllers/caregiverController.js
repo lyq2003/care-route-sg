@@ -4,7 +4,27 @@ const {supabase} = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 const { getReceiverSocketId, io } = require('../middleware/socket');
 
+/**
+ * Caregiver Controller
+ * Handles HTTP requests for caregiver operations
+ * Provides endpoints for linking to elderly users, viewing linked elderly, and monitoring their activities
+ * All methods require caregiver authentication
+ * 
+ * @class CaregiverController
+ * @example
+ * // Used in routes: router.get('/me', CaregiverController.me);
+ */
 class CaregiverController {
+  /**
+   * Get caregiver profile with linked elderly users
+   * @route GET /api/caregiver/me
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Caregiver data with linked elderly list
+   * @returns {Object} 500 - Server error
+   */
   static async me(req, res) {
     try {
       // Get linked elderly data - using consistent naming with frontend
@@ -19,6 +39,17 @@ class CaregiverController {
     }
   }
 
+  /**
+   * Update caregiver profile
+   * @route PUT /api/caregiver/profile
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {Object} req.body - Profile updates
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Updated profile
+   * @returns {Object} 400 - Validation errors
+   */
   static async updateProfile(req, res) {
     try {
       // Pull current profile to validate merged data (optional but clean)
@@ -32,6 +63,19 @@ class CaregiverController {
     } catch (e) { res.status(400).json({ error: e.message }); }
   }
 
+  /**
+   * Update linked elderly user's profile
+   * @route PUT /api/caregiver/elderly/:elderlyUserId/profile
+   * @access Private (Caregiver only, must be linked to elderly)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {string} req.params.elderlyUserId - Elderly user ID to update
+   * @param {Object} req.body - Profile updates
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Elderly profile updated
+   * @returns {Object} 403 - Not authorized (not linked to this elderly)
+   * @returns {Object} 400 - Validation errors
+   */
   static async updateElderlyProfile(req, res) {
     try {
       const { elderlyUserId } = req.params;
@@ -53,6 +97,18 @@ class CaregiverController {
     }
   }
 
+  /**
+   * Link caregiver to elderly user using PIN
+   * @route POST /api/caregiver/link
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {Object} req.body - Link data
+   * @param {string} req.body.pin - 6-digit linking PIN from elderly user
+   * @param {Response} res - Express response object
+   * @returns {Object} 201 - Successfully linked
+   * @returns {Object} 400 - Invalid PIN or missing PIN
+   */
   static async linkByPIN(req, res) {
     try {
       const { pin } = req.body || {};
@@ -62,11 +118,37 @@ class CaregiverController {
     } catch (e) { res.status(400).json({ error: e.message }); }
   }
 
+  /**
+   * Get all linked elderly users
+   * @route GET /api/caregiver/elderly
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of linked elderly profiles
+   * @returns {Object} 500 - Server error
+   */
   static async getLinkedElderly(req, res) {
     try { res.json(await CaregiverServices.getLinkedElderly(req.user.id)); }
     catch (e) { res.status(500).json({ error: e.message }); }
   }
 
+  /**
+   * Submit a report on behalf of linked elderly user
+   * @route POST /api/caregiver/report
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {Object} req.body - Report data
+   * @param {string} req.body.linkedElderlyUserId - Linked elderly user ID
+   * @param {string} req.body.reportedVolunteerUserId - Volunteer user ID being reported
+   * @param {Array} req.body.reasons - Array of report reasons
+   * @param {string} [req.body.description] - Optional detailed description
+   * @param {Response} res - Express response object
+   * @returns {Object} 201 - Report created successfully
+   * @returns {Object} 400 - Not linked to this elderly or missing required fields
+   * @returns {Object} 500 - Server error
+   */
   static async submitReport(req, res) {
     try {
       const report = await CaregiverServices.submitReport(req.user.id, req.body || {});
@@ -74,6 +156,21 @@ class CaregiverController {
     } catch (e) { res.status(400).json({ error: e.message }); }
   }
 
+  /**
+   * Get help request history for a linked elderly user
+   * @route GET /api/caregiver/elderly/:elderlyUserId/requests
+   * @access Private (Caregiver only, must be linked to elderly)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {string} req.params.elderlyUserId - Elderly user ID
+   * @param {Object} req.query - Query parameters
+   * @param {number} [req.query.limit=20] - Maximum results to return
+   * @param {number} [req.query.offset=0] - Number of results to skip
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of help requests
+   * @returns {Object} 400 - Not linked to this elderly
+   * @returns {Object} 500 - Server error
+   */
   static async requestHistory(req, res) {
     try {
       const { elderlyUserId } = req.params;
@@ -88,6 +185,15 @@ class CaregiverController {
 
   /**
    * Get current location for a linked elderly user
+   * @route GET /api/caregiver/elderly/:elderlyUserId/location
+   * @access Private (Caregiver only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Caregiver user ID (from authentication)
+   * @param {string} req.params.elderlyUserId - ID of elderly user
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Current location data
+   * @returns {Object} 403 - Not authorized (not linked to this elderly)
+   * @returns {Object} 404 - Location not found
    */
   static async getElderlyLocation(req, res) {
     try {

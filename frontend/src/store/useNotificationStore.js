@@ -4,9 +4,33 @@ import { toast } from "react-toastify";
 import { useAuthStore } from "./useAuthStore";
 import { axiosInstance } from "../components/axios";
 
+/**
+ * Notification Store (Zustand)
+ * 
+ * Manages real-time notifications received via Socket.IO.
+ * Handles:
+ * - Notification list state
+ * - Socket event listeners for notifications
+ * - Mark notifications as read
+ * - Display toast notifications
+ * 
+ * @namespace useNotificationStore
+ * @example
+ * ```tsx
+ * const { notifications, initNotificationListener, markAllRead } = useNotificationStore();
+ * ```
+ */
 export const useNotificationStore = create((set,get)=>({
     notifications: [],
 
+    /**
+     * Initialize Socket.IO listener for notifications
+     * Sets up 'notify' event handler that:
+     * - Displays toast notification
+     * - Adds notification to state list
+     * Only initializes if socket is connected
+     * @returns {void}
+     */
     initNotificationListener: () => {
     const { socket } = useAuthStore.getState();
 
@@ -27,6 +51,11 @@ export const useNotificationStore = create((set,get)=>({
     });
   },
 
+  /**
+   * Mark all notifications as read
+   * Updates all notifications in state to isRead: true
+   * @returns {void}
+   */
   markAllRead: () =>
     set((state) => ({
       notifications: state.notifications.map((n) => ({ ...n, isRead: true })),

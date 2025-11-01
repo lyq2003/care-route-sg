@@ -5,9 +5,35 @@ const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus');
 const NotificationService = require('./notificationService');
 
+/**
+ * Admin Service
+ * Handles administrative operations including user management, dashboard statistics,
+ * user status modifications (suspend, deactivate, reactivate), and report management
+ * 
+ * @class AdminService
+ * @example
+ * const adminService = new AdminService();
+ * const stats = await adminService.getDashboardStats();
+ * const users = await adminService.getAllUsers(1, 10);
+ */
 class AdminService {
   
-  // Get dashboard statistics
+  /**
+   * Get dashboard statistics for admin panel
+   * Provides overview of users, active/suspended/deactivated counts, and pending reports
+   * 
+   * @returns {Promise<Object>} Dashboard statistics object
+   * @returns {number} returns.totalUsers - Total number of users in system
+   * @returns {number} returns.activeUsers - Number of active users
+   * @returns {number} returns.suspendedUsers - Number of suspended users
+   * @returns {number} returns.deactivatedUsers - Number of deactivated users
+   * @returns {number} returns.pendingReports - Number of pending reports
+   * @throws {Error} If statistics retrieval fails
+   * 
+   * @example
+   * const stats = await adminService.getDashboardStats();
+   * // Returns: { totalUsers: 150, activeUsers: 120, suspendedUsers: 5, deactivatedUsers: 25, pendingReports: 3 }
+   */
   async getDashboardStats() {
     try {
       // Get all users from Supabase Auth
@@ -56,7 +82,28 @@ class AdminService {
     }
   }
 
-  // Get all users with pagination (combines Auth users + profiles)
+  /**
+   * Get all users with pagination and filtering
+   * Combines data from Supabase Auth and user_profiles table
+   * 
+   * @param {number} [page=1] - Page number (1-indexed)
+   * @param {number} [limit=10] - Number of users per page
+   * @param {Object} [filters={}] - Filter options
+   * @param {string} [filters.role] - Filter by user role
+   * @param {string} [filters.status] - Filter by user status
+   * @param {string} [filters.search] - Search term for name/email
+   * @returns {Promise<Object>} Paginated users result
+   * @returns {Array} returns.users - Array of user objects
+   * @returns {number} returns.total - Total number of users
+   * @returns {number} returns.page - Current page number
+   * @returns {number} returns.limit - Users per page
+   * @returns {number} returns.totalPages - Total number of pages
+   * @throws {Error} If user retrieval fails
+   * 
+   * @example
+   * const result = await adminService.getAllUsers(1, 20, { role: 'ELDERLY', status: 'ACTIVE' });
+   * console.log(`Found ${result.total} users`);
+   */
   async getAllUsers(page = 1, limit = 10, filters = {}) {
     try {
       // Get users from Supabase Auth (using admin client)
@@ -209,7 +256,16 @@ class AdminService {
     }
   }
 
-  // Suspend user (updates both Auth metadata and profile status)
+  /**
+   * Suspend a user account
+   * Updates both Auth metadata and profile status
+   * @param {string} userId - User ID to suspend
+   * @param {string} reason - Reason for suspension
+   * @param {string} adminId - Admin user ID performing suspension
+   * @param {number} [duration=7] - Suspension duration in days (7, 30, or 90)
+   * @returns {Promise<User>} Updated user domain object
+   * @throws {Error} If user cannot be suspended or update fails
+   */
   async suspendUser(userId, reason, adminId, duration = 7) {
     try {
       // First get the user to validate
@@ -292,7 +348,15 @@ class AdminService {
     }
   }
 
-  // Deactivate user (updates both Auth metadata and profile status)
+  /**
+   * Deactivate a user account
+   * Updates both Auth metadata and profile status
+   * @param {string} userId - User ID to deactivate
+   * @param {string} reason - Reason for deactivation
+   * @param {string} adminId - Admin user ID performing deactivation
+   * @returns {Promise<User>} Updated user domain object
+   * @throws {Error} If user cannot be deactivated or update fails
+   */
   async deactivateUser(userId, reason, adminId) {
     try {
       // First get the user to validate
@@ -365,7 +429,14 @@ class AdminService {
     }
   }
 
-  // Reactivate user (manual admin reactivation for deactivated accounts)
+  /**
+   * Reactivate a deactivated user account
+   * @param {string} userId - User ID to reactivate
+   * @param {string} adminId - Admin user ID performing reactivation
+   * @param {string} reason - Reason for reactivation
+   * @returns {Promise<User>} Updated user domain object
+   * @throws {Error} If user cannot be reactivated or update fails
+   */
   async reactivateUser(userId, adminId, reason) {
     try {
       // First get the user to validate
@@ -426,7 +497,14 @@ class AdminService {
     }
   }
 
-  // Unsuspend user (automatic unsuspension when duration expires)
+  /**
+   * Unsuspend a suspended user account
+   * Can be automatic (when duration expires) or manual (admin action)
+   * @param {string} userId - User ID to unsuspend
+   * @param {string} [reason='Suspension period expired'] - Reason for unsuspension
+   * @returns {Promise<User>} Updated user domain object
+   * @throws {Error} If user cannot be unsuspended or update fails
+   */
   async unsuspendUser(userId, reason = 'Suspension period expired') {
     try {
       // First get the user to validate
@@ -499,7 +577,14 @@ class AdminService {
     }
   }
 
-  // Log admin actions for audit trail (uses admin client to bypass RLS)
+  /**
+   * Log admin action for audit trail
+   * @param {string} adminId - Admin user ID (or 'SYSTEM' for automatic actions)
+   * @param {string} action - Action type (e.g., 'SUSPEND_USER', 'DEACTIVATE_USER')
+   * @param {string} targetId - Target user/resource ID
+   * @param {Object} [metadata={}] - Additional metadata about the action
+   * @returns {Promise<void>}
+   */
   async logAdminAction(adminId, action, targetId, metadata = {}) {
     try {
       const { error } = await supabaseAdmin
@@ -521,7 +606,20 @@ class AdminService {
     }
   }
 
-  // Get admin activity logs
+  /**
+   * Get admin activity logs with pagination
+   * @param {number} [page=1] - Page number (1-indexed)
+   * @param {number} [limit=20] - Logs per page
+   * @param {Object} [filters={}] - Filter options
+   * @param {string} [filters.adminId] - Filter by admin ID
+   * @param {string} [filters.action] - Filter by action type
+   * @returns {Promise<Object>} Paginated logs result
+   * @returns {Array} returns.logs - Array of log objects
+   * @returns {number} returns.total - Total number of logs
+   * @returns {number} returns.page - Current page number
+   * @returns {number} returns.totalPages - Total number of pages
+   * @throws {Error} If log retrieval fails
+   */
   async getAdminLogs(page = 1, limit = 20, filters = {}) {
     try {
       const offset = (page - 1) * limit;

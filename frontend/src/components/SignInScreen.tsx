@@ -8,6 +8,19 @@ import { ArrowLeft, MapPin, User, Heart, HandHeart, Shield } from "lucide-react"
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 
+/**
+ * Sign In Screen Component
+ * 
+ * Handles user authentication with:
+ * - Email/password login form
+ * - Google OAuth login option
+ * - Role selection (if needed for new users)
+ * - Error handling and validation
+ * - Navigation to appropriate dashboard after login
+ * 
+ * @component
+ * @returns {JSX.Element} Sign-in form with email/password and Google OAuth options
+ */
 export default function SignInScreen() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({

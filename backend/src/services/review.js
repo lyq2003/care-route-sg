@@ -1,6 +1,44 @@
 const { supabase, supabaseAdmin } = require('../config/supabase');
 
+/**
+ * Review Service
+ * Handles review submission, retrieval, and rating calculations
+ * Manages volunteer ratings based on reviews from elderly users
+ * 
+ * @class ReviewService
+ * @example
+ * const reviewService = new ReviewService();
+ * await reviewService.submitReview({
+ *   authorUserId: 'elderly-123',
+ *   recipientUserId: 'volunteer-456',
+ *   helpRequestId: 'request-789',
+ *   rating: 5,
+ *   text: 'Great help, very patient!'
+ * });
+ */
 class ReviewService {
+  /**
+   * Submits a review from an elderly user for a volunteer
+   * Updates the volunteer's average rating and review count
+   * 
+   * @param {Object} reviewData - Review data object
+   * @param {string} reviewData.authorUserId - ID of the user writing the review (elderly)
+   * @param {string} reviewData.recipientUserId - ID of the user being reviewed (volunteer)
+   * @param {string} reviewData.helpRequestId - ID of the completed help request
+   * @param {number} reviewData.rating - Rating value (typically 1-5)
+   * @param {string} [reviewData.text] - Optional review text/comment
+   * @returns {Promise<Object>} Created review object
+   * @throws {Error} If review submission or profile update fails
+   * 
+   * @example
+   * const review = await reviewService.submitReview({
+   *   authorUserId: 'elderly-123',
+   *   recipientUserId: 'volunteer-456',
+   *   helpRequestId: 'request-789',
+   *   rating: 5,
+   *   text: 'Excellent service!'
+   * });
+   */
   async submitReview({ authorUserId, recipientUserId, helpRequestId, rating, text }) {
     const { data: review, error: reviewError } = await supabase
       .from('reviews')
@@ -57,6 +95,17 @@ class ReviewService {
     return review;
   }
 
+  /**
+   * Edit an existing review
+   * Only the author can edit their review
+   * @param {Object} editData - Review edit data
+   * @param {string} editData.reviewId - Review ID to edit
+   * @param {string} editData.authorUserId - ID of review author (must match existing review)
+   * @param {number} [editData.rating] - Updated rating value
+   * @param {string} [editData.text] - Updated review text
+   * @returns {Promise<Object>} Updated review object
+   * @throws {Error} If review not found, unauthorized, or update fails
+   */
   async editReview({ reviewId, authorUserId, rating, text }) {
     // Only author can edit
     const { data: existing, error: fetchErr } = await supabase
@@ -81,6 +130,12 @@ class ReviewService {
     return data;
   }
 
+  /**
+   * Get all reviews written by a user
+   * @param {string} userId - ID of the user (review author)
+   * @returns {Promise<Array>} Array of review objects authored by the user
+   * @throws {Error} If database query fails
+   */
   async viewMyReviews(userId) {
     const { data, error } = await supabase
       .from('reviews')
@@ -91,6 +146,12 @@ class ReviewService {
     return data;
   }
 
+  /**
+   * Get all reviews about a user
+   * @param {string} userId - ID of the user being reviewed
+   * @returns {Promise<Array>} Array of review objects about the user
+   * @throws {Error} If database query fails
+   */
   async viewReviewsAboutMe(userId) {
     const { data, error } = await supabase
       .from('reviews')
@@ -101,7 +162,11 @@ class ReviewService {
     return data;
   }
 
-  // Admin-specific method to get all reviews with full user details
+  /**
+   * Get all reviews with full user details for admin moderation
+   * @returns {Promise<Array>} Array of review objects with author and recipient profiles
+   * @throws {Error} If database query fails
+   */
   async getAllReviewsForAdmin() {
     console.log('getAllReviewsForAdmin: Fetching all reviews for admin...');
     
@@ -123,7 +188,15 @@ class ReviewService {
     return data || []; // Ensure we return an empty array if data is null
   }
 
-  // Flag review for removal (admin or automated moderation)
+  /**
+   * Flag a review for moderation
+   * @param {Object} flagData - Flag data
+   * @param {string} flagData.reviewId - Review ID to flag
+   * @param {string} [flagData.reason='offensive language'] - Reason for flagging
+   * @param {string} [flagData.flaggedBy='SYSTEM'] - Who flagged the review
+   * @returns {Promise<Object>} Flagged review object
+   * @throws {Error} If review not found or update fails
+   */
   async flagReview({ reviewId, reason = 'offensive language', flaggedBy = 'SYSTEM' }) {
     const { data, error } = await supabase
       .from('reviews')
@@ -151,7 +224,14 @@ class ReviewService {
     return data;
   }
 
-  // Remove flagged review (admin action)
+  /**
+   * Remove a review (admin action)
+   * @param {Object} removeData - Removal data
+   * @param {string} removeData.reviewId - Review ID to remove
+   * @param {string} removeData.adminUserId - Admin user ID performing removal
+   * @returns {Promise<Object>} Removed review object
+   * @throws {Error} If review not found or deletion fails
+   */
   async removeReview({ reviewId, adminUserId }) {
     const { data, error } = await supabase
       .from('reviews')

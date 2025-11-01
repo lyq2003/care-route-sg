@@ -5,7 +5,28 @@ const NotificationService = require('../services/notificationService');
 const { supabase } = require('../config/supabase');
 const { getReceiverSocketId, io } = require('../middleware/socket');
 
+/**
+ * Elderly Controller
+ * Handles HTTP requests for elderly user operations
+ * Provides endpoints for profile management, linking PINs, location tracking, and caregiver management
+ * All methods require elderly user authentication
+ * 
+ * @class ElderlyController
+ * @example
+ * // Used in routes: router.get('/profile', ElderlyController.getProfile);
+ */
 class ElderlyController {
+  /**
+   * Get elderly user profile
+   * @route GET /api/elderly/profile
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User profile data
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
   static async getProfile(req, res) {
     try {
       const elderly = await UserService.findById(req.user.id);
@@ -17,6 +38,18 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Update elderly user profile
+   * @route PUT /api/elderly/profile
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Profile updates
+   * @param {string} [req.body.mobilityPreference] - Mobility preference setting
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Updated profile data
+   * @returns {Object} 500 - Server error
+   */
   static async updateProfile(req, res) {
     try {
       const { mobilityPreference } = req.body;
@@ -30,6 +63,16 @@ class ElderlyController {
 
   /**
    * Update language preference for elderly user
+   * @route PUT /api/elderly/language
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Language preference data
+   * @param {string} req.body.language - Language code (en, zh, ms, ta)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Success message with updated language
+   * @returns {Object} 400 - Invalid language code or missing language
+   * @returns {Object} 500 - Server error
    */
   static async updateLanguagePreference(req, res) {
     try {
@@ -73,6 +116,13 @@ class ElderlyController {
 
   /**
    * Get linking PIN for elderly user (generates one if it doesn't exist)
+   * @route GET /api/elderly/linking-pin
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Linking PIN and instructions
+   * @returns {Object} 500 - Server error
    */
   static async getLinkingPIN(req, res) {
     try {
@@ -90,6 +140,13 @@ class ElderlyController {
 
   /**
    * Regenerate linking PIN for elderly user
+   * @route POST /api/elderly/linking-pin/regenerate
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - New linking PIN and instructions
+   * @returns {Object} 500 - Server error
    */
   static async regenerateLinkingPIN(req, res) {
     try {
@@ -107,6 +164,13 @@ class ElderlyController {
 
   /**
    * Get all caregivers linked to this elderly user
+   * @route GET /api/elderly/caregivers
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of linked caregiver profiles
+   * @returns {Object} 500 - Server error
    */
   static async getLinkedCaregivers(req, res) {
     try {
@@ -120,6 +184,25 @@ class ElderlyController {
 
   /**
    * Update elderly user's real-time location
+   * Stores location in database and broadcasts to linked caregivers via WebSocket
+   * @route POST /api/elderly/location
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Location data
+   * @param {number} req.body.latitude - Latitude coordinate (required)
+   * @param {number} req.body.longitude - Longitude coordinate (required)
+   * @param {number} [req.body.accuracy] - Location accuracy in meters
+   * @param {number} [req.body.speed] - Speed in m/s
+   * @param {number} [req.body.heading] - Heading in degrees
+   * @param {number} [req.body.altitude] - Altitude in meters
+   * @param {string} [req.body.tripId] - Related trip ID
+   * @param {string} [req.body.helpRequestId] - Related help request ID
+   * @param {string} [req.body.status] - Location status (active, idle, etc.)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Location stored successfully
+   * @returns {Object} 400 - Missing required location data
+   * @returns {Object} 500 - Server error
    */
   static async updateLocation(req, res) {
     try {
@@ -178,7 +261,21 @@ class ElderlyController {
   }
 
   /**
-   * Start trip tracking
+   * Start trip tracking for elderly user
+   * @route POST /api/elderly/trips/start
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Trip data
+   * @param {string} req.body.origin - Trip origin location
+   * @param {string} req.body.destination - Trip destination location
+   * @param {string} [req.body.type] - Trip type (default: 'route')
+   * @param {string} [req.body.helpRequestId] - Related help request ID
+   * @param {string} [req.body.volunteerId] - Assigned volunteer ID
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Trip started successfully
+   * @returns {Object} 400 - Missing origin or destination
+   * @returns {Object} 500 - Server error
    */
   static async startTripTracking(req, res) {
     try {
@@ -238,7 +335,16 @@ class ElderlyController {
   }
 
   /**
-   * Complete trip tracking
+   * Complete trip tracking for elderly user
+   * @route POST /api/elderly/trips/:tripId/complete
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {string} req.params.tripId - Trip ID to complete
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Trip completed successfully
+   * @returns {Object} 400 - Missing trip ID
+   * @returns {Object} 500 - Server error
    */
   static async completeTripTracking(req, res) {
     try {
@@ -297,7 +403,12 @@ class ElderlyController {
     }
   }
 
-  // Helper methods
+  /**
+   * Helper: Get linked caregivers for notifications
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise<Array>} Array of caregiver objects
+   * @private
+   */
   static async getLinkedCaregiversForNotification(elderlyId) {
     try {
       const { data: caregivers, error } = await supabase
@@ -325,6 +436,12 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Helper: Get elderly user's name
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise<string>} Elderly user's full name or username
+   * @private
+   */
   static async getElderlyName(elderlyId) {
     try {
       const { data: elderly, error } = await supabase
@@ -340,6 +457,19 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Helper: Broadcast location update to linked caregivers via WebSocket
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Object} locationData - Location data object
+   * @param {number} locationData.latitude - Latitude coordinate
+   * @param {number} locationData.longitude - Longitude coordinate
+   * @param {number} [locationData.accuracy] - Location accuracy in meters
+   * @param {string} [locationData.timestamp] - Location timestamp
+   * @param {string} [locationData.trip_id] - Related trip ID
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @returns {Promise<void>}
+   * @private
+   */
   static async broadcastLocationToCaregivers(elderlyId, locationData, linkedCaregivers) {
     try {
       const elderlyName = await ElderlyController.getElderlyName(elderlyId);
@@ -398,6 +528,14 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Helper: Check for location-based alerts and notify caregivers
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Object} location - Location object with lat, lng, accuracy
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @returns {Promise<void>}
+   * @private
+   */
   static async checkLocationAlerts(elderlyId, location, linkedCaregivers) {
     try {
       // Check if elderly has moved significantly from last known safe location
@@ -432,6 +570,12 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Helper: Get last known safe (completed) location
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise<Object|null>} Location object with lat/lng or null
+   * @private
+   */
   static async getLastSafeLocation(elderlyId) {
     try {
       const { data: location, error } = await supabase
@@ -455,6 +599,13 @@ class ElderlyController {
     }
   }
 
+  /**
+   * Helper: Calculate distance between two GPS points using Haversine formula
+   * @param {Object} point1 - First point with lat and lng properties
+   * @param {Object} point2 - Second point with lat and lng properties
+   * @returns {number} Distance in meters
+   * @private
+   */
   static calculateDistance(point1, point2) {
     const R = 6371e3; // Earth's radius in meters
     const φ1 = point1.lat * Math.PI/180;
@@ -470,6 +621,15 @@ class ElderlyController {
     return R * c; // Distance in meters
   }
 
+  /**
+   * Helper: Send location alert notification to caregivers
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @param {string} alertType - Type of alert (e.g., 'DISTANCE_ALERT', 'ACCURACY_ALERT')
+   * @param {string} message - Alert message
+   * @returns {Promise<void>}
+   * @private
+   */
   static async sendLocationAlert(elderlyId, linkedCaregivers, alertType, message) {
     try {
       const elderlyName = await ElderlyController.getElderlyName(elderlyId);

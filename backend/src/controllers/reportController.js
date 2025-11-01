@@ -1,7 +1,34 @@
 const ReportService = require('../services/report');
 const ReportStatus = require('../domain/enum/ReportStatus');
 
+/**
+ * Report Controller
+ * Handles HTTP requests for report operations
+ * Provides endpoints for submitting reports, adding evidence, and admin moderation
+ * 
+ * @class ReportController
+ * @example
+ * const reportController = new ReportController();
+ * // Used in routes: router.post('/reports', reportController.submitReport);
+ */
 class ReportController {
+  /**
+   * Submit a new report
+   * @route POST /api/reports
+   * @access Private
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Reporter user ID (from authentication)
+   * @param {string} req.user.role - Reporter role (from authentication)
+   * @param {Object} req.body - Report data
+   * @param {string} req.body.reportedUserId - ID of user being reported
+   * @param {string} [req.body.helpRequestId] - Optional related help request ID
+   * @param {string} req.body.reason - Reason for report
+   * @param {string} [req.body.description] - Optional detailed description
+   * @param {Response} res - Express response object
+   * @returns {Object} 201 - Created report
+   * @returns {Object} 400 - Missing required fields
+   * @returns {Object} 500 - Server error
+   */
   submitReport = async (req, res) => {
     try {
       const reporterUserId = req.user.id;
@@ -28,6 +55,20 @@ class ReportController {
     }
   };
 
+  /**
+   * Add evidence file to a report
+   * @route POST /api/reports/:reportId/evidence
+   * @access Private (Report author only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Reporter user ID (from authentication)
+   * @param {string} req.params.reportId - Report ID to add evidence to
+   * @param {File} req.file - Uploaded evidence file (via multer middleware)
+   * @param {Response} res - Express response object
+   * @returns {Object} 201 - Evidence attached successfully
+   * @returns {Object} 400 - Missing file or report ID
+   * @returns {Object} 403 - Not authorized (not the report author)
+   * @returns {Object} 500 - Server error
+   */
   addEvidence = async (req, res) => {
     try {
       const uploadedByUserId = req.user.id;
@@ -47,6 +88,21 @@ class ReportController {
     }
   };
 
+  /**
+   * Begin reviewing a report (Admin only)
+   * Marks report as IN_PROGRESS
+   * @route POST /api/reports/:reportId/review
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.user.role - Must be ADMIN
+   * @param {string} req.params.reportId - Report ID to review
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report review started
+   * @returns {Object} 400 - Missing report ID
+   * @returns {Object} 409 - Report already being reviewed
+   * @returns {Object} 500 - Server error
+   */
   beginReview = async (req, res) => {
     try {
       const adminUserId = req.user.id;
@@ -67,6 +123,21 @@ class ReportController {
     }
   };
 
+  /**
+   * Resolve a report (Admin only)
+   * Marks report as RESOLVED
+   * @route POST /api/reports/:reportId/resolve
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.user.role - Must be ADMIN
+   * @param {string} req.params.reportId - Report ID to resolve
+   * @param {Object} req.body - Resolution data
+   * @param {string} [req.body.note] - Resolution note
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report resolved successfully
+   * @returns {Object} 500 - Server error
+   */
   resolveReport = async (req, res) => {
     try {
       const adminUserId = req.user.id;
@@ -88,6 +159,21 @@ class ReportController {
     }
   };
 
+  /**
+   * Reject a report (Admin only)
+   * Marks report as REJECTED
+   * @route POST /api/reports/:reportId/reject
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.user.role - Must be ADMIN
+   * @param {string} req.params.reportId - Report ID to reject
+   * @param {Object} req.body - Rejection data
+   * @param {string} [req.body.note] - Rejection note
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report rejected successfully
+   * @returns {Object} 500 - Server error
+   */
   rejectReport = async (req, res) => {
     try {
       const adminUserId = req.user.id;
@@ -109,6 +195,16 @@ class ReportController {
     }
   };
 
+  /**
+   * View reports submitted by the authenticated user
+   * @route GET /api/reports/my-reports
+   * @access Private
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Reporter user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of reports submitted by user
+   * @returns {Object} 500 - Server error
+   */
   viewMyReports = async (req, res) => {
     try {
       const userId = req.user.id;

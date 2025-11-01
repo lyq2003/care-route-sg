@@ -25,8 +25,23 @@ import { useNotificationStore }from './store/useNotificationStore';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+/**
+ * React Query client instance for managing server state
+ */
 const queryClient = new QueryClient();
 
+/**
+ * Main App Component
+ * 
+ * Root component of the CareRoute application. Manages:
+ * - Authentication state and socket connections
+ * - Route configuration and navigation
+ * - Global providers (QueryClient, TooltipProvider, AuthProvider)
+ * - Notification listeners
+ * 
+ * @component
+ * @returns {JSX.Element} The main app component with all routes and providers
+ */
 const App = () => {
   const { authUser, checkAuth, connectSocket, disconnectSocket, socket, isCheckingAuth } = useAuthStore();
   const { initNotificationListener } = useNotificationStore();

@@ -7,12 +7,34 @@ import { ArrowLeft, User, Heart, HandHeart, Shield } from "lucide-react";
 import { useNavigate  } from "react-router-dom";
 import { axiosInstance } from "./axios";
 
+/**
+ * Props for SignUpScreen component
+ */
 interface SignUpScreenProps {
+  /** Callback function to navigate back */
   onBack: () => void;
 }
 
+/**
+ * User type options for registration
+ */
 type UserType = "elderly" | "caregiver" | "volunteer" | "admin" | null;
 
+/**
+ * Sign Up Screen Component
+ * 
+ * Multi-step registration form that:
+ * - Allows users to select their role (Elderly, Caregiver, Volunteer, Admin)
+ * - Collects user details (name, email, phone, password)
+ * - Validates password strength and matching
+ * - Submits registration to backend API
+ * - Handles errors and success states
+ * 
+ * @component
+ * @param {SignUpScreenProps} props - Component props
+ * @param {() => void} props.onBack - Callback to navigate back
+ * @returns {JSX.Element} Multi-step sign-up form
+ */
 export default function SignUpScreen({ onBack}: SignUpScreenProps) {
   const [step, setStep] = useState<"role" | "details">("role");
   const [selectedRole, setSelectedRole] = useState<UserType>(null);

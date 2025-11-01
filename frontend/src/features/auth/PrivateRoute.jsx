@@ -1,4 +1,18 @@
-// PrivateRoute.js
+/**
+ * Private Route Component
+ * 
+ * Route guard that protects routes requiring authentication.
+ * 
+ * Behavior:
+ * - Shows loading state while checking authentication
+ * - Redirects to /login if user is not authenticated
+ * - Renders child routes if user is authenticated
+ * 
+ * Uses AuthContext to check authentication status.
+ * 
+ * @component
+ * @returns {JSX.Element} Either <Outlet /> for authenticated users or <Navigate /> to login
+ */
 import { Navigate, Outlet } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from './authContext';

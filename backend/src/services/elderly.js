@@ -1,9 +1,28 @@
 const { supabase } = require('../config/supabase');
 const Role = require('../domain/enum/Role');
 
+/**
+ * Elderly Services
+ * Service layer for elderly user-specific operations
+ * Handles linking PINs, caregiver relationships, and profile management
+ * 
+ * @namespace ElderlyServices
+ * @example
+ * const pin = await ElderlyServices.getLinkingPIN('elderly-123');
+ * const caregivers = await ElderlyServices.getLinkedCaregivers('elderly-123');
+ */
 const ElderlyServices = {
   /**
    * Get or generate linking PIN for elderly user
+   * Returns existing PIN if available, otherwise generates a new one
+   * 
+   * @param {string} elderlyUserId - ID of the elderly user
+   * @returns {Promise<string>} 6-digit linking PIN
+   * @throws {Error} If profile not found or PIN generation fails
+   * 
+   * @example
+   * const pin = await ElderlyServices.getLinkingPIN('elderly-123');
+   * console.log(`Linking PIN: ${pin}`);
    */
   async getLinkingPIN(elderlyUserId) {
     // Get current profile
@@ -49,6 +68,14 @@ const ElderlyServices = {
 
   /**
    * Regenerate linking PIN for elderly user
+   * Creates a new PIN and invalidates the old one
+   * 
+   * @param {string} elderlyUserId - ID of the elderly user
+   * @returns {Promise<string>} New 6-digit linking PIN
+   * @throws {Error} If profile not found or PIN regeneration fails
+   * 
+   * @example
+   * const newPin = await ElderlyServices.regenerateLinkingPIN('elderly-123');
    */
   async regenerateLinkingPIN(elderlyUserId) {
     const newPin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -71,6 +98,15 @@ const ElderlyServices = {
 
   /**
    * Get all caregivers linked to this elderly user
+   * Retrieves caregiver profiles linked via caregiver_link table
+   * 
+   * @param {string} elderlyUserId - ID of the elderly user
+   * @returns {Promise<Array>} Array of caregiver profile objects
+   * @throws {Error} If database query fails
+   * 
+   * @example
+   * const caregivers = await ElderlyServices.getLinkedCaregivers('elderly-123');
+   * console.log(`Linked to ${caregivers.length} caregivers`);
    */
   async getLinkedCaregivers(elderlyUserId) {
     const { data, error } = await supabase

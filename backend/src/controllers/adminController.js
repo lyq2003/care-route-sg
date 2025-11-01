@@ -8,9 +8,29 @@ const UserStatus = require('../domain/enum/UserStatus');
 const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus');
 
+/**
+ * Admin Controller
+ * Handles HTTP requests for administrative operations
+ * Provides endpoints for user management, dashboard statistics, and report/review moderation
+ * All methods require admin authentication
+ * 
+ * @class AdminController
+ * @example
+ * const adminController = new AdminController();
+ * // Used in routes: router.get('/dashboard/stats', adminController.getDashboardStats);
+ */
 class AdminController {
   
-  // Get dashboard statistics
+  /**
+   * Get dashboard statistics
+   * @route GET /api/admin/dashboard/stats
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Dashboard statistics
+   * @returns {boolean} returns.success - Success flag
+   * @returns {Object} returns.data - Statistics object with user counts and pending reports
+   */
   async getDashboardStats(req, res) {
     try {
       // Debug user information
@@ -35,7 +55,21 @@ class AdminController {
     }
   }
 
-  // Get all users with pagination and filters
+  /**
+   * Get all users with pagination and filters
+   * @route GET /api/admin/users
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Object} req.query - Query parameters
+   * @param {number} [req.query.page=1] - Page number
+   * @param {number} [req.query.limit=10] - Users per page
+   * @param {string} [req.query.status] - Filter by status
+   * @param {string} [req.query.search] - Search term for name/email
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Paginated users list
+   * @returns {boolean} returns.success - Success flag
+   * @returns {Object} returns.data - Users and pagination info
+   */
   async getAllUsers(req, res) {
     try {
       const {
@@ -87,7 +121,17 @@ class AdminController {
     }
   }
 
-  // Get user by ID
+  /**
+   * Get user by ID
+   * @route GET /api/admin/users/:userId
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.params.userId - User ID to retrieve
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User details
+   * @returns {Object} 400 - Missing user ID
+   * @returns {Object} 404 - User not found
+   */
   async getUserById(req, res) {
     try {
       const { userId } = req.params;
@@ -122,7 +166,21 @@ class AdminController {
     }
   }
 
-  // Suspend user (For all Users except Admin with duration of 7, 30, or 90 days)
+  /**
+   * Suspend a user account
+   * @route POST /api/admin/users/:userId/suspend
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.userId - User ID to suspend
+   * @param {Object} req.body - Suspension data
+   * @param {number} [req.body.duration=7] - Suspension duration in days (7, 30, or 90)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User suspended successfully
+   * @returns {Object} 400 - Invalid duration or user ID
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
   async suspendUser(req, res) {
     try {
       const { userId } = req.params;
@@ -200,7 +258,20 @@ class AdminController {
     }
   }
 
-  // Deactivate user (For all Users except Admin and is indefinite until reactivated)
+  /**
+   * Deactivate a user account
+   * Indefinite deactivation until manually reactivated by admin
+   * @route POST /api/admin/users/:userId/deactivate
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.userId - User ID to deactivate
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User deactivated successfully
+   * @returns {Object} 400 - Invalid user ID or cannot deactivate
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
   async deactivateUser(req, res) {
     try {
       const { userId } = req.params;
@@ -253,7 +324,19 @@ class AdminController {
     }
   }
 
-  // Reactivate user (manual admin reactivation for deactivated accounts)
+  /**
+   * Reactivate a deactivated user account
+   * @route POST /api/admin/users/:userId/reactivate
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.userId - User ID to reactivate
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User reactivated successfully
+   * @returns {Object} 400 - Cannot reactivate (user not deactivated)
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
   async reactivateUser(req, res) {
     try {
       const { userId } = req.params;
@@ -298,7 +381,22 @@ class AdminController {
     }
   }
 
-  // Unsuspend user (automatic unsuspension when duration expires)
+  /**
+   * Unsuspend a suspended user account
+   * Can be used for manual early unsuspension before duration expires
+   * @route POST /api/admin/users/:userId/unsuspend
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.userId - User ID to unsuspend
+   * @param {Object} req.body - Unsuspension data
+   * @param {string} [req.body.reason] - Reason for unsuspension
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User unsuspended successfully
+   * @returns {Object} 400 - Cannot unsuspend (user not suspended)
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
   async unsuspendUser(req, res) {
     try {
       const { userId } = req.params;
@@ -345,7 +443,20 @@ class AdminController {
 
   // Get admin activity logs
 
-  // Reassign volunteer to request
+  /**
+   * Reassign a volunteer to a help request
+   * @route POST /api/admin/requests/:requestId/reassign
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.requestId - Help request ID
+   * @param {Object} req.body - Reassignment data
+   * @param {string} req.body.volunteerId - New volunteer ID to assign
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Volunteer reassigned successfully
+   * @returns {Object} 400 - Missing request ID or volunteer ID
+   * @returns {Object} 500 - Server error
+   */
   async reassignVolunteer(req, res) {
     try {
       const { requestId } = req.params;
@@ -377,7 +488,17 @@ class AdminController {
 
   // Report Management Methods
   
-  // Get all reports for admin review
+  /**
+   * Get all reports for admin review
+   * @route GET /api/admin/reports
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Object} req.query - Query parameters
+   * @param {string} [req.query.status] - Filter by report status
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of reports with pagination
+   * @returns {Object} 500 - Server error
+   */
   async getAllReports(req, res) {
     try {
       // Use the admin service method to get all reports with full user details
@@ -414,7 +535,20 @@ class AdminController {
     }
   }
 
-  // Start reviewing a report
+  /**
+   * Start reviewing a report
+   * Marks report as IN_PROGRESS and assigns admin to it
+   * @route POST /api/admin/reports/:reportId/review
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.reportId - Report ID to review
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report review started
+   * @returns {Object} 400 - Missing report ID
+   * @returns {Object} 409 - Report already being reviewed
+   * @returns {Object} 500 - Server error
+   */
   async startReportReview(req, res) {
     try {
       const { reportId } = req.params;
@@ -451,7 +585,24 @@ class AdminController {
     }
   }
 
-  // Resolve a report with disciplinary action
+  /**
+   * Resolve a report with disciplinary action
+   * Can suspend or deactivate reported user based on action type
+   * @route POST /api/admin/reports/:reportId/resolve
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.reportId - Report ID to resolve
+   * @param {Object} req.body - Resolution data
+   * @param {string} req.body.action - Action type ('suspend' or 'deactivate')
+   * @param {string} [req.body.reason] - Reason for action
+   * @param {number} [req.body.duration] - Suspension duration (7, 30, or 90 days) if action is 'suspend'
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report resolved and action taken
+   * @returns {Object} 400 - Missing report ID, action, or invalid duration
+   * @returns {Object} 404 - Report not found
+   * @returns {Object} 500 - Server error
+   */
   async resolveReport(req, res) {
     try {
       const { reportId } = req.params;
@@ -516,7 +667,21 @@ class AdminController {
     }
   }
 
-  // Reject a report
+  /**
+   * Reject a report
+   * Closes report without taking action on reported user
+   * @route POST /api/admin/reports/:reportId/reject
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.reportId - Report ID to reject
+   * @param {Object} req.body - Rejection data
+   * @param {string} [req.body.reason] - Reason for rejection
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Report rejected successfully
+   * @returns {Object} 400 - Missing report ID
+   * @returns {Object} 500 - Server error
+   */
   async rejectReport(req, res) {
     try {
       const { reportId } = req.params;
@@ -552,7 +717,17 @@ class AdminController {
 
   // Review Management Methods
 
-  // Get all reviews for admin moderation
+  /**
+   * Get all reviews for admin moderation
+   * @route GET /api/admin/reviews
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Object} req.query - Query parameters
+   * @param {string} [req.query.flagged] - Filter by flagged status ('true' or 'false')
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of reviews with pagination
+   * @returns {Object} 500 - Server error
+   */
   async getAllReviews(req, res) {
     try {
       // Use the admin service method to get all reviews with full user details
@@ -587,7 +762,21 @@ class AdminController {
     }
   }
 
-  // Remove inappropriate review
+  /**
+   * Remove inappropriate review
+   * Permanently deletes a review and logs admin action
+   * @route DELETE /api/admin/reviews/:reviewId
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Admin user ID (from authentication)
+   * @param {string} req.params.reviewId - Review ID to remove
+   * @param {Object} req.body - Removal data
+   * @param {string} [req.body.reason] - Reason for removal
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Review removed successfully
+   * @returns {Object} 400 - Missing review ID
+   * @returns {Object} 500 - Server error
+   */
   async removeReview(req, res) {
     try {
       const { reviewId } = req.params;
@@ -632,7 +821,22 @@ class AdminController {
     }
   }
 
-  // Get admin activity logs
+  /**
+   * Get admin activity logs
+   * Retrieves paginated log of all administrative actions
+   * @route GET /api/admin/logs
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Object} req.query - Query parameters
+   * @param {number} [req.query.page=1] - Page number
+   * @param {number} [req.query.limit=20] - Logs per page
+   * @param {string} [req.query.adminId] - Filter by admin ID
+   * @param {string} [req.query.action] - Filter by action type
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Paginated admin logs
+   * @returns {Object} 400 - Invalid pagination parameters
+   * @returns {Object} 500 - Server error
+   */
   async getAdminLogs(req, res) {
     try {
       const {
@@ -673,7 +877,20 @@ class AdminController {
 
   // ==================== SYSTEM-WIDE NOTIFICATIONS ====================
 
-  // Announce service outage (API/external service down)
+  /**
+   * Announce service outage
+   * Broadcasts system-wide notification about service disruption
+   * @route POST /api/admin/notifications/outage
+   * @access Private (Admin only)
+   * @param {Request} req - Express request object
+   * @param {Object} req.body - Outage data
+   * @param {string} req.body.serviceName - Name of the affected service
+   * @param {string} [req.body.description] - Description of the outage
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Notification sent successfully
+   * @returns {Object} 400 - Missing service name
+   * @returns {Object} 500 - Server error
+   */
   async announceServiceOutage(req, res) {
     try {
       const { serviceName, description } = req.body;

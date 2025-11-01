@@ -3,7 +3,29 @@ const Role = require('../domain/enum/Role');
 const ReportStatus = require('../domain/enum/ReportStatus'); // keep if you have it
 const NotificationService = require('./notificationService');
 
+/**
+ * Caregiver Services
+ * Service layer for caregiver-specific operations
+ * Handles linking to elderly users, managing relationships, and viewing linked elderly activities
+ * 
+ * @namespace CaregiverServices
+ * @example
+ * const link = await CaregiverServices.linkToElderlyByPIN('caregiver-123', '123456');
+ * const elderly = await CaregiverServices.getLinkedElderly('caregiver-123');
+ */
 const CaregiverServices = {
+  /**
+   * Link caregiver to elderly user using PIN
+   * Creates caregiver_link relationship and sends notifications to both parties
+   * 
+   * @param {string} caregiverUserId - ID of the caregiver
+   * @param {string} pin - 6-digit linking PIN from elderly user
+   * @returns {Promise<Object>} Created link relationship object
+   * @throws {Error} If PIN is invalid, elderly not found, or link creation fails
+   * 
+   * @example
+   * const link = await CaregiverServices.linkToElderlyByPIN('caregiver-123', '123456');
+   */
   async linkToElderlyByPIN(caregiverUserId, pin) {
     console.log('Attempting to link with PIN:', pin);
     
@@ -72,7 +94,18 @@ const CaregiverServices = {
     return link;
   },
 
-  // issue here
+  /**
+   * Get all elderly users linked to this caregiver
+   * Retrieves elderly profiles linked via caregiver_link table
+   * 
+   * @param {string} caregiverUserId - ID of the caregiver
+   * @returns {Promise<Array>} Array of elderly profile objects
+   * @throws {Error} If database query fails
+   * 
+   * @example
+   * const elderly = await CaregiverServices.getLinkedElderly('caregiver-123');
+   * console.log(`Linked to ${elderly.length} elderly users`);
+   */
   async getLinkedElderly(caregiverUserId) {
     const { data, error } = await supabase
       .from('caregiver_link')

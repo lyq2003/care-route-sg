@@ -1,0 +1,26 @@
+{
+  "entryPoints": ["src/**/*.ts", "src/**/*.tsx"],
+  "entryPointStrategy": "expand",
+  "out": "docs",
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "node_modules"],
+  "includeVersion": true,
+  "readme": "README.md",
+  "name": "CareRoute Frontend Documentation",
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "skipErrorChecking": true,
+  "theme": "default",
+  "plugin": ["typedoc-plugin-markdown"],
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Components",
+    "Pages",
+    "Services",
+    "Hooks",
+    "Stores",
+    "Utils",
+    "*"
+  ]
+}
+

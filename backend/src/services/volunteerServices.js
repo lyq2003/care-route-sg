@@ -3,6 +3,28 @@ const { supabase, supabaseAdmin } = require('../config/supabase');
 const router= express.Router();
 const NotificationService = require('./notificationService');
 
+/**
+ * Volunteer Services
+ * Service layer for volunteer-specific operations
+ * Handles help request management: viewing, accepting, cancelling, and completing requests
+ * 
+ * @namespace VolunteerServices
+ */
+
+/**
+ * Get pending help requests near volunteer's location
+ * Uses database function to find requests within 10km radius
+ * 
+ * @param {number} latitude - Volunteer's latitude coordinate
+ * @param {number} longitude - Volunteer's longitude coordinate
+ * @param {number} [limit] - Maximum number of requests to return
+ * @param {number} [offset] - Number of requests to skip (for pagination)
+ * @returns {Promise<Array>} Array of pending help requests
+ * @throws {Error} If database query fails
+ * 
+ * @example
+ * const requests = await VolunteerServices.getPendingRequests(1.3521, 103.8198, 10, 0);
+ */
 async function getPendingRequests(latitude,longitude,limit,offset){
     const { data, error } = await supabaseAdmin.rpc('get_pending_requests_nearby', {
         lat: latitude,
@@ -38,6 +60,18 @@ async function getFilteredRequests(latitude,longitude,filters,limit,offset){
     return filteredData;    
 }
 
+/**
+ * Accept a help request
+ * Assigns volunteer to the request and updates status to ACCEPTED (status 2)
+ * 
+ * @param {string} postId - ID of the help request
+ * @param {string} volunteerId - ID of the volunteer accepting the request
+ * @returns {Promise<Object>} Updated help request object
+ * @throws {Error} If request not found or update fails
+ * 
+ * @example
+ * const request = await VolunteerServices.acceptRequest('request-123', 'volunteer-456');
+ */
 async function acceptRequest(postId,volunteerId){
     const {data,error}= await supabaseAdmin
     .from("help_request")
@@ -78,6 +112,20 @@ async function getAcceptedRequest(latitude,longitude,volunteerId){
     return data;
 }
 
+/**
+ * Complete a help request
+ * Updates request status to COMPLETED (status 4) and sends notifications
+ * Notifies elderly user, linked caregivers, and volunteer about completion
+ * 
+ * @param {string} postId - ID of the help request
+ * @param {string} volunteerId - ID of the volunteer completing the request
+ * @param {string} elderlyId - ID of the elderly user who requested help
+ * @returns {Promise<Object>} Updated help request object
+ * @throws {Error} If request not found or update fails
+ * 
+ * @example
+ * const request = await VolunteerServices.completeRequest('request-123', 'volunteer-456', 'elderly-789');
+ */
 async function completeRequest(postId, volunteerId, elderlyId) {
     // Update request status to completed
     const {data, error} = await supabaseAdmin

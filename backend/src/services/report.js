@@ -21,12 +21,67 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+/**
+ * Report Service
+ * Handles report submission, status management, and evidence file uploads
+ * Manages moderation workflow for user reports
+ * 
+ * @class ReportService
+ * @example
+ * const reportService = new ReportService();
+ * const report = await reportService.submitReport({
+ *   reporterUserId: 'user-123',
+ *   reporterRole: 'ELDERLY',
+ *   reportedUserId: 'volunteer-456',
+ *   helpRequestId: 'request-789',
+ *   reason: 'Inappropriate behavior',
+ *   description: 'Details of the incident...'
+ * });
+ */
 class ReportService {
+  /**
+   * Returns Multer middleware for handling evidence file uploads
+   * Configures file upload destination and naming
+   * 
+   * @returns {Function} Multer middleware function
+   * @example
+   * // In route handler
+   * router.post('/report', 
+   *   reportService.getEvidenceUploadMiddleware(),
+   *   async (req, res) => {
+   *     // req.file contains uploaded file info
+   *   }
+   * );
+   */
   getEvidenceUploadMiddleware() {
     return upload.single('file');
   }
 
-  // reporterRole now comes from controller (req.user.role)
+  /**
+   * Submits a new report from a user
+   * Creates report record and initial status history entry
+   * Notifies admins about the new report
+   * 
+   * @param {Object} reportData - Report data object
+   * @param {string} reportData.reporterUserId - ID of user submitting the report
+   * @param {string} reportData.reporterRole - Role of the reporter (ELDERLY, VOLUNTEER, CAREGIVER)
+   * @param {string} reportData.reportedUserId - ID of user being reported
+   * @param {string} [reportData.helpRequestId] - Optional ID of related help request
+   * @param {string} reportData.reason - Reason for the report
+   * @param {string} [reportData.description] - Optional detailed description
+   * @returns {Promise<Object>} Created report object
+   * @throws {Error} If report submission fails
+   * 
+   * @example
+   * const report = await reportService.submitReport({
+   *   reporterUserId: 'elderly-123',
+   *   reporterRole: 'ELDERLY',
+   *   reportedUserId: 'volunteer-456',
+   *   helpRequestId: 'request-789',
+   *   reason: 'Inappropriate behavior',
+   *   description: 'Detailed description...'
+   * });
+   */
   async submitReport({ reporterUserId, reporterRole, reportedUserId, helpRequestId, reason, description }) {
     // 1. Insert the report itself
     const { data, error } = await supabase
@@ -76,6 +131,15 @@ class ReportService {
     return data;
   }
 
+  /**
+   * Add evidence file attachment to a report
+   * @param {Object} evidenceData - Evidence data
+   * @param {string} evidenceData.reportId - Report ID to attach evidence to
+   * @param {string} evidenceData.uploadedByUserId - User ID uploading the file
+   * @param {File} evidenceData.file - Multer file object
+   * @returns {Promise<Object>} Created attachment object
+   * @throws {Error} If file is missing or attachment creation fails
+   */
   async addEvidence({ reportId, uploadedByUserId, file }) {
     if (!file) {
       throw new Error('No file uploaded');
@@ -102,7 +166,16 @@ class ReportService {
     return data;
   }
 
-  // adminRole now comes from controller (req.user.role)
+  /**
+   * Begin reviewing a report
+   * Marks report as IN_PROGRESS and prevents other admins from reviewing it
+   * @param {Object} reviewData - Review data
+   * @param {string} reviewData.reportId - Report ID to review
+   * @param {string} reviewData.adminUserId - Admin user ID starting review
+   * @param {string} reviewData.adminRole - Admin role (must be ADMIN)
+   * @returns {Promise<Object>} Updated report object
+   * @throws {Error} If report not found, already in progress (409), or update fails
+   */
   async beginReview({ reportId, adminUserId, adminRole }) {
     // 1. Load report
     const { data: report, error: fetchErr } = await supabase
@@ -156,6 +229,17 @@ class ReportService {
     return updated;
   }
 
+  /**
+   * Resolve a report
+   * Marks report as RESOLVED
+   * @param {Object} resolveData - Resolution data
+   * @param {string} resolveData.reportId - Report ID to resolve
+   * @param {string} resolveData.adminUserId - Admin user ID resolving the report
+   * @param {string} resolveData.adminRole - Admin role (must be ADMIN)
+   * @param {string} [resolveData.note] - Resolution note
+   * @returns {Promise<Object>} Updated report object
+   * @throws {Error} If report not found or update fails
+   */
   async resolveReport({ reportId, adminUserId, adminRole, note }) {
     // Reuse shared close logic
     const result = await this.#closeReport({
@@ -179,6 +263,17 @@ class ReportService {
     return result;
   }
 
+  /**
+   * Reject a report
+   * Marks report as REJECTED
+   * @param {Object} rejectData - Rejection data
+   * @param {string} rejectData.reportId - Report ID to reject
+   * @param {string} rejectData.adminUserId - Admin user ID rejecting the report
+   * @param {string} rejectData.adminRole - Admin role (must be ADMIN)
+   * @param {string} [rejectData.note] - Rejection note
+   * @returns {Promise<Object>} Updated report object
+   * @throws {Error} If report not found or update fails
+   */
   async rejectReport({ reportId, adminUserId, adminRole, note }) {
     // Reuse shared close logic
     return this.#closeReport({
@@ -234,6 +329,12 @@ class ReportService {
     return updated;
   }
 
+  /**
+   * Get all reports submitted by a user
+   * @param {string} userId - ID of the user (reporter)
+   * @returns {Promise<Array>} Array of report objects submitted by the user
+   * @throws {Error} If database query fails
+   */
   async viewMyReports(userId) {
     const { data, error } = await supabase
       .from('reports')
@@ -244,7 +345,12 @@ class ReportService {
     return data;
   }
 
-  // fixed code
+  /**
+   * Get all reports with full user details for admin moderation
+   * Includes reporter and reported user profiles, and attachments
+   * @returns {Promise<Array>} Array of report objects with full details
+   * @throws {Error} If database query fails
+   */
   async getAllReportsForAdmin() {
     const { data:reports, error } = await supabase
       .from('reports')

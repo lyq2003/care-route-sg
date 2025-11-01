@@ -1,5 +1,22 @@
 const { supabase, supabaseAdmin } = require('../config/supabase');
 
+/**
+ * Route History Service
+ * Manages storage and retrieval of completed route history for users
+ * Tracks route statistics and provides route management functionality
+ * 
+ * @class RouteHistoryService
+ * @example
+ * // Save a completed route
+ * await RouteHistoryService.saveRouteHistory({
+ *   userId: 'user-123',
+ *   from: 'Home',
+ *   to: 'Clinic',
+ *   mode: 'TRANSIT',
+ *   duration: '30 mins',
+ *   steps: 5
+ * });
+ */
 class RouteHistoryService {
   /**
    * Save a completed route to the database

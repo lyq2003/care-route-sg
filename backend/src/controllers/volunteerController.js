@@ -4,7 +4,28 @@ const VolunteerServices = require('../services/volunteerServices');
 const {getReceiverSocketId, io} = require('../middleware/socket.js');
 const NotificationService = require('../services/notificationService');
 
+/**
+ * Volunteer Controller
+ * Handles HTTP requests for volunteer operations
+ * Provides endpoints for viewing help requests, accepting/cancelling requests, and completing tasks
+ * All methods require volunteer authentication
+ * 
+ * @class VolunteerController
+ * @example
+ * // Used in routes: router.get('/profile', VolunteerController.getProfile);
+ */
 class VolunteerController {
+    /**
+     * Get volunteer profile
+     * @route GET /api/volunteer/profile
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Volunteer profile data
+     * @returns {Object} 404 - Volunteer not found
+     * @returns {Object} 500 - Server error
+     */
     static async getProfile(req, res) {
         try {
         const volunteer = await UserService.findById(req.user.id);
@@ -16,6 +37,17 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Update volunteer profile
+     * @route PUT /api/volunteer/profile
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.body - Profile updates
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Updated profile data
+     * @returns {Object} 500 - Server error
+     */
     static async updateProfile(req, res) {
         try {
         const userData = req.body;
@@ -27,6 +59,22 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Get pending help requests near volunteer's location
+     * @route GET /api/volunteer/requests/pending
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.query - Query parameters
+     * @param {number} req.query.latitude - Volunteer latitude (required)
+     * @param {number} req.query.longitude - Volunteer longitude (required)
+     * @param {number} [req.query.limit] - Maximum results to return
+     * @param {number} [req.query.offset] - Number of results to skip
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Array of pending help requests
+     * @returns {Object} 400 - Missing location parameters
+     * @returns {Object} 500 - Server error
+     */
     static async getPendingRequest(req, res) {
         try{
             const { latitude, longitude, limit, offset } = req.query;
@@ -46,6 +94,23 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Get filtered help requests based on urgency and distance
+     * @route GET /api/volunteer/requests/filtered
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.query - Query parameters
+     * @param {number} req.query.latitude - Volunteer latitude (required)
+     * @param {number} req.query.longitude - Volunteer longitude (required)
+     * @param {string} [req.query.priority] - Filter by urgency/priority
+     * @param {number} [req.query.distance] - Maximum distance in meters
+     * @param {number} [req.query.limit] - Maximum results to return
+     * @param {number} [req.query.offset] - Number of results to skip
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Array of filtered help requests
+     * @returns {Object} 500 - Server error
+     */
     static async getFilteredRequests(req,res) {
         try{
             const filters = {
@@ -72,6 +137,21 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Cancel an accepted help request
+     * @route POST /api/volunteer/requests/cancel
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {string} req.user.username - Volunteer username (from authentication)
+     * @param {Object} req.body - Request cancellation data
+     * @param {Object} req.body.params - Parameters object
+     * @param {string} req.body.params.requestId - Help request ID to cancel
+     * @param {string} req.body.params.elderlyId - Elderly user ID for notifications
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Request cancelled successfully
+     * @returns {Object} 500 - Server error
+     */
     static async cancelRequest(req,res) {
         try{
             const {requestId, elderlyId} = req.body.params;
@@ -128,6 +208,22 @@ class VolunteerController {
             });
         }
     }
+    /**
+     * Accept a help request
+     * Assigns volunteer to the request and notifies elderly user and linked caregivers
+     * @route POST /api/volunteer/requests/accept
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {string} req.user.username - Volunteer username (from authentication)
+     * @param {Object} req.body - Request acceptance data
+     * @param {Object} req.body.params - Parameters object
+     * @param {string} req.body.params.requestId - Help request ID to accept
+     * @param {string} req.body.params.elderlyId - Elderly user ID
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Request accepted successfully
+     * @returns {Object} 500 - Server error
+     */
     static async acceptRequest(req,res) {
         try{
             const {requestId, elderlyId} = req.body.params;
@@ -195,6 +291,20 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Get accepted help request for volunteer
+     * Returns the currently assigned request if any
+     * @route GET /api/volunteer/requests/accepted
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.query - Query parameters
+     * @param {number} req.query.latitude - Volunteer latitude (required)
+     * @param {number} req.query.longitude - Volunteer longitude (required)
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Accepted request data or null if none
+     * @returns {Object} 500 - Server error
+     */
     static async getAcceptedRequest(req,res) {
         try{
             const volunteerId = req.user.id;
@@ -224,6 +334,21 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Mark help request as completed
+     * Updates request status and sends completion notifications
+     * @route POST /api/volunteer/requests/complete
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.body - Request completion data
+     * @param {Object} req.body.params - Parameters object
+     * @param {string} req.body.params.requestId - Help request ID to complete
+     * @param {string} req.body.params.elderlyId - Elderly user ID
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Request completed successfully
+     * @returns {Object} 500 - Server error
+     */
     static async completeRequest(req,res) {
         try{
             const {requestId, elderlyId} = req.body.params;
@@ -245,6 +370,22 @@ class VolunteerController {
         }
     }
 
+    /**
+     * Send progress update to caregivers
+     * Notifies linked caregivers about volunteer's progress with elderly user
+     * @route POST /api/volunteer/progress
+     * @access Private (Volunteer only)
+     * @param {Request} req - Express request object
+     * @param {string} req.user.id - Volunteer user ID (from authentication)
+     * @param {Object} req.body - Progress update data
+     * @param {string} req.body.elderlyId - Elderly user ID
+     * @param {string} req.body.location - Current location description
+     * @param {string} [req.body.estimatedArrival] - Estimated arrival time
+     * @param {Response} res - Express response object
+     * @returns {Object} 200 - Progress update sent successfully
+     * @returns {Object} 400 - Missing elderlyId or location
+     * @returns {Object} 500 - Server error
+     */
     static async sendProgressUpdate(req,res) {
         try{
             const {elderlyId, location, estimatedArrival} = req.body;

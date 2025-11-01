@@ -3,7 +3,18 @@ import { Heart, MapPin, Users, Shield } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useNavigate  } from "react-router-dom";
 
-
+/**
+ * Welcome Screen Component
+ * 
+ * Landing page that introduces users to CareRoute. Displays:
+ * - Application branding and tagline
+ * - Hero image showcasing the platform
+ * - Feature highlights (Smart Routes, Helper Network, Care Support, Safety)
+ * - Call-to-action button to get started
+ * 
+ * @component
+ * @returns {JSX.Element} Welcome screen with feature highlights and CTA
+ */
 export default function WelcomeScreen() {
   const navigate = useNavigate();
   const onGetStarted = () =>{
