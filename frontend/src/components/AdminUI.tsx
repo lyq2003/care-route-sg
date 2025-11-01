@@ -36,7 +36,12 @@ import {
   RotateCcw,
   UserCheck,
   ChevronDown,
-  LogOut
+  LogOut,
+  FileImage,
+  FileText,
+  Download,
+  ExternalLink,
+  Paperclip
 } from "lucide-react";
 import { axiosInstance } from "./axios";
 
@@ -61,6 +66,15 @@ interface User {
   };
 }
 
+interface Attachment {
+  id: string;
+  url: string;
+  content_type: string;
+  size_bytes: number;
+  uploaded_by_user_id: string;
+  created_at: string;
+}
+
 interface Report {
   id: string;
   reporterName: string;
@@ -73,6 +87,7 @@ interface Report {
   status: ReportStatus;
   timestamp: string;
   evidence?: string;
+  attachments?: Attachment[];
 }
 
 interface Review {
@@ -95,6 +110,32 @@ interface Review {
     role?: UserRole;
   };
 }
+
+// Helper functions for file handling
+const getFileIcon = (contentType: string) => {
+  if (contentType.startsWith('image/')) {
+    return <FileImage className="w-4 h-4" />;
+  } else if (contentType.includes('pdf')) {
+    return <FileText className="w-4 h-4 text-red-600" />;
+  } else if (contentType.includes('text')) {
+    return <FileText className="w-4 h-4" />;
+  } else {
+    return <Paperclip className="w-4 h-4" />;
+  }
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const getFileName = (url: string): string => {
+  const parts = url.split('/');
+  return parts[parts.length - 1] || 'Unknown File';
+};
 
 export default function AdminUI() {
   const { toast } = useToast();
@@ -229,7 +270,8 @@ export default function AdminUI() {
                   report.status === 'IN_PROGRESS' ? 'In Progress' :
                   report.status === 'RESOLVED' ? 'Resolved' : 'Rejected',
           timestamp: new Date(report.created_at).toLocaleString(),
-          evidence: report.attachments?.length > 0 ? 'Available' : undefined
+          evidence: report.attachments?.length > 0 ? 'Available' : undefined,
+          attachments: report.attachments || []
         }));
         setReports(transformedReports);
         
@@ -1187,43 +1229,89 @@ export default function AdminUI() {
                         </div>
                       </div>
 
-                      {report.evidence && (
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">Evidence</Label>
-                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-1 border border-blue-200 dark:border-blue-800">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                                Evidence Available
-                              </span>
-                            </div>
-                            
-                            {/* Mock evidence display - you can replace this with actual evidence rendering */}
-                            <div className="space-y-3">
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <MessageSquare className="w-4 h-4 text-blue-600" />
-                                  <span className="text-xs font-medium">Screenshot Evidence</span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mb-2">
-                                  Screenshots showing inappropriate behavior
-                                </p>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="bg-gray-100 dark:bg-gray-700 h-20 rounded border-2 border-dashed flex items-center justify-center">
-                                    <span className="text-xs text-muted-foreground">Image 1</span>
-                                  </div>
-                                  <div className="bg-gray-100 dark:bg-gray-700 h-20 rounded border-2 border-dashed flex items-center justify-center">
-                                    <span className="text-xs text-muted-foreground">Image 2</span>
-                                  </div>
-                                </div>
-                                <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
-                                  View Full Evidence
-                                </Button>
-                              </div>
-                            </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">File Evidence</Label>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-1 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                            <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                              {report.attachments?.length || 0} File Evidence Uploaded
+                            </span>
                           </div>
+                          
+                          {/* Real evidence display */}
+                          {report.attachments && report.attachments.length > 0 ? (
+                            <div className="space-y-3">
+                              {report.attachments.map((attachment, index) => (
+                                <div key={attachment.id} className="bg-white dark:bg-gray-800 p-3 rounded border">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      {getFileIcon(attachment.content_type)}
+                                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                        Evidence File {index + 1}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatFileSize(attachment.size_bytes)}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="text-xs text-muted-foreground mb-3 space-y-1">
+                                    <div>File: {getFileName(attachment.url)}</div>
+                                    <div>Type: {attachment.content_type}</div>
+                                    <div>Uploaded: {new Date(attachment.created_at).toLocaleDateString()}</div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                    {attachment.content_type.startsWith('image/') ? (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs h-7"
+                                        onClick={() => window.open(`http://localhost:3001${attachment.url}`, '_blank')}
+                                      >
+                                        <Eye className="w-3 h-3 mr-1" />
+                                        View Image
+                                      </Button>
+                                    ) : (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs h-7"
+                                        onClick={() => window.open(`http://localhost:3001${attachment.url}`, '_blank')}
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open File
+                                      </Button>
+                                    )}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="text-xs h-7"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = `http://localhost:3001${attachment.url}`;
+                                        link.download = getFileName(attachment.url);
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                      }}
+                                    >
+                                      <Download className="w-3 h-3 mr-1" />
+                                      Download
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6">
+                              <Paperclip className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-sm text-muted-foreground">No file evidence uploaded</p>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Reported User Info */}
@@ -1454,48 +1542,78 @@ export default function AdminUI() {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium">Evidence:</Label>
+                  <Label className="text-sm font-medium">File Evidence:</Label>
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-1 border border-blue-200 dark:border-blue-800">
-                    {selectedReport.evidence ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-blue-800 dark:text-blue-200">{selectedReport.evidence}</p>
-                        
-                        {/* Mock evidence items */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MessageSquare className="w-4 h-4 text-blue-600" />
-                              <span className="text-xs font-medium">Chat Log</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Conversation screenshots showing inappropriate behavior
-                            </p>
-                            <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
-                              View Details
-                            </Button>
-                          </div>
-                          
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                            <div className="flex items-center gap-2 mb-2">
-                              <User className="w-4 h-4 text-green-600" />
-                              <span className="text-xs font-medium">Witness Statement</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Third-party confirmation of the incident
-                            </p>
-                            <Button variant="outline" size="sm" className="mt-2 text-xs h-6">
-                              Read Statement
-                            </Button>
-                          </div>
+                    {selectedReport.attachments && selectedReport.attachments.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            {selectedReport.attachments.length} File Evidence
+                          </span>
                         </div>
+                        
+                        {selectedReport.attachments.map((attachment, index) => (
+                          <div key={attachment.id} className="bg-white dark:bg-gray-800 p-4 rounded border">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                {getFileIcon(attachment.content_type)}
+                                <span className="text-sm font-medium">Evidence File {index + 1}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {formatFileSize(attachment.size_bytes)}
+                              </span>
+                            </div>
+                            
+                            <div className="text-sm text-muted-foreground mb-3 space-y-1">
+                              <div><strong>File:</strong> {getFileName(attachment.url)}</div>
+                              <div><strong>Type:</strong> {attachment.content_type}</div>
+                              <div><strong>Uploaded:</strong> {new Date(attachment.created_at).toLocaleDateString()}</div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {attachment.content_type.startsWith('image/') ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(`http://localhost:3001${attachment.url}`, '_blank')}
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Image
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(`http://localhost:3001${attachment.url}`, '_blank')}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Open File
+                                </Button>
+                              )}
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `http://localhost:3001${attachment.url}`;
+                                  link.download = getFileName(attachment.url);
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <AlertCircle className="w-12 h-12 mx-auto mb-2 text-orange-500" />
-                        <p className="text-sm text-muted-foreground">Evidence retrieval error</p>
-                        <Button variant="outline" size="sm" className="mt-2">
-                          Retry
-                        </Button>
+                        <Paperclip className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">No file evidence uploaded</p>
                       </div>
                     )}
                   </div>
