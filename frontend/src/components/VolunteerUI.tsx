@@ -12,7 +12,8 @@ import {
   Menu,
   Check,
   Navigation,
-  Shield
+  Shield,
+  OctagonAlert
 } from "lucide-react";
 import { axiosInstance } from "./axios";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ import AcceptedRequest from "../features/volunteer/VolunteerAcceptedRequest";
 import CompletedRequest from "@/features/volunteer/VolunteerFinishedRequest";
 import VolunteerProfile from "@/features/volunteer/VolunteerProfile";
 import VolunteerRoute from "./VolunteerRoute";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Max number of posts to be fetched every call
 const LIMIT=10;
@@ -34,6 +36,8 @@ export default function VolunteerUI() {
   const [offset,setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [helpRequests, setHelpRequests] = useState([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [volunteerData, setVolunteerData] = useState({
     name: "Unknown Volunteer",
     phoneNumber: null,
@@ -48,7 +52,15 @@ export default function VolunteerUI() {
   const {profile} = getProfile();
   // this is the data from user_profile
   const {userProfile}= getUserProfile();
-  
+
+  const isImage = (mimeType) => {
+    return mimeType.startsWith("image/");
+  }
+
+  const isPDF = (mimeType) => {
+    return mimeType === "application/pdf";
+  }
+
 useEffect(() => {
   console.log("userProfile is:", userProfile);
 
@@ -194,6 +206,103 @@ useEffect(() => {
 
     setActiveTab("route");
   };
+  const fetchReviews = async () => {
+    console.log("fetchReviews");
+
+    try {
+
+      const response = await axiosInstance.get('/reviews/me/');
+
+      var data = response.data.data;
+
+      console.log("Reviews are:",data,response);
+
+
+
+
+      var tempReviewsArr = [];
+
+      for (let i = 0; i < data.length; i++) {
+
+        var reviewObj = {
+          "id": data[i].id,
+          "volunteer": data[i].reviews_recipient_user_id_fkey1.username,
+          "date": data[i].created_at,
+          "rating": data[i].rating,
+          "comment": data[i].text
+        }
+
+        tempReviewsArr.push(reviewObj);
+
+      }
+
+
+      setReviews(tempReviewsArr);
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+
+  const formatDate = (dateString) => {
+    const options: Intl.DateTimeFormatOptions = {
+      /* weekday: "long", */
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options)
+  }
+
+  const fetchReports = async () => {
+
+    try {
+
+      const response = await axiosInstance.get('/reports/me/');
+
+      var data = response.data.data;
+
+      /* console.log("fetchReports");
+      console.log(data); */
+
+
+
+
+      var tempReportsArr = [];
+
+      for (let i = 0; i < data.length; i++) {
+
+        var reportObj = {
+          "id": data[i].id,
+          "description": data[i].description,
+          "reason": data[i].reason,
+          "reportedUsername": data[i].reports_reported_user_id_fkey1.username,
+          "status": data[i].status,
+          "date": data[i].created_at,
+          "help_request_id": data[i].help_request_id,
+          "file": data[i].file,
+          "mimeType": data[i].mimeType
+        }
+
+        tempReportsArr.push(reportObj);
+
+      }
+
+
+      setReports(tempReportsArr);
+
+    } catch (error) {
+      console.error('Error details:', error);
+
+    }
+
+  }
+  useEffect(()=>{
+    fetchReports();
+    fetchReviews();
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -313,6 +422,117 @@ useEffect(() => {
       case "Completed_request":
         return <CompletedRequest setActiveTab={setActiveTab}/>;
 
+    case "reviews":
+      return (
+        <div className="space-y-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-foreground mb-2">{('My reviews')}</h2>
+          </div>
+
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <Card key={review.id} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-xl font-semibold text-foreground">{review.volunteer}</h4>
+                      <p className="text-muted-foreground">{formatDate(review.date)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-5 w-5 ${i < review.rating ? 'text-warning fill-current' : 'text-muted-foreground'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-foreground">{review.comment}</p>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Star className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-xl text-muted-foreground">{('No Reviews')}</p>
+            </div>
+          )}
+        </div>
+      );
+
+
+    case "reports":
+      return (
+        <div className="space-y-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-foreground mb-2">{('My Reports')}</h2>
+          </div>
+
+          {reports.length > 0 ? (
+            <div className="space-y-4">
+              {reports.map((report) => (
+                <Card key={report.id} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-xl font-semibold text-foreground">Reported: {report.reportedUsername}</h4>
+                      <p className="text-muted-foreground">{formatDate(report.date)}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-foreground">Reason: {report.reason}</p>
+
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-foreground">Description: {report.description}</p>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-foreground">Status: {report.status}</p>
+                  </div>
+
+                  {report.file ? (
+                    <div className="mt-4">
+
+                      <div>
+                        <p className="text-foreground">File:</p>
+                      </div>
+
+                      {isPDF(report.mimeType) ? (
+                        <embed src={`${API_BASE_URL}/api/static/${report.file}`} type="application/pdf" width="100%" height="600px" />
+
+
+
+                      ) : isImage(report.mimeType) ? (
+                        <img src={`${API_BASE_URL}/api/static/${report.file}`} alt="Uploaded image" style={{ width: "30%", height: "30%" }} />
+
+                      ) : (
+                        <p>Unsupported file type</p>
+                      )}
+
+                    </div>
+                  ) : (
+
+                    <div>
+                      <p className="text-foreground">File: No evidence uploaded</p>
+                    </div>
+
+                  )}
+
+                </Card>
+              ))}
+            </div>
+
+          ) : (
+            <div className="text-center py-12">
+              <OctagonAlert className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-xl text-muted-foreground">{('No Reports')}</p>
+            </div>
+          )}
+        </div>
+      );
+
       case "profile":
         return <VolunteerProfile />;
 
@@ -397,6 +617,8 @@ useEffect(() => {
             { id: "dashboard", icon: Activity, label: "Dashboard" },
             { id: "Accepted_request", icon: HelpCircle, label: "Accepted request" },
             { id: "Completed_request", icon: HelpCircle, label: "Completed request"},
+            { id: "reviews", icon: Star, label: "Reviews" },
+            { id: "reports", icon: OctagonAlert, label: "Reports"},
             { id: "profile", icon: User, label: "Profile" }
           ].map((tab) => (
             <button

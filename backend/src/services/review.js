@@ -22,7 +22,7 @@ class ReviewService {
     // Fetch the current ratings and review_count for the recipient
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('rating, review_count')
+      .select('role,rating, review_count')
       .eq('user_id', recipientUserId)
       .single();
 
@@ -30,10 +30,20 @@ class ReviewService {
 
     const currentRating = profile?.ratings;
     const currentCount = profile?.review_count;
-
+    const role = profile?.role;
+    console.log(role);
     let newRating;
     let newCount;
+    
+    if (role!="volunteer"){
+      const {data: updatedVolunteer, error:updateVolError} =await supabaseAdmin
+      .from('help_request')
+      .update({ reviewedVolunteer: true })
+      .eq('id', helpRequestId)
 
+      if (updateVolError) throw updateVolError;
+      //console.log(updatedVolunteer)
+    };
     // Handle the edge case when no rating exists yet
     if (currentRating == null || currentCount == null) {
       newRating = rating;
