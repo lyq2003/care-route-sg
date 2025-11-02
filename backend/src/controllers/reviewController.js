@@ -36,6 +36,7 @@ class ReviewController {
     try {
       const userId = req.user.id;
       const reviews = await ReviewService.viewMyReviews(userId);
+      console.log("Reviews are:",reviews, userId)
       return res.status(200).json({ success: true, data: reviews });
     } catch (error) {
       console.error('viewMyReviews error:', error);

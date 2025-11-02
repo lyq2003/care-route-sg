@@ -52,6 +52,7 @@ export default function CompletedRequest({ setActiveTab}) {
     }
     useEffect(() =>{
         fetchFinishedRequest();
+        console.log
     }, [location]);
 
     if (error) return <p>Error loading accepted request.</p>;
