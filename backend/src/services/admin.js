@@ -237,7 +237,7 @@ class AdminService {
       // Get current user data to preserve existing metadata
       const { data: currentUser } = await supabaseAdmin.auth.admin.getUserById(userId);
       
-      // Update auth user metadata using admin client
+      // Update auth user metadata and disable the user account
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
@@ -246,7 +246,9 @@ class AdminService {
           suspension_reason: reason,
           suspension_duration: duration,
           suspension_end_date: suspensionEndDateISO
-        }
+        },
+        // Disable the user account to prevent login
+        ban_duration: `${duration * 24}h` // Convert days to hours for Supabase
       });
 
       if (authError) {
@@ -382,7 +384,7 @@ class AdminService {
       // Get current user data to preserve existing metadata
       const { data: currentUser } = await supabaseAdmin.auth.admin.getUserById(userId);
       
-      // Update auth user metadata using admin client
+      // Update auth user metadata and remove the ban to re-enable account
       const { data: authUpdateData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...currentUser.user.user_metadata,
@@ -393,7 +395,9 @@ class AdminService {
           suspension_end_date: null,
           unsuspended_at: unsuspendedAt,
           unsuspension_reason: reason
-        }
+        },
+        // Remove the ban to re-enable login
+        ban_duration: 'none'
       });
 
       if (authError) {

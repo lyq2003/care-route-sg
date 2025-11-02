@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>services/report.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Admin.html">Admin</a><ul class='methods'><li data-type='method'><a href="Admin.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Admin.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Admin.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Admin.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Admin.html#isActive">isActive</a></li><li data-type='method'><a href="Admin.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Admin.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Admin.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Admin.html#.validate">validate</a></li></ul></li><li><a href="AdminController.html">AdminController</a><ul class='methods'><li data-type='method'><a href="AdminController.html#announceServiceOutage">announceServiceOutage</a></li><li data-type='method'><a href="AdminController.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminController.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminController.html#getAllReports">getAllReports</a></li><li data-type='method'><a href="AdminController.html#getAllReviews">getAllReviews</a></li><li data-type='method'><a href="AdminController.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminController.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminController.html#getUserById">getUserById</a></li><li data-type='method'><a href="AdminController.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminController.html#reassignVolunteer">reassignVolunteer</a></li><li data-type='method'><a href="AdminController.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="AdminController.html#removeReview">removeReview</a></li><li data-type='method'><a href="AdminController.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="AdminController.html#startReportReview">startReportReview</a></li><li data-type='method'><a href="AdminController.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminController.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="AdminService.html">AdminService</a><ul class='methods'><li data-type='method'><a href="AdminService.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminService.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminService.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminService.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminService.html#logAdminAction">logAdminAction</a></li><li data-type='method'><a href="AdminService.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminService.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminService.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="Caregiver.html">Caregiver</a><ul class='methods'><li data-type='method'><a href="Caregiver.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Caregiver.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Caregiver.html#isActive">isActive</a></li><li data-type='method'><a href="Caregiver.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Caregiver.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Caregiver.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Caregiver.html#.validate">validate</a></li></ul></li><li><a href="CaregiverController.html">CaregiverController</a><ul class='methods'><li data-type='method'><a href="CaregiverController.html#.getActiveTrips">getActiveTrips</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocation">getElderlyLocation</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocationHistory">getElderlyLocationHistory</a></li><li data-type='method'><a href="CaregiverController.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverController.html#.linkByPIN">linkByPIN</a></li><li data-type='method'><a href="CaregiverController.html#.me">me</a></li><li data-type='method'><a href="CaregiverController.html#.requestHistory">requestHistory</a></li><li data-type='method'><a href="CaregiverController.html#.submitReport">submitReport</a></li><li data-type='method'><a href="CaregiverController.html#.updateElderlyProfile">updateElderlyProfile</a></li><li data-type='method'><a href="CaregiverController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="Elderly.html">Elderly</a><ul class='methods'><li data-type='method'><a href="Elderly.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Elderly.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Elderly.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Elderly.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Elderly.html#canGenerateLinkPIN">canGenerateLinkPIN</a></li><li data-type='method'><a href="Elderly.html#generateNewPIN">generateNewPIN</a></li><li data-type='method'><a href="Elderly.html#isActive">isActive</a></li><li data-type='method'><a href="Elderly.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Elderly.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Elderly.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Elderly.html#.validate">validate</a></li></ul></li><li><a href="ElderlyController.html">ElderlyController</a><ul class='methods'><li data-type='method'><a href="ElderlyController.html#.completeTripTracking">completeTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="ElderlyController.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.startTripTracking">startTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.updateLanguagePreference">updateLanguagePreference</a></li><li data-type='method'><a href="ElderlyController.html#.updateLocation">updateLocation</a></li><li data-type='method'><a href="ElderlyController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="HelpRequest.html">HelpRequest</a><ul class='methods'><li data-type='method'><a href="HelpRequest.html#.createRequest">createRequest</a></li><li data-type='method'><a href="HelpRequest.html#.getCompletedHelpRequestswithVolunteer">getCompletedHelpRequestswithVolunteer</a></li></ul></li><li><a href="NotificationService.html">NotificationService</a><ul class='methods'><li data-type='method'><a href="NotificationService.html#broadcastToAllUsers">broadcastToAllUsers</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountCreated">notifyAccountCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountDeactivated">notifyAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountSuspended">notifyAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountUnsuspended">notifyAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewReportSubmitted">notifyAdminNewReportSubmitted</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewUserRegistered">notifyAdminNewUserRegistered</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReportResolved">notifyAdminReportResolved</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReviewFlagged">notifyAdminReviewFlagged</a></li><li data-type='method'><a href="NotificationService.html#notifyAllAdmins">notifyAllAdmins</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountDeactivated">notifyCaregiverAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountSuspended">notifyCaregiverAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountUnsuspended">notifyCaregiverAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverElderlyLinked">notifyCaregiverElderlyLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestCompleted">notifyCaregiverHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestInitiated">notifyCaregiverHelpRequestInitiated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestMatched">notifyCaregiverHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverLinked">notifyCaregiverLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverProgressUpdate">notifyCaregiverProgressUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverReportUpdate">notifyCaregiverReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyFeatureUpdate">notifyFeatureUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCancelled">notifyHelpRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCompleted">notifyHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCreated">notifyHelpRequestCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestMatched">notifyHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyReportUpdate">notifyReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyReviewReminder">notifyReviewReminder</a></li><li data-type='method'><a href="NotificationService.html#notifyScheduledMaintenance">notifyScheduledMaintenance</a></li><li data-type='method'><a href="NotificationService.html#notifyServiceOutage">notifyServiceOutage</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountDeactivated">notifyVolunteerAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountSuspended">notifyVolunteerAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountUnsuspended">notifyVolunteerAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerNewRequestNearby">notifyVolunteerNewRequestNearby</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerReportUpdate">notifyVolunteerReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestAssigned">notifyVolunteerRequestAssigned</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCancelled">notifyVolunteerRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCompleted">notifyVolunteerRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#sendAdminNotification">sendAdminNotification</a></li><li data-type='method'><a href="NotificationService.html#sendCaregiverNotification">sendCaregiverNotification</a></li><li data-type='method'><a href="NotificationService.html#sendNotification">sendNotification</a></li><li data-type='method'><a href="NotificationService.html#sendVolunteerNotification">sendVolunteerNotification</a></li></ul></li><li><a href="ReportController.html">ReportController</a></li><li><a href="ReportService.html">ReportService</a><ul class='methods'><li data-type='method'><a href="ReportService.html#addEvidence">addEvidence</a></li><li data-type='method'><a href="ReportService.html#beginReview">beginReview</a></li><li data-type='method'><a href="ReportService.html#getAllReportsForAdmin">getAllReportsForAdmin</a></li><li data-type='method'><a href="ReportService.html#getEvidenceUploadMiddleware">getEvidenceUploadMiddleware</a></li><li data-type='method'><a href="ReportService.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="ReportService.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="ReportService.html#submitReport">submitReport</a></li><li data-type='method'><a href="ReportService.html#viewMyReports">viewMyReports</a></li></ul></li><li><a href="ReviewController.html">ReviewController</a></li><li><a href="ReviewService.html">ReviewService</a><ul class='methods'><li data-type='method'><a href="ReviewService.html#editReview">editReview</a></li><li data-type='method'><a href="ReviewService.html#flagReview">flagReview</a></li><li data-type='method'><a href="ReviewService.html#getAllReviewsForAdmin">getAllReviewsForAdmin</a></li><li data-type='method'><a href="ReviewService.html#removeReview">removeReview</a></li><li data-type='method'><a href="ReviewService.html#submitReview">submitReview</a></li><li data-type='method'><a href="ReviewService.html#viewMyReviews">viewMyReviews</a></li><li data-type='method'><a href="ReviewService.html#viewReviewsAboutMe">viewReviewsAboutMe</a></li></ul></li><li><a href="RouteHistoryService.html">RouteHistoryService</a><ul class='methods'><li data-type='method'><a href="RouteHistoryService.html#.deleteRouteHistory">deleteRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteHistory">getRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteStatistics">getRouteStatistics</a></li><li data-type='method'><a href="RouteHistoryService.html#.saveRouteHistory">saveRouteHistory</a></li></ul></li><li><a href="User.html">User</a><ul class='methods'><li data-type='method'><a href="User.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="User.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="User.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="User.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="User.html#isActive">isActive</a></li><li data-type='method'><a href="User.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="User.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="User.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="User.html#.findById">findById</a></li><li data-type='method'><a href="User.html#.getAll">getAll</a></li><li data-type='method'><a href="User.html#.update">update</a></li><li data-type='method'><a href="User.html#.validate">validate</a></li></ul></li><li></li><li></li><li><a href="Volunteer.html">Volunteer</a><ul class='methods'><li data-type='method'><a href="Volunteer.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Volunteer.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Volunteer.html#isActive">isActive</a></li><li data-type='method'><a href="Volunteer.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Volunteer.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Volunteer.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Volunteer.html#.validate">validate</a></li></ul></li><li><a href="VolunteerController.html">VolunteerController</a><ul class='methods'><li data-type='method'><a href="VolunteerController.html#.acceptRequest">acceptRequest</a></li><li data-type='method'><a href="VolunteerController.html#.cancelRequest">cancelRequest</a></li><li data-type='method'><a href="VolunteerController.html#.completeRequest">completeRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getAcceptedRequest">getAcceptedRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getFilteredRequests">getFilteredRequests</a></li><li data-type='method'><a href="VolunteerController.html#.getPendingRequest">getPendingRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="VolunteerController.html#.sendProgressUpdate">sendProgressUpdate</a></li><li data-type='method'><a href="VolunteerController.html#.updateProfile">updateProfile</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="CaregiverServices.html">CaregiverServices</a><ul class='methods'><li data-type='method'><a href="CaregiverServices.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverServices.html#.linkToElderlyByPIN">linkToElderlyByPIN</a></li></ul></li><li><a href="ElderlyServices.html">ElderlyServices</a><ul class='methods'><li data-type='method'><a href="ElderlyServices.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyServices.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="VolunteerServices.html">VolunteerServices</a></li></ul><h3>Global</h3><ul><li><a href="global.html#acceptRequest">acceptRequest</a></li><li><a href="global.html#completeRequest">completeRequest</a></li><li><a href="global.html#deleteProfile">deleteProfile</a></li><li><a href="global.html#getAllUsers">getAllUsers</a></li><li><a href="global.html#getPendingRequests">getPendingRequests</a></li><li><a href="global.html#getProfile">getProfile</a></li><li><a href="global.html#sanitize">sanitize</a></li><li><a href="global.html#updateProfile">updateProfile</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">services/report.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const { supabase, supabaseAdmin } = require('../config/supabase');
+const ReportStatus = require('../domain/enum/ReportStatus');
+const AttachmentParentType = require('../domain/enum/AttachmentParentType');
+const NotificationService = require('./notificationService');
+
+// Local disk storage for uploaded evidence (dev only)
+const uploadPath = path.join(__dirname, './uploads');
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage });
+
+/**
+ * Report Service
+ * Handles report submission, status management, and evidence file uploads
+ * Manages moderation workflow for user reports
+ * 
+ * @class ReportService
+ * @example
+ * const reportService = new ReportService();
+ * const report = await reportService.submitReport({
+ *   reporterUserId: 'user-123',
+ *   reporterRole: 'ELDERLY',
+ *   reportedUserId: 'volunteer-456',
+ *   helpRequestId: 'request-789',
+ *   reason: 'Inappropriate behavior',
+ *   description: 'Details of the incident...'
+ * });
+ */
+class ReportService {
+  /**
+   * Returns Multer middleware for handling evidence file uploads
+   * Configures file upload destination and naming
+   * 
+   * @returns {Function} Multer middleware function
+   * @example
+   * // In route handler
+   * router.post('/report', 
+   *   reportService.getEvidenceUploadMiddleware(),
+   *   async (req, res) => {
+   *     // req.file contains uploaded file info
+   *   }
+   * );
+   */
+  getEvidenceUploadMiddleware() {
+    return upload.single('file');
+  }
+
+  /**
+   * Submits a new report from a user
+   * Creates report record and initial status history entry
+   * Notifies admins about the new report
+   * 
+   * @param {Object} reportData - Report data object
+   * @param {string} reportData.reporterUserId - ID of user submitting the report
+   * @param {string} reportData.reporterRole - Role of the reporter (ELDERLY, VOLUNTEER, CAREGIVER)
+   * @param {string} reportData.reportedUserId - ID of user being reported
+   * @param {string} [reportData.helpRequestId] - Optional ID of related help request
+   * @param {string} reportData.reason - Reason for the report
+   * @param {string} [reportData.description] - Optional detailed description
+   * @returns {Promise&lt;Object>} Created report object
+   * @throws {Error} If report submission fails
+   * 
+   * @example
+   * const report = await reportService.submitReport({
+   *   reporterUserId: 'elderly-123',
+   *   reporterRole: 'ELDERLY',
+   *   reportedUserId: 'volunteer-456',
+   *   helpRequestId: 'request-789',
+   *   reason: 'Inappropriate behavior',
+   *   description: 'Detailed description...'
+   * });
+   */
+  async submitReport({ reporterUserId, reporterRole, reportedUserId, helpRequestId, reason, description }) {
+    // 1. Insert the report itself
+    const { data, error } = await supabase
+      .from('reports')
+      .insert([
+        {
+          reporter_user_id: reporterUserId,
+          reported_user_id: reportedUserId,
+          help_request_id: helpRequestId || null,
+          reason,
+          description: description || null,
+          status: ReportStatus.PENDING,
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    // 2. Insert status history row
+    await supabase.from('report_status_history').insert([
+      {
+        report_id: data.id,
+        from_status: null,
+        to_status: ReportStatus.PENDING,
+        changed_by_user_id: reporterUserId,
+        admin_note: null,
+      },
+    ]);
+
+    // 3. Notify admins that someone submitted a report
+    // We used to query user_profiles to get "reporterName" and a nice role string.
+    // For demo: we avoid any DB lookups that assume user_profiles exists.
+    try {
+      const reporterName = 'User'; // fallback display name
+      const safeRole = reporterRole || 'User'; // fallback role
+      await NotificationService.notifyAdminNewReportSubmitted(
+        reporterName,
+        safeRole,
+        data.id
+      );
+    } catch (notifError) {
+      console.error('Error sending admin report notification:', notifError);
+      // swallow notification failure to keep demo stable
+    }
+
+    return data;
+  }
+
+  /**
+   * Add evidence file attachment to a report
+   * @param {Object} evidenceData - Evidence data
+   * @param {string} evidenceData.reportId - Report ID to attach evidence to
+   * @param {string} evidenceData.uploadedByUserId - User ID uploading the file
+   * @param {File} evidenceData.file - Multer file object
+   * @returns {Promise&lt;Object>} Created attachment object
+   * @throws {Error} If file is missing or attachment creation fails
+   */
+  async addEvidence({ reportId, uploadedByUserId, file }) {
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+
+    const publicUrl = `/api/static/uploads/${file.filename}`; // optionally serve statically via Express
+
+    const { data, error } = await supabase
+      .from('attachments')
+      .insert([
+        {
+          url: publicUrl,
+          content_type: file.mimetype,
+          size_bytes: file.size,
+          parent_type: AttachmentParentType.REPORT,
+          parent_id: reportId,
+          uploaded_by_user_id: uploadedByUserId,
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Begin reviewing a report
+   * Marks report as IN_PROGRESS and prevents other admins from reviewing it
+   * @param {Object} reviewData - Review data
+   * @param {string} reviewData.reportId - Report ID to review
+   * @param {string} reviewData.adminUserId - Admin user ID starting review
+   * @param {string} reviewData.adminRole - Admin role (must be ADMIN)
+   * @returns {Promise&lt;Object>} Updated report object
+   * @throws {Error} If report not found, already in progress (409), or update fails
+   */
+  async beginReview({ reportId, adminUserId, adminRole }) {
+    // 1. Load report
+    const { data: report, error: fetchErr } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+    if (fetchErr) throw fetchErr;
+
+    // 2. Check if already in progress
+    if (report.status === ReportStatus.IN_PROGRESS) {
+      const conflict = new Error('Report already in progress');
+      conflict.statusCode = 409;
+      throw conflict;
+    }
+
+    // 3. Update report status
+    const { data: updated, error } = await supabase
+      .from('reports')
+      .update({ status: ReportStatus.IN_PROGRESS })
+      .eq('id', reportId)
+      .select('*')
+      .single();
+    if (error) throw error;
+
+    // 4. Log history
+    await supabase.from('report_status_history').insert([
+      {
+        report_id: reportId,
+        from_status: report.status,
+        to_status: ReportStatus.IN_PROGRESS,
+        changed_by_user_id: adminUserId,
+        admin_note: null,
+      },
+    ]);
+
+    // 5. Notify the reporter
+    // Before: we queried user_profiles to branch on ELDERLY / CAREGIVER / VOLUNTEER.
+    // Now: we DO NOT query user_profiles at all.
+    // We'll just send a generic update. This is enough for demo.
+    try {
+      await NotificationService.notifyReportUpdate(
+        report.reporter_user_id,
+        reportId,
+        ReportStatus.IN_PROGRESS
+      );
+    } catch (notifError) {
+      console.error('Error sending report update notification:', notifError);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Resolve a report
+   * Marks report as RESOLVED
+   * @param {Object} resolveData - Resolution data
+   * @param {string} resolveData.reportId - Report ID to resolve
+   * @param {string} resolveData.adminUserId - Admin user ID resolving the report
+   * @param {string} resolveData.adminRole - Admin role (must be ADMIN)
+   * @param {string} [resolveData.note] - Resolution note
+   * @returns {Promise&lt;Object>} Updated report object
+   * @throws {Error} If report not found or update fails
+   */
+  async resolveReport({ reportId, adminUserId, adminRole, note }) {
+    // Reuse shared close logic
+    const result = await this.#closeReport({
+      reportId,
+      adminUserId,
+      adminRole,
+      toStatus: ReportStatus.RESOLVED,
+      note,
+    });
+
+    // After resolving, notify other admins.
+    // Before: we tried to read the admin profile to get a pretty name.
+    // Now: no DB call, just "Admin".
+    try {
+      const resolvedBy = 'Admin';
+      await NotificationService.notifyAdminReportResolved(reportId, resolvedBy);
+    } catch (notifError) {
+      console.error('Error sending admin report resolved notification:', notifError);
+    }
+
+    return result;
+  }
+
+  /**
+   * Reject a report
+   * Marks report as REJECTED
+   * @param {Object} rejectData - Rejection data
+   * @param {string} rejectData.reportId - Report ID to reject
+   * @param {string} rejectData.adminUserId - Admin user ID rejecting the report
+   * @param {string} rejectData.adminRole - Admin role (must be ADMIN)
+   * @param {string} [rejectData.note] - Rejection note
+   * @returns {Promise&lt;Object>} Updated report object
+   * @throws {Error} If report not found or update fails
+   */
+  async rejectReport({ reportId, adminUserId, adminRole, note }) {
+    // Reuse shared close logic
+    return this.#closeReport({
+      reportId,
+      adminUserId,
+      adminRole,
+      toStatus: ReportStatus.REJECTED,
+      note,
+    });
+  }
+
+  async #closeReport({ reportId, adminUserId, adminRole, toStatus, note }) {
+    // 1. Load current report
+    const { data: report, error: fetchErr } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+    if (fetchErr) throw fetchErr;
+
+    // 2. Update status
+    const { data: updated, error } = await supabase
+      .from('reports')
+      .update({ status: toStatus })
+      .eq('id', reportId)
+      .select('*')
+      .single();
+    if (error) throw error;
+
+    // 3. Insert into history
+    await supabase.from('report_status_history').insert([
+      {
+        report_id: reportId,
+        from_status: report.status,
+        to_status: toStatus,
+        changed_by_user_id: adminUserId,
+        admin_note: note || null,
+      },
+    ]);
+
+    // 4. Notify the reporter (generic, no user_profiles lookup)
+    try {
+      await NotificationService.notifyReportUpdate(
+        report.reporter_user_id,
+        reportId,
+        toStatus,
+        note
+      );
+    } catch (notifError) {
+      console.error('Error sending report update notification:', notifError);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Get all reports submitted by a user
+   * @param {string} userId - ID of the user (reporter)
+   * @returns {Promise&lt;Array>} Array of report objects submitted by the user
+   * @throws {Error} If database query fails
+   */
+  async viewMyReports(userId) {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('reporter_user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Get all reports with full user details for admin moderation
+   * Includes reporter and reported user profiles, and attachments
+   * @returns {Promise&lt;Array>} Array of report objects with full details
+   * @throws {Error} If database query fails
+   */
+  async getAllReportsForAdmin() {
+    const { data:reports, error } = await supabase
+      .from('reports')
+      .select(`
+        *,
+        reporter:user_profiles!reporter_user_id(*),
+        reported:user_profiles!reported_user_id(*)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+
+    const reportIds = reports.map(r => r.id);
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .in('parent_id', reportIds)
+      .eq('parent_type', 'report');
+
+    // Merge attachments into each report
+    const merged = reports.map(report => ({
+      ...report,
+      attachments: attachments.filter(a => a.parent_id === report.id),
+    }));
+
+    return merged;
+  }
+}
+
+module.exports = new ReportService();</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Nov 01 2025 20:03:33 GMT+0800 (Singapore Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

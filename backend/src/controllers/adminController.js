@@ -91,7 +91,7 @@ class AdminController {
       // Add suspension time remaining for suspended users
       const usersWithSuspensionInfo = result.users.map(user => {
         const userObj = user.toJSON ? user.toJSON() : user;
-        if (userObj.status === 'suspended' && userObj.suspensionEndDate) {
+        if (userObj.status === UserStatus.SUSPENDED && userObj.suspensionEndDate) {
           const suspensionInfo = this.calculateSuspensionTimeRemaining(userObj.suspensionEndDate);
           userObj.suspensionTimeRemaining = suspensionInfo;
         }

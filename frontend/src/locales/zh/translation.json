@@ -19,13 +19,14 @@
     "clear": "清除",
     "submit": "提交",
     "repeat": "重复",
-    "chas": "查斯诊所"
+    "chas": "查斯诊所",
+    "reports": "报告"
   },
   "home": {
     "welcome": "欢迎，{{name}}",
     "howCanWeHelp": "我们今天可以为您做些什么？",
     "totalRequests": "总请求数",
-    "completed": "已完成", 
+    "completed": "已完成",
     "rating": "评分",
     "caregivers": "护理员",
     "quickActions": "快速操作",
@@ -42,7 +43,7 @@
     "manageAccount": "管理您的账户和偏好设置",
     "personalInformation": "个人信息",
     "fullName": "全名",
-    "emailAddress": "电子邮件地址", 
+    "emailAddress": "电子邮件地址",
     "phoneNumber": "电话号码",
     "caregiverLinkingPin": "护理员关联PIN码",
     "sharePinWithCaregivers": "与您的护理员分享此PIN码以关联账户",
@@ -51,7 +52,7 @@
     "accessibilityNeeds": "无障碍需求",
     "wheelchairUser": "轮椅使用者",
     "visualImpairment": "视力障碍",
-    "hearingImpairment": "听力障碍", 
+    "hearingImpairment": "听力障碍",
     "mobilityAssistance": "行动辅助",
     "cognitiveAssistance": "认知辅助",
     "saveSettings": "保存设置"
@@ -64,7 +65,7 @@
     "describeHelpPlaceholder": "详细描述您需要的帮助...",
     "urgencyLevel": "紧急程度",
     "low": "低",
-    "medium": "中", 
+    "medium": "中",
     "high": "高",
     "addPhoto": "添加照片（可选）",
     "submitHelpRequest": "提交求助请求",
@@ -77,7 +78,8 @@
     "call": "通话",
     "message": "消息",
     "reviewVolunteer": "评价志愿者",
-    "requestNewHelp": "请求新的帮助"
+    "requestNewHelp": "请求新的帮助",
+    "cancelRequest": "取消请求"
   },
   "routes": {
     "smartRoutes": "智能路线",
@@ -99,5 +101,10 @@
     "selectBestRoute": "选择最佳路线",
     "selectThisRoute": "选择此路线",
     "searchNewRoute": "搜索新路线"
+  },
+  "reports": {
+    "myReports": "我的报告",
+    "reportsWritten": "你为志愿者撰写的报告",
+    "noReports": "还没有报告"
   }
 }

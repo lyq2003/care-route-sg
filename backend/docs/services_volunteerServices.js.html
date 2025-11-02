@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>services/volunteerServices.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Admin.html">Admin</a><ul class='methods'><li data-type='method'><a href="Admin.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Admin.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Admin.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Admin.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Admin.html#isActive">isActive</a></li><li data-type='method'><a href="Admin.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Admin.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Admin.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Admin.html#.validate">validate</a></li></ul></li><li><a href="AdminController.html">AdminController</a><ul class='methods'><li data-type='method'><a href="AdminController.html#announceServiceOutage">announceServiceOutage</a></li><li data-type='method'><a href="AdminController.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminController.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminController.html#getAllReports">getAllReports</a></li><li data-type='method'><a href="AdminController.html#getAllReviews">getAllReviews</a></li><li data-type='method'><a href="AdminController.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminController.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminController.html#getUserById">getUserById</a></li><li data-type='method'><a href="AdminController.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminController.html#reassignVolunteer">reassignVolunteer</a></li><li data-type='method'><a href="AdminController.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="AdminController.html#removeReview">removeReview</a></li><li data-type='method'><a href="AdminController.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="AdminController.html#startReportReview">startReportReview</a></li><li data-type='method'><a href="AdminController.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminController.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="AdminService.html">AdminService</a><ul class='methods'><li data-type='method'><a href="AdminService.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminService.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminService.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminService.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminService.html#logAdminAction">logAdminAction</a></li><li data-type='method'><a href="AdminService.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminService.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminService.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="Caregiver.html">Caregiver</a><ul class='methods'><li data-type='method'><a href="Caregiver.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Caregiver.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Caregiver.html#isActive">isActive</a></li><li data-type='method'><a href="Caregiver.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Caregiver.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Caregiver.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Caregiver.html#.validate">validate</a></li></ul></li><li><a href="CaregiverController.html">CaregiverController</a><ul class='methods'><li data-type='method'><a href="CaregiverController.html#.getActiveTrips">getActiveTrips</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocation">getElderlyLocation</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocationHistory">getElderlyLocationHistory</a></li><li data-type='method'><a href="CaregiverController.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverController.html#.linkByPIN">linkByPIN</a></li><li data-type='method'><a href="CaregiverController.html#.me">me</a></li><li data-type='method'><a href="CaregiverController.html#.requestHistory">requestHistory</a></li><li data-type='method'><a href="CaregiverController.html#.submitReport">submitReport</a></li><li data-type='method'><a href="CaregiverController.html#.updateElderlyProfile">updateElderlyProfile</a></li><li data-type='method'><a href="CaregiverController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="Elderly.html">Elderly</a><ul class='methods'><li data-type='method'><a href="Elderly.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Elderly.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Elderly.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Elderly.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Elderly.html#canGenerateLinkPIN">canGenerateLinkPIN</a></li><li data-type='method'><a href="Elderly.html#generateNewPIN">generateNewPIN</a></li><li data-type='method'><a href="Elderly.html#isActive">isActive</a></li><li data-type='method'><a href="Elderly.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Elderly.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Elderly.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Elderly.html#.validate">validate</a></li></ul></li><li><a href="ElderlyController.html">ElderlyController</a><ul class='methods'><li data-type='method'><a href="ElderlyController.html#.completeTripTracking">completeTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="ElderlyController.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.startTripTracking">startTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.updateLanguagePreference">updateLanguagePreference</a></li><li data-type='method'><a href="ElderlyController.html#.updateLocation">updateLocation</a></li><li data-type='method'><a href="ElderlyController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="HelpRequest.html">HelpRequest</a><ul class='methods'><li data-type='method'><a href="HelpRequest.html#.createRequest">createRequest</a></li><li data-type='method'><a href="HelpRequest.html#.getCompletedHelpRequestswithVolunteer">getCompletedHelpRequestswithVolunteer</a></li></ul></li><li><a href="NotificationService.html">NotificationService</a><ul class='methods'><li data-type='method'><a href="NotificationService.html#broadcastToAllUsers">broadcastToAllUsers</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountCreated">notifyAccountCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountDeactivated">notifyAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountSuspended">notifyAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountUnsuspended">notifyAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewReportSubmitted">notifyAdminNewReportSubmitted</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewUserRegistered">notifyAdminNewUserRegistered</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReportResolved">notifyAdminReportResolved</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReviewFlagged">notifyAdminReviewFlagged</a></li><li data-type='method'><a href="NotificationService.html#notifyAllAdmins">notifyAllAdmins</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountDeactivated">notifyCaregiverAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountSuspended">notifyCaregiverAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountUnsuspended">notifyCaregiverAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverElderlyLinked">notifyCaregiverElderlyLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestCompleted">notifyCaregiverHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestInitiated">notifyCaregiverHelpRequestInitiated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestMatched">notifyCaregiverHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverLinked">notifyCaregiverLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverProgressUpdate">notifyCaregiverProgressUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverReportUpdate">notifyCaregiverReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyFeatureUpdate">notifyFeatureUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCancelled">notifyHelpRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCompleted">notifyHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCreated">notifyHelpRequestCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestMatched">notifyHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyReportUpdate">notifyReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyReviewReminder">notifyReviewReminder</a></li><li data-type='method'><a href="NotificationService.html#notifyScheduledMaintenance">notifyScheduledMaintenance</a></li><li data-type='method'><a href="NotificationService.html#notifyServiceOutage">notifyServiceOutage</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountDeactivated">notifyVolunteerAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountSuspended">notifyVolunteerAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountUnsuspended">notifyVolunteerAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerNewRequestNearby">notifyVolunteerNewRequestNearby</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerReportUpdate">notifyVolunteerReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestAssigned">notifyVolunteerRequestAssigned</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCancelled">notifyVolunteerRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCompleted">notifyVolunteerRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#sendAdminNotification">sendAdminNotification</a></li><li data-type='method'><a href="NotificationService.html#sendCaregiverNotification">sendCaregiverNotification</a></li><li data-type='method'><a href="NotificationService.html#sendNotification">sendNotification</a></li><li data-type='method'><a href="NotificationService.html#sendVolunteerNotification">sendVolunteerNotification</a></li></ul></li><li><a href="ReportController.html">ReportController</a></li><li><a href="ReportService.html">ReportService</a><ul class='methods'><li data-type='method'><a href="ReportService.html#addEvidence">addEvidence</a></li><li data-type='method'><a href="ReportService.html#beginReview">beginReview</a></li><li data-type='method'><a href="ReportService.html#getAllReportsForAdmin">getAllReportsForAdmin</a></li><li data-type='method'><a href="ReportService.html#getEvidenceUploadMiddleware">getEvidenceUploadMiddleware</a></li><li data-type='method'><a href="ReportService.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="ReportService.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="ReportService.html#submitReport">submitReport</a></li><li data-type='method'><a href="ReportService.html#viewMyReports">viewMyReports</a></li></ul></li><li><a href="ReviewController.html">ReviewController</a></li><li><a href="ReviewService.html">ReviewService</a><ul class='methods'><li data-type='method'><a href="ReviewService.html#editReview">editReview</a></li><li data-type='method'><a href="ReviewService.html#flagReview">flagReview</a></li><li data-type='method'><a href="ReviewService.html#getAllReviewsForAdmin">getAllReviewsForAdmin</a></li><li data-type='method'><a href="ReviewService.html#removeReview">removeReview</a></li><li data-type='method'><a href="ReviewService.html#submitReview">submitReview</a></li><li data-type='method'><a href="ReviewService.html#viewMyReviews">viewMyReviews</a></li><li data-type='method'><a href="ReviewService.html#viewReviewsAboutMe">viewReviewsAboutMe</a></li></ul></li><li><a href="RouteHistoryService.html">RouteHistoryService</a><ul class='methods'><li data-type='method'><a href="RouteHistoryService.html#.deleteRouteHistory">deleteRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteHistory">getRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteStatistics">getRouteStatistics</a></li><li data-type='method'><a href="RouteHistoryService.html#.saveRouteHistory">saveRouteHistory</a></li></ul></li><li><a href="User.html">User</a><ul class='methods'><li data-type='method'><a href="User.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="User.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="User.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="User.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="User.html#isActive">isActive</a></li><li data-type='method'><a href="User.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="User.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="User.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="User.html#.findById">findById</a></li><li data-type='method'><a href="User.html#.getAll">getAll</a></li><li data-type='method'><a href="User.html#.update">update</a></li><li data-type='method'><a href="User.html#.validate">validate</a></li></ul></li><li></li><li></li><li><a href="Volunteer.html">Volunteer</a><ul class='methods'><li data-type='method'><a href="Volunteer.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Volunteer.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Volunteer.html#isActive">isActive</a></li><li data-type='method'><a href="Volunteer.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Volunteer.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Volunteer.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Volunteer.html#.validate">validate</a></li></ul></li><li><a href="VolunteerController.html">VolunteerController</a><ul class='methods'><li data-type='method'><a href="VolunteerController.html#.acceptRequest">acceptRequest</a></li><li data-type='method'><a href="VolunteerController.html#.cancelRequest">cancelRequest</a></li><li data-type='method'><a href="VolunteerController.html#.completeRequest">completeRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getAcceptedRequest">getAcceptedRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getFilteredRequests">getFilteredRequests</a></li><li data-type='method'><a href="VolunteerController.html#.getPendingRequest">getPendingRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="VolunteerController.html#.sendProgressUpdate">sendProgressUpdate</a></li><li data-type='method'><a href="VolunteerController.html#.updateProfile">updateProfile</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="CaregiverServices.html">CaregiverServices</a><ul class='methods'><li data-type='method'><a href="CaregiverServices.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverServices.html#.linkToElderlyByPIN">linkToElderlyByPIN</a></li></ul></li><li><a href="ElderlyServices.html">ElderlyServices</a><ul class='methods'><li data-type='method'><a href="ElderlyServices.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyServices.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="VolunteerServices.html">VolunteerServices</a></li></ul><h3>Global</h3><ul><li><a href="global.html#acceptRequest">acceptRequest</a></li><li><a href="global.html#completeRequest">completeRequest</a></li><li><a href="global.html#deleteProfile">deleteProfile</a></li><li><a href="global.html#getAllUsers">getAllUsers</a></li><li><a href="global.html#getPendingRequests">getPendingRequests</a></li><li><a href="global.html#getProfile">getProfile</a></li><li><a href="global.html#sanitize">sanitize</a></li><li><a href="global.html#updateProfile">updateProfile</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">services/volunteerServices.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const express = require('express');
+const { supabase, supabaseAdmin } = require('../config/supabase');
+const router= express.Router();
+const NotificationService = require('./notificationService');
+
+/**
+ * Volunteer Services
+ * Service layer for volunteer-specific operations
+ * Handles help request management: viewing, accepting, cancelling, and completing requests
+ * 
+ * @namespace VolunteerServices
+ */
+
+/**
+ * Get pending help requests near volunteer's location
+ * Uses database function to find requests within 10km radius
+ * 
+ * @param {number} latitude - Volunteer's latitude coordinate
+ * @param {number} longitude - Volunteer's longitude coordinate
+ * @param {number} [limit] - Maximum number of requests to return
+ * @param {number} [offset] - Number of requests to skip (for pagination)
+ * @returns {Promise&lt;Array>} Array of pending help requests
+ * @throws {Error} If database query fails
+ * 
+ * @example
+ * const requests = await VolunteerServices.getPendingRequests(1.3521, 103.8198, 10, 0);
+ */
+async function getPendingRequests(latitude,longitude,limit,offset){
+    const { data, error } = await supabaseAdmin.rpc('get_pending_requests_nearby', {
+        lat: latitude,
+        lon: longitude,
+        radius_meters: 10000,
+        limit_count: limit,
+        offset_count: offset
+    });
+    if(error) throw error;
+    return data;
+}
+
+// edit the filters.distance after mallvin change table 
+
+async function getFilteredRequests(latitude,longitude,filters,limit,offset){
+    //console.log("filters json are: ",filters, "latitude:", latitude, "longitude:",longitude);
+    const { data, error } = await supabaseAdmin.rpc("get_pending_requests_nearby", {
+        lat: latitude,
+        lon: longitude,
+        radius_meters: filters.distance,
+        limit_count: limit,
+        offset_count: offset,
+    });
+    
+    if(error) throw error;
+    let filteredData = data;
+
+    // Apply urgency filter (if not 'all')
+    if (filters.urgency &amp;&amp; filters.urgency !== "all") {
+        filteredData = filteredData.filter((item) => item.urgency === filters.urgency);
+    }
+
+    return filteredData;    
+}
+
+/**
+ * Accept a help request
+ * Assigns volunteer to the request and updates status to ACCEPTED (status 2)
+ * 
+ * @param {string} postId - ID of the help request
+ * @param {string} volunteerId - ID of the volunteer accepting the request
+ * @returns {Promise&lt;Object>} Updated help request object
+ * @throws {Error} If request not found or update fails
+ * 
+ * @example
+ * const request = await VolunteerServices.acceptRequest('request-123', 'volunteer-456');
+ */
+async function acceptRequest(postId,volunteerId){
+    const {data,error}= await supabaseAdmin
+    .from("help_request")
+    .update({assignedVolunteerId: volunteerId, helpRequestStatus: "2" })
+    .eq('id',postId)
+    .select()
+    .single();
+
+    if(error) throw error;
+    return data;
+}
+
+async function cancelRequest(postId,volunteerId){
+    const {data,error}= await supabaseAdmin
+    .from("help_request")
+    .update({assignedVolunteerId: null, helpRequestStatus: "1" })
+    .eq('id',postId)
+    .eq('assignedVolunteerId',volunteerId)
+    .select()
+    .single();
+
+    if(error) throw error;
+    return data;
+}
+
+async function getAcceptedRequest(latitude,longitude,volunteerId){
+    const { data, error } = await supabaseAdmin.rpc("get_accepted_requests",{
+        lat: latitude,
+        lon: longitude,
+        volunteer_id: volunteerId
+    })
+    
+    if(error) throw error;
+
+    if (!data || data.length === 0) {
+        return null;
+    }
+    return data;
+}
+
+/**
+ * Complete a help request
+ * Updates request status to COMPLETED (status 4) and sends notifications
+ * Notifies elderly user, linked caregivers, and volunteer about completion
+ * 
+ * @param {string} postId - ID of the help request
+ * @param {string} volunteerId - ID of the volunteer completing the request
+ * @param {string} elderlyId - ID of the elderly user who requested help
+ * @returns {Promise&lt;Object>} Updated help request object
+ * @throws {Error} If request not found or update fails
+ * 
+ * @example
+ * const request = await VolunteerServices.completeRequest('request-123', 'volunteer-456', 'elderly-789');
+ */
+async function completeRequest(postId, volunteerId, elderlyId) {
+    // Update request status to completed
+    const {data, error} = await supabaseAdmin
+        .from("help_request")
+        .update({helpRequestStatus: "4"}) // 4 = COMPLETED
+        .eq('id', postId)
+        .eq('assignedVolunteerId', volunteerId)
+        .select()
+        .single();
+
+    if(error) throw error;
+
+    // Get volunteer name for notification
+    const { data: volunteerProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('username, full_name')
+        .eq('user_id', volunteerId)
+        .single();
+    
+    const volunteerName = volunteerProfile?.full_name || volunteerProfile?.username || 'Your volunteer';
+
+    // Send completion notification
+    try {
+        await NotificationService.notifyHelpRequestCompleted(elderlyId, postId, volunteerName);
+        
+        // Send review reminder after a short delay (or immediately)
+        await NotificationService.notifyReviewReminder(elderlyId, postId, volunteerName);
+
+        // Also notify caregivers linked to this elderly user
+        const { data: elderlyProfile } = await supabaseAdmin
+            .from('user_profiles')
+            .select('username, full_name')
+            .eq('user_id', elderlyId)
+            .single();
+        
+        const elderlyName = elderlyProfile?.full_name || elderlyProfile?.username || 'Elderly user';
+
+        // Get all linked caregivers
+        const { data: caregiverLinks } = await supabaseAdmin
+            .from('caregiver_link')
+            .select('caregiver_user_id')
+            .eq('elderly_user_id', elderlyId);
+
+        // Notify each caregiver
+        if (caregiverLinks &amp;&amp; caregiverLinks.length > 0) {
+            for (const link of caregiverLinks) {
+                await NotificationService.notifyCaregiverHelpRequestCompleted(
+                    link.caregiver_user_id,
+                    elderlyName,
+                    postId
+                );
+            }
+        }
+
+        // Notify the volunteer about successful completion
+        await NotificationService.notifyVolunteerRequestCompleted(
+            volunteerId,
+            elderlyName,
+            postId
+        );
+    } catch (notifError) {
+        console.error('Error sending completion notifications:', notifError);
+        // Don't fail the complete if notification fails
+    }
+
+    return data;
+}
+
+
+module.exports = {
+    getPendingRequests,
+    getFilteredRequests,
+    acceptRequest,
+    getAcceptedRequest,
+    cancelRequest,
+    completeRequest,
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Nov 01 2025 20:03:33 GMT+0800 (Singapore Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

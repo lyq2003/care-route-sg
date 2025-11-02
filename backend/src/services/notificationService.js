@@ -107,12 +107,15 @@ class NotificationService {
   /**
    * 4.1. Help request matched - Volunteer accepted request
    */
-  async notifyHelpRequestMatched(elderlyId, volunteerId, volunteerName) {
+  async notifyHelpRequestMatched(elderlyId, volunteerId, volunteerName, volunteerPhoneNumber, averageRating, helpRequestId) {
     const message = `A volunteer (${volunteerName}) has accepted your help request.`;
     await this.sendNotification(elderlyId, message, {
       type: 'HELP_REQUEST_MATCHED',
       volunteerId,
-      volunteerName
+      volunteerName,
+      volunteerPhoneNumber,
+      averageRating,
+      helpRequestId
     });
   }
 
