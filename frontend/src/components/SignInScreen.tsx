@@ -17,6 +17,7 @@ export default function SignInScreen() {
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [error,setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const onBack = () => {
     navigate(`/WelcomeScreen`);
@@ -25,7 +26,13 @@ export default function SignInScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Add loading state to prevent multiple submissions
+    setLoading(true);
+    
     try{
+      console.log('Attempting login with:', { email: formData.email });
+      
       // Logic for checking with backend to see if password is correct
       const response = await axiosInstance.post("/auth/login",
       {
@@ -34,6 +41,8 @@ export default function SignInScreen() {
       },
       { withCredentials: true }
       );
+
+      console.log('Login response:', response.data);
 
       // Handle the redirect response
       if (response.data.redirectUrl) {
@@ -44,7 +53,40 @@ export default function SignInScreen() {
       }
     } catch (err: any) {
       console.error("Login failed:", err);
-      setError(err.response?.data?.message || "Failed to login, Please try again.");
+      console.error("Error response:", err.response?.data);
+      
+      // Handle different types of error responses from backend
+      let errorMessage = "Failed to login, Please try again.";
+      
+      if (err.response?.data) {
+        // Check for structured error response (suspension/ban messages)
+        if (err.response.data.error && err.response.data.message) {
+          // Structured error with title and message
+          errorMessage = `${err.response.data.error}: ${err.response.data.message}`;
+          
+          // Add additional details if available
+          if (err.response.data.details) {
+            const details = err.response.data.details;
+            if (details.daysRemaining) {
+              errorMessage += ` (${details.daysRemaining} days remaining)`;
+            }
+            if (details.reason) {
+              errorMessage += ` Reason: ${details.reason}`;
+            }
+          }
+        } else if (err.response.data.error) {
+          // Simple error message
+          errorMessage = err.response.data.error;
+        } else if (err.response.data.message) {
+          // Fallback to message field
+          errorMessage = err.response.data.message;
+        }
+      }
+      
+      console.log('Setting error message:', errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,13 +164,55 @@ export default function SignInScreen() {
             </div>
 
             {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm font-medium">{error}</p>
+              <div className={`mt-4 p-6 rounded-lg border-2 ${
+                error.includes('Suspended') || error.includes('Deactivated') || error.includes('suspended') || error.includes('banned') || error.includes('deactivated')
+                  ? 'bg-red-50 border-red-300 shadow-lg' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    {(error.includes('Suspended') || error.includes('suspended')) && (
+                      <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    {(error.includes('Deactivated') || error.includes('banned') || error.includes('deactivated')) && (
+                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    {!error.includes('Suspended') && !error.includes('Deactivated') && !error.includes('suspended') && !error.includes('banned') && !error.includes('deactivated') && (
+                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium ${
+                      error.includes('Suspended') || error.includes('Deactivated') || error.includes('suspended') || error.includes('banned') || error.includes('deactivated')
+                        ? 'text-red-700 text-base' 
+                        : 'text-red-600 text-sm'
+                    }`}>
+                      {error}
+                    </p>
+                    {(error.includes('suspended') || error.includes('banned') || error.includes('deactivated') || error.includes('Suspended') || error.includes('Deactivated')) && (
+                      <p className="text-red-600 text-sm mt-2">
+                        If you believe this is an error, please contact our support team.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
-            <Button type="submit" size="xl" className="w-full mt-8">
-              Sign In
+            <Button type="submit" size="xl" className="w-full mt-8" disabled={loading}>
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 

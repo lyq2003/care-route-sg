@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>controllers/elderlyController.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Admin.html">Admin</a><ul class='methods'><li data-type='method'><a href="Admin.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Admin.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Admin.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Admin.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Admin.html#isActive">isActive</a></li><li data-type='method'><a href="Admin.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Admin.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Admin.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Admin.html#.validate">validate</a></li></ul></li><li><a href="AdminController.html">AdminController</a><ul class='methods'><li data-type='method'><a href="AdminController.html#announceServiceOutage">announceServiceOutage</a></li><li data-type='method'><a href="AdminController.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminController.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminController.html#getAllReports">getAllReports</a></li><li data-type='method'><a href="AdminController.html#getAllReviews">getAllReviews</a></li><li data-type='method'><a href="AdminController.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminController.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminController.html#getUserById">getUserById</a></li><li data-type='method'><a href="AdminController.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminController.html#reassignVolunteer">reassignVolunteer</a></li><li data-type='method'><a href="AdminController.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="AdminController.html#removeReview">removeReview</a></li><li data-type='method'><a href="AdminController.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="AdminController.html#startReportReview">startReportReview</a></li><li data-type='method'><a href="AdminController.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminController.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="AdminService.html">AdminService</a><ul class='methods'><li data-type='method'><a href="AdminService.html#deactivateUser">deactivateUser</a></li><li data-type='method'><a href="AdminService.html#getAdminLogs">getAdminLogs</a></li><li data-type='method'><a href="AdminService.html#getAllUsers">getAllUsers</a></li><li data-type='method'><a href="AdminService.html#getDashboardStats">getDashboardStats</a></li><li data-type='method'><a href="AdminService.html#logAdminAction">logAdminAction</a></li><li data-type='method'><a href="AdminService.html#reactivateUser">reactivateUser</a></li><li data-type='method'><a href="AdminService.html#suspendUser">suspendUser</a></li><li data-type='method'><a href="AdminService.html#unsuspendUser">unsuspendUser</a></li></ul></li><li><a href="Caregiver.html">Caregiver</a><ul class='methods'><li data-type='method'><a href="Caregiver.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Caregiver.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Caregiver.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Caregiver.html#isActive">isActive</a></li><li data-type='method'><a href="Caregiver.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Caregiver.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Caregiver.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Caregiver.html#.validate">validate</a></li></ul></li><li><a href="CaregiverController.html">CaregiverController</a><ul class='methods'><li data-type='method'><a href="CaregiverController.html#.getActiveTrips">getActiveTrips</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocation">getElderlyLocation</a></li><li data-type='method'><a href="CaregiverController.html#.getElderlyLocationHistory">getElderlyLocationHistory</a></li><li data-type='method'><a href="CaregiverController.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverController.html#.linkByPIN">linkByPIN</a></li><li data-type='method'><a href="CaregiverController.html#.me">me</a></li><li data-type='method'><a href="CaregiverController.html#.requestHistory">requestHistory</a></li><li data-type='method'><a href="CaregiverController.html#.submitReport">submitReport</a></li><li data-type='method'><a href="CaregiverController.html#.updateElderlyProfile">updateElderlyProfile</a></li><li data-type='method'><a href="CaregiverController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="Elderly.html">Elderly</a><ul class='methods'><li data-type='method'><a href="Elderly.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Elderly.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Elderly.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Elderly.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Elderly.html#canGenerateLinkPIN">canGenerateLinkPIN</a></li><li data-type='method'><a href="Elderly.html#generateNewPIN">generateNewPIN</a></li><li data-type='method'><a href="Elderly.html#isActive">isActive</a></li><li data-type='method'><a href="Elderly.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Elderly.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Elderly.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Elderly.html#.validate">validate</a></li></ul></li><li><a href="ElderlyController.html">ElderlyController</a><ul class='methods'><li data-type='method'><a href="ElderlyController.html#.completeTripTracking">completeTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyController.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="ElderlyController.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyController.html#.startTripTracking">startTripTracking</a></li><li data-type='method'><a href="ElderlyController.html#.updateLanguagePreference">updateLanguagePreference</a></li><li data-type='method'><a href="ElderlyController.html#.updateLocation">updateLocation</a></li><li data-type='method'><a href="ElderlyController.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="HelpRequest.html">HelpRequest</a><ul class='methods'><li data-type='method'><a href="HelpRequest.html#.createRequest">createRequest</a></li><li data-type='method'><a href="HelpRequest.html#.getCompletedHelpRequestswithVolunteer">getCompletedHelpRequestswithVolunteer</a></li></ul></li><li><a href="NotificationService.html">NotificationService</a><ul class='methods'><li data-type='method'><a href="NotificationService.html#broadcastToAllUsers">broadcastToAllUsers</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountCreated">notifyAccountCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountDeactivated">notifyAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountSuspended">notifyAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAccountUnsuspended">notifyAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewReportSubmitted">notifyAdminNewReportSubmitted</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminNewUserRegistered">notifyAdminNewUserRegistered</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReportResolved">notifyAdminReportResolved</a></li><li data-type='method'><a href="NotificationService.html#notifyAdminReviewFlagged">notifyAdminReviewFlagged</a></li><li data-type='method'><a href="NotificationService.html#notifyAllAdmins">notifyAllAdmins</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountDeactivated">notifyCaregiverAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountSuspended">notifyCaregiverAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverAccountUnsuspended">notifyCaregiverAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverElderlyLinked">notifyCaregiverElderlyLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestCompleted">notifyCaregiverHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestInitiated">notifyCaregiverHelpRequestInitiated</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverHelpRequestMatched">notifyCaregiverHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverLinked">notifyCaregiverLinked</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverProgressUpdate">notifyCaregiverProgressUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyCaregiverReportUpdate">notifyCaregiverReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyFeatureUpdate">notifyFeatureUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCancelled">notifyHelpRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCompleted">notifyHelpRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestCreated">notifyHelpRequestCreated</a></li><li data-type='method'><a href="NotificationService.html#notifyHelpRequestMatched">notifyHelpRequestMatched</a></li><li data-type='method'><a href="NotificationService.html#notifyReportUpdate">notifyReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyReviewReminder">notifyReviewReminder</a></li><li data-type='method'><a href="NotificationService.html#notifyScheduledMaintenance">notifyScheduledMaintenance</a></li><li data-type='method'><a href="NotificationService.html#notifyServiceOutage">notifyServiceOutage</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountDeactivated">notifyVolunteerAccountDeactivated</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountSuspended">notifyVolunteerAccountSuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerAccountUnsuspended">notifyVolunteerAccountUnsuspended</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerNewRequestNearby">notifyVolunteerNewRequestNearby</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerReportUpdate">notifyVolunteerReportUpdate</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestAssigned">notifyVolunteerRequestAssigned</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCancelled">notifyVolunteerRequestCancelled</a></li><li data-type='method'><a href="NotificationService.html#notifyVolunteerRequestCompleted">notifyVolunteerRequestCompleted</a></li><li data-type='method'><a href="NotificationService.html#sendAdminNotification">sendAdminNotification</a></li><li data-type='method'><a href="NotificationService.html#sendCaregiverNotification">sendCaregiverNotification</a></li><li data-type='method'><a href="NotificationService.html#sendNotification">sendNotification</a></li><li data-type='method'><a href="NotificationService.html#sendVolunteerNotification">sendVolunteerNotification</a></li></ul></li><li><a href="ReportController.html">ReportController</a></li><li><a href="ReportService.html">ReportService</a><ul class='methods'><li data-type='method'><a href="ReportService.html#addEvidence">addEvidence</a></li><li data-type='method'><a href="ReportService.html#beginReview">beginReview</a></li><li data-type='method'><a href="ReportService.html#getAllReportsForAdmin">getAllReportsForAdmin</a></li><li data-type='method'><a href="ReportService.html#getEvidenceUploadMiddleware">getEvidenceUploadMiddleware</a></li><li data-type='method'><a href="ReportService.html#rejectReport">rejectReport</a></li><li data-type='method'><a href="ReportService.html#resolveReport">resolveReport</a></li><li data-type='method'><a href="ReportService.html#submitReport">submitReport</a></li><li data-type='method'><a href="ReportService.html#viewMyReports">viewMyReports</a></li></ul></li><li><a href="ReviewController.html">ReviewController</a></li><li><a href="ReviewService.html">ReviewService</a><ul class='methods'><li data-type='method'><a href="ReviewService.html#editReview">editReview</a></li><li data-type='method'><a href="ReviewService.html#flagReview">flagReview</a></li><li data-type='method'><a href="ReviewService.html#getAllReviewsForAdmin">getAllReviewsForAdmin</a></li><li data-type='method'><a href="ReviewService.html#removeReview">removeReview</a></li><li data-type='method'><a href="ReviewService.html#submitReview">submitReview</a></li><li data-type='method'><a href="ReviewService.html#viewMyReviews">viewMyReviews</a></li><li data-type='method'><a href="ReviewService.html#viewReviewsAboutMe">viewReviewsAboutMe</a></li></ul></li><li><a href="RouteHistoryService.html">RouteHistoryService</a><ul class='methods'><li data-type='method'><a href="RouteHistoryService.html#.deleteRouteHistory">deleteRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteHistory">getRouteHistory</a></li><li data-type='method'><a href="RouteHistoryService.html#.getRouteStatistics">getRouteStatistics</a></li><li data-type='method'><a href="RouteHistoryService.html#.saveRouteHistory">saveRouteHistory</a></li></ul></li><li><a href="User.html">User</a><ul class='methods'><li data-type='method'><a href="User.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="User.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="User.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="User.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="User.html#isActive">isActive</a></li><li data-type='method'><a href="User.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="User.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="User.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="User.html#.findById">findById</a></li><li data-type='method'><a href="User.html#.getAll">getAll</a></li><li data-type='method'><a href="User.html#.update">update</a></li><li data-type='method'><a href="User.html#.validate">validate</a></li></ul></li><li></li><li></li><li><a href="Volunteer.html">Volunteer</a><ul class='methods'><li data-type='method'><a href="Volunteer.html#canBeDeactivated">canBeDeactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeReactivated">canBeReactivated</a></li><li data-type='method'><a href="Volunteer.html#canBeSuspended">canBeSuspended</a></li><li data-type='method'><a href="Volunteer.html#canBeUnsuspended">canBeUnsuspended</a></li><li data-type='method'><a href="Volunteer.html#isActive">isActive</a></li><li data-type='method'><a href="Volunteer.html#isDeactivated">isDeactivated</a></li><li data-type='method'><a href="Volunteer.html#isManageableByAdmin">isManageableByAdmin</a></li><li data-type='method'><a href="Volunteer.html#isSuspended">isSuspended</a></li><li data-type='method'><a href="Volunteer.html#.validate">validate</a></li></ul></li><li><a href="VolunteerController.html">VolunteerController</a><ul class='methods'><li data-type='method'><a href="VolunteerController.html#.acceptRequest">acceptRequest</a></li><li data-type='method'><a href="VolunteerController.html#.cancelRequest">cancelRequest</a></li><li data-type='method'><a href="VolunteerController.html#.completeRequest">completeRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getAcceptedRequest">getAcceptedRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getFilteredRequests">getFilteredRequests</a></li><li data-type='method'><a href="VolunteerController.html#.getPendingRequest">getPendingRequest</a></li><li data-type='method'><a href="VolunteerController.html#.getProfile">getProfile</a></li><li data-type='method'><a href="VolunteerController.html#.sendProgressUpdate">sendProgressUpdate</a></li><li data-type='method'><a href="VolunteerController.html#.updateProfile">updateProfile</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="CaregiverServices.html">CaregiverServices</a><ul class='methods'><li data-type='method'><a href="CaregiverServices.html#.getLinkedElderly">getLinkedElderly</a></li><li data-type='method'><a href="CaregiverServices.html#.linkToElderlyByPIN">linkToElderlyByPIN</a></li></ul></li><li><a href="ElderlyServices.html">ElderlyServices</a><ul class='methods'><li data-type='method'><a href="ElderlyServices.html#.getLinkedCaregivers">getLinkedCaregivers</a></li><li data-type='method'><a href="ElderlyServices.html#.getLinkingPIN">getLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.regenerateLinkingPIN">regenerateLinkingPIN</a></li><li data-type='method'><a href="ElderlyServices.html#.updateProfile">updateProfile</a></li></ul></li><li><a href="VolunteerServices.html">VolunteerServices</a></li></ul><h3>Global</h3><ul><li><a href="global.html#acceptRequest">acceptRequest</a></li><li><a href="global.html#completeRequest">completeRequest</a></li><li><a href="global.html#deleteProfile">deleteProfile</a></li><li><a href="global.html#getAllUsers">getAllUsers</a></li><li><a href="global.html#getPendingRequests">getPendingRequests</a></li><li><a href="global.html#getProfile">getProfile</a></li><li><a href="global.html#sanitize">sanitize</a></li><li><a href="global.html#updateProfile">updateProfile</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">controllers/elderlyController.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const Elderly = require('../domain/elderly');
+const UserService = require('../services/user');
+const ElderlyServices = require('../services/elderly');
+const NotificationService = require('../services/notificationService');
+const { supabase } = require('../config/supabase');
+const { getReceiverSocketId, io } = require('../middleware/socket');
+
+/**
+ * Elderly Controller
+ * Handles HTTP requests for elderly user operations
+ * Provides endpoints for profile management, linking PINs, location tracking, and caregiver management
+ * All methods require elderly user authentication
+ * 
+ * @class ElderlyController
+ * @example
+ * // Used in routes: router.get('/profile', ElderlyController.getProfile);
+ */
+class ElderlyController {
+  /**
+   * Get elderly user profile
+   * @route GET /api/elderly/profile
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - User profile data
+   * @returns {Object} 404 - User not found
+   * @returns {Object} 500 - Server error
+   */
+  static async getProfile(req, res) {
+    try {
+      const elderly = await UserService.findById(req.user.id);
+      if (!elderly) return res.status(404).json({ error: 'Not found' });
+      res.json(elderly);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Update elderly user profile
+   * @route PUT /api/elderly/profile
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Profile updates
+   * @param {string} [req.body.mobilityPreference] - Mobility preference setting
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Updated profile data
+   * @returns {Object} 500 - Server error
+   */
+  static async updateProfile(req, res) {
+    try {
+      const { mobilityPreference } = req.body;
+      const updated = await UserService.update(req.user.id, { mobilityPreference });
+      res.json({ message: 'Profile updated', updated });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Update language preference for elderly user
+   * @route PUT /api/elderly/language
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Language preference data
+   * @param {string} req.body.language - Language code (en, zh, ms, ta)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Success message with updated language
+   * @returns {Object} 400 - Invalid language code or missing language
+   * @returns {Object} 500 - Server error
+   */
+  static async updateLanguagePreference(req, res) {
+    try {
+      const { language } = req.body;
+      
+      if (!language) {
+        return res.status(400).json({ error: 'Language is required' });
+      }
+
+      // Validate language code
+      const validLanguages = ['en', 'zh', 'ms', 'ta'];
+      if (!validLanguages.includes(language)) {
+        return res.status(400).json({ error: 'Invalid language code' });
+      }
+
+      // Update language preference in user profile
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          language_preference: language
+        })
+        .eq('user_id', req.user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating language preference:', error);
+        return res.status(500).json({ error: 'Failed to update language preference' });
+      }
+
+      res.json({ 
+        message: 'Language preference updated successfully', 
+        language: language,
+        profile: data
+      });
+    } catch (err) {
+      console.error('Update language preference error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Get linking PIN for elderly user (generates one if it doesn't exist)
+   * @route GET /api/elderly/linking-pin
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Linking PIN and instructions
+   * @returns {Object} 500 - Server error
+   */
+  static async getLinkingPIN(req, res) {
+    try {
+      const pin = await ElderlyServices.getLinkingPIN(req.user.id);
+      res.json({ 
+        message: 'Linking PIN retrieved successfully', 
+        pin,
+        instructions: 'Share this 6-digit PIN with your caregiver to link your accounts.'
+      });
+    } catch (err) {
+      console.error('Get linking PIN error:', err);
+      res.status(500).json({ error: err.message || 'Failed to get linking PIN' });
+    }
+  }
+
+  /**
+   * Regenerate linking PIN for elderly user
+   * @route POST /api/elderly/linking-pin/regenerate
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - New linking PIN and instructions
+   * @returns {Object} 500 - Server error
+   */
+  static async regenerateLinkingPIN(req, res) {
+    try {
+      const pin = await ElderlyServices.regenerateLinkingPIN(req.user.id);
+      res.json({ 
+        message: 'New linking PIN generated successfully', 
+        pin,
+        instructions: 'Your old PIN is no longer valid. Share this new 6-digit PIN with your caregiver.'
+      });
+    } catch (err) {
+      console.error('Regenerate linking PIN error:', err);
+      res.status(500).json({ error: err.message || 'Failed to regenerate linking PIN' });
+    }
+  }
+
+  /**
+   * Get all caregivers linked to this elderly user
+   * @route GET /api/elderly/caregivers
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Array of linked caregiver profiles
+   * @returns {Object} 500 - Server error
+   */
+  static async getLinkedCaregivers(req, res) {
+    try {
+      const caregivers = await ElderlyServices.getLinkedCaregivers(req.user.id);
+      res.json({ caregivers });
+    } catch (err) {
+      console.error('Get linked caregivers error:', err);
+      res.status(500).json({ error: err.message || 'Failed to get linked caregivers' });
+    }
+  }
+
+  /**
+   * Update elderly user's real-time location
+   * Stores location in database and broadcasts to linked caregivers via WebSocket
+   * @route POST /api/elderly/location
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Location data
+   * @param {number} req.body.latitude - Latitude coordinate (required)
+   * @param {number} req.body.longitude - Longitude coordinate (required)
+   * @param {number} [req.body.accuracy] - Location accuracy in meters
+   * @param {number} [req.body.speed] - Speed in m/s
+   * @param {number} [req.body.heading] - Heading in degrees
+   * @param {number} [req.body.altitude] - Altitude in meters
+   * @param {string} [req.body.tripId] - Related trip ID
+   * @param {string} [req.body.helpRequestId] - Related help request ID
+   * @param {string} [req.body.status] - Location status (active, idle, etc.)
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Location stored successfully
+   * @returns {Object} 400 - Missing required location data
+   * @returns {Object} 500 - Server error
+   */
+  static async updateLocation(req, res) {
+    try {
+      const { latitude, longitude, accuracy, speed, heading, altitude, tripId, helpRequestId, status } = req.body;
+      
+      if (!latitude || !longitude) {
+        return res.status(400).json({ error: 'Latitude and longitude are required' });
+      }
+
+      const locationData = {
+        elderly_id: req.user.id,
+        latitude,
+        longitude,
+        accuracy: accuracy || null,
+        timestamp: new Date().toISOString(),
+        trip_id: tripId || null,
+        help_request_id: helpRequestId || null,
+        status: status || 'active',
+        metadata: {
+          speed: speed || null,
+          heading: heading || null,
+          altitude: altitude || null
+        }
+      };
+
+      // Store location in database
+      const { data: locationRecord, error } = await supabase
+        .from('elderly_locations')
+        .upsert(locationData, { 
+          onConflict: 'elderly_id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error storing location:', error);
+        return res.status(500).json({ error: 'Failed to store location' });
+      }
+
+      // Get linked caregivers
+      const linkedCaregivers = await ElderlyController.getLinkedCaregiversForNotification(req.user.id);
+
+      // Broadcast location to caregivers via WebSocket
+      await ElderlyController.broadcastLocationToCaregivers(req.user.id, locationData, linkedCaregivers);
+
+      // Check for location alerts
+      await ElderlyController.checkLocationAlerts(req.user.id, { lat: latitude, lng: longitude, accuracy }, linkedCaregivers);
+
+      res.json({ success: true, data: locationRecord });
+
+    } catch (err) {
+      console.error('Update location error:', err);
+      res.status(500).json({ error: err.message || 'Failed to update location' });
+    }
+  }
+
+  /**
+   * Start trip tracking for elderly user
+   * @route POST /api/elderly/trips/start
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {Object} req.body - Trip data
+   * @param {string} req.body.origin - Trip origin location
+   * @param {string} req.body.destination - Trip destination location
+   * @param {string} [req.body.type] - Trip type (default: 'route')
+   * @param {string} [req.body.helpRequestId] - Related help request ID
+   * @param {string} [req.body.volunteerId] - Assigned volunteer ID
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Trip started successfully
+   * @returns {Object} 400 - Missing origin or destination
+   * @returns {Object} 500 - Server error
+   */
+  static async startTripTracking(req, res) {
+    try {
+      const { origin, destination, type, helpRequestId, volunteerId } = req.body;
+
+      if (!origin || !destination) {
+        return res.status(400).json({ error: 'Origin and destination are required' });
+      }
+
+      // Create trip record
+      const { data: trip, error } = await supabase
+        .from('elderly_trips')
+        .insert({
+          elderly_id: req.user.id,
+          origin,
+          destination,
+          trip_type: type || 'route',
+          help_request_id: helpRequestId || null,
+          volunteer_id: volunteerId || null,
+          status: 'in_progress',
+          started_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating trip record:', error);
+        return res.status(500).json({ error: 'Failed to create trip record' });
+      }
+
+      // Notify linked caregivers about trip start
+      const linkedCaregivers = await ElderlyController.getLinkedCaregiversForNotification(req.user.id);
+      const elderlyName = await ElderlyController.getElderlyName(req.user.id);
+
+      for (const caregiver of linkedCaregivers) {
+        await NotificationService.sendCaregiverNotification(
+          caregiver.user_id,
+          `${elderlyName} has started a trip from ${origin} to ${destination}`,
+          {
+            type: 'TRIP_STARTED',
+            elderlyId: req.user.id,
+            elderlyName,
+            tripId: trip.id,
+            origin,
+            destination,
+            volunteerId
+          }
+        );
+      }
+
+      res.json({ success: true, data: trip });
+
+    } catch (err) {
+      console.error('Start trip tracking error:', err);
+      res.status(500).json({ error: err.message || 'Failed to start trip tracking' });
+    }
+  }
+
+  /**
+   * Complete trip tracking for elderly user
+   * @route POST /api/elderly/trips/:tripId/complete
+   * @access Private (Elderly only)
+   * @param {Request} req - Express request object
+   * @param {string} req.user.id - Elderly user ID (from authentication)
+   * @param {string} req.params.tripId - Trip ID to complete
+   * @param {Response} res - Express response object
+   * @returns {Object} 200 - Trip completed successfully
+   * @returns {Object} 400 - Missing trip ID
+   * @returns {Object} 500 - Server error
+   */
+  static async completeTripTracking(req, res) {
+    try {
+      const { tripId } = req.params;
+
+      if (!tripId) {
+        return res.status(400).json({ error: 'Trip ID is required' });
+      }
+
+      // Update trip status
+      const { data: trip, error } = await supabase
+        .from('elderly_trips')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', tripId)
+        .eq('elderly_id', req.user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error completing trip:', error);
+        return res.status(500).json({ error: 'Failed to complete trip' });
+      }
+
+      // Update location status to completed
+      await supabase
+        .from('elderly_locations')
+        .update({ status: 'completed' })
+        .eq('elderly_id', req.user.id)
+        .eq('trip_id', tripId);
+
+      // Notify caregivers of trip completion
+      const linkedCaregivers = await ElderlyController.getLinkedCaregiversForNotification(req.user.id);
+      const elderlyName = await ElderlyController.getElderlyName(req.user.id);
+
+      for (const caregiver of linkedCaregivers) {
+        await NotificationService.sendCaregiverNotification(
+          caregiver.user_id,
+          `${elderlyName} has safely completed their trip`,
+          {
+            type: 'TRIP_COMPLETED',
+            elderlyId: req.user.id,
+            elderlyName,
+            tripId: trip.id
+          }
+        );
+      }
+
+      res.json({ success: true, data: trip });
+
+    } catch (err) {
+      console.error('Complete trip tracking error:', err);
+      res.status(500).json({ error: err.message || 'Failed to complete trip tracking' });
+    }
+  }
+
+  /**
+   * Helper: Get linked caregivers for notifications
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise&lt;Array>} Array of caregiver objects
+   * @private
+   */
+  static async getLinkedCaregiversForNotification(elderlyId) {
+    try {
+      const { data: caregivers, error } = await supabase
+        .from('caregiver_link')
+        .select(`
+          caregiver_user_id,
+          caregiver:user_profiles!caregiver_user_id (
+            user_id,
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .eq('elderly_user_id', elderlyId);
+
+      if (error) {
+        console.error('Error fetching linked caregivers:', error);
+        return [];
+      }
+
+      return (caregivers || []).map(link => link.caregiver).filter(c => c);
+    } catch (error) {
+      console.error('Error getting linked caregivers:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Helper: Get elderly user's name
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise&lt;string>} Elderly user's full name or username
+   * @private
+   */
+  static async getElderlyName(elderlyId) {
+    try {
+      const { data: elderly, error } = await supabase
+        .from('user_profiles')
+        .select('full_name, username')
+        .eq('user_id', elderlyId)
+        .single();
+
+      return elderly?.full_name || elderly?.username || 'Unknown';
+    } catch (error) {
+      console.error('Error getting elderly name:', error);
+      return 'Unknown';
+    }
+  }
+
+  /**
+   * Helper: Broadcast location update to linked caregivers via WebSocket
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Object} locationData - Location data object
+   * @param {number} locationData.latitude - Latitude coordinate
+   * @param {number} locationData.longitude - Longitude coordinate
+   * @param {number} [locationData.accuracy] - Location accuracy in meters
+   * @param {string} [locationData.timestamp] - Location timestamp
+   * @param {string} [locationData.trip_id] - Related trip ID
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @returns {Promise&lt;void>}
+   * @private
+   */
+  static async broadcastLocationToCaregivers(elderlyId, locationData, linkedCaregivers) {
+    try {
+      const elderlyName = await ElderlyController.getElderlyName(elderlyId);
+      const locationString = `Lat: ${locationData.latitude.toFixed(4)}, Lng: ${locationData.longitude.toFixed(4)}`;
+
+      // Get trip context if this location is part of a trip
+      let tripContext = null;
+      if (locationData.trip_id) {
+        const { data: trip, error } = await supabase
+          .from('elderly_trips')
+          .select('id, origin, destination, trip_type, status, help_request_id, volunteer_id')
+          .eq('id', locationData.trip_id)
+          .single();
+        
+        if (!error &amp;&amp; trip) {
+          tripContext = {
+            tripId: trip.id,
+            helpRequestId: trip.help_request_id,
+            status: trip.status,
+            origin: trip.origin,
+            destination: trip.destination,
+            tripType: trip.trip_type
+          };
+        }
+      }
+
+      for (const caregiver of linkedCaregivers) {
+        // Send real-time WebSocket update
+        const caregiverSocketId = getReceiverSocketId(caregiver.user_id);
+        if (caregiverSocketId) {
+          io.to(caregiverSocketId).emit('elderly_location_update', {
+            elderlyId,
+            elderlyName,
+            location: {
+              lat: locationData.latitude,
+              lng: locationData.longitude,
+              accuracy: locationData.accuracy,
+              timestamp: locationData.timestamp
+            },
+            tripContext: tripContext
+          });
+        }
+
+        // Send structured notification using existing notification service
+        await NotificationService.notifyCaregiverProgressUpdate(
+          caregiver.user_id,
+          elderlyName,
+          locationString,
+          null // No estimated arrival for now
+        );
+
+        console.log(`Location broadcast to caregiver ${caregiver.user_id} for elderly ${elderlyId}`);
+      }
+    } catch (error) {
+      console.error('Error broadcasting location to caregivers:', error);
+    }
+  }
+
+  /**
+   * Helper: Check for location-based alerts and notify caregivers
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Object} location - Location object with lat, lng, accuracy
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @returns {Promise&lt;void>}
+   * @private
+   */
+  static async checkLocationAlerts(elderlyId, location, linkedCaregivers) {
+    try {
+      // Check if elderly has moved significantly from last known safe location
+      const lastSafeLocation = await ElderlyController.getLastSafeLocation(elderlyId);
+      
+      if (lastSafeLocation) {
+        const distance = ElderlyController.calculateDistance(location, lastSafeLocation);
+        
+        // Alert if moved more than 5km from last safe location
+        if (distance > 5000) {
+          await ElderlyController.sendLocationAlert(
+            elderlyId, 
+            linkedCaregivers, 
+            'DISTANCE_ALERT',
+            `Elderly user has moved ${Math.round(distance/1000)}km from their usual area`
+          );
+        }
+      }
+
+      // Check for low accuracy (possible indoor/emergency situation)
+      if (location.accuracy &amp;&amp; location.accuracy > 100) {
+        await ElderlyController.sendLocationAlert(
+          elderlyId,
+          linkedCaregivers,
+          'ACCURACY_ALERT', 
+          'GPS signal is weak - elderly may be indoors or in a challenging location'
+        );
+      }
+
+    } catch (error) {
+      console.error('Error checking location alerts:', error);
+    }
+  }
+
+  /**
+   * Helper: Get last known safe (completed) location
+   * @param {string} elderlyId - Elderly user ID
+   * @returns {Promise&lt;Object|null>} Location object with lat/lng or null
+   * @private
+   */
+  static async getLastSafeLocation(elderlyId) {
+    try {
+      const { data: location, error } = await supabase
+        .from('elderly_locations')
+        .select('latitude, longitude')
+        .eq('elderly_id', elderlyId)
+        .eq('status', 'completed')
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !location) return null;
+
+      return {
+        lat: location.latitude,
+        lng: location.longitude
+      };
+    } catch (error) {
+      console.error('Error getting last safe location:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper: Calculate distance between two GPS points using Haversine formula
+   * @param {Object} point1 - First point with lat and lng properties
+   * @param {Object} point2 - Second point with lat and lng properties
+   * @returns {number} Distance in meters
+   * @private
+   */
+  static calculateDistance(point1, point2) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = point1.lat * Math.PI/180;
+    const φ2 = point2.lat * Math.PI/180;
+    const Δφ = (point2.lat-point1.lat) * Math.PI/180;
+    const Δλ = (point2.lng-point1.lng) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  }
+
+  /**
+   * Helper: Send location alert notification to caregivers
+   * @param {string} elderlyId - Elderly user ID
+   * @param {Array} linkedCaregivers - Array of linked caregiver objects
+   * @param {string} alertType - Type of alert (e.g., 'DISTANCE_ALERT', 'ACCURACY_ALERT')
+   * @param {string} message - Alert message
+   * @returns {Promise&lt;void>}
+   * @private
+   */
+  static async sendLocationAlert(elderlyId, linkedCaregivers, alertType, message) {
+    try {
+      const elderlyName = await ElderlyController.getElderlyName(elderlyId);
+      const fullMessage = `Location Alert for ${elderlyName}: ${message}`;
+
+      for (const caregiver of linkedCaregivers) {
+        await NotificationService.sendCaregiverNotification(
+          caregiver.user_id,
+          fullMessage,
+          {
+            type: alertType,
+            elderlyId,
+            elderlyName,
+            priority: 'high'
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error sending location alert:', error);
+    }
+  }
+}
+
+module.exports = ElderlyController;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Nov 01 2025 20:03:33 GMT+0800 (Singapore Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

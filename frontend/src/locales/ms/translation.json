@@ -19,11 +19,12 @@
     "clear": "Kosongkan",
     "submit": "Hantar",
     "repeat": "Ulang",
-    "chas": "klinik CHAS"
+    "chas": "klinik CHAS",
+    "reports": "Laporan"
   },
   "navigation": {
     "home": "Laman Utama",
-    "profile": "Profil", 
+    "profile": "Profil",
     "help": "Minta Bantuan",
     "routes": "Laluan Pintar",
     "reviews": "Ulasan Saya",
@@ -96,7 +97,8 @@
     "call": "Panggil",
     "message": "Mesej",
     "reviewVolunteer": "Ulasan Sukarelawan",
-    "requestNewHelp": "Minta Bantuan Baru"
+    "requestNewHelp": "Minta Bantuan Baru",
+    "cancelRequest": "Batalkan Permintaan"
   },
   "routes": {
     "smartRoutes": "Laluan Pintar",
@@ -123,6 +125,11 @@
     "reviewsWritten": "Ulasan yang anda tulis untuk sukarelawan",
     "noReviews": "Belum ada ulasan",
     "completeHelpRequests": "Lengkapkan permintaan bantuan untuk meninggalkan ulasan untuk sukarelawan"
+  },
+  "reports": {
+    "myReports": "Laporan Saya",
+    "reportsWritten": "Laporan yang telah anda tulis untuk sukarelawan",
+    "noReports": "Tiada laporan lagi"
   },
   "navigation": {
     "trackLive": "Jejak Langsung",

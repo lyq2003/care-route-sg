@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
+const UserStatus = require('../domain/enum/UserStatus');
 
 class User {
   static async getAll() {
@@ -30,7 +31,7 @@ class User {
             ...user.user_metadata,
             role: profile?.role || user.user_metadata?.role,
             phone: profile?.phone_number || user.user_metadata?.phone_number,
-            status: profile?.status || user.user_metadata?.status || 'active',
+            status: profile?.status || user.user_metadata?.status || UserStatus.ACTIVE,
             online: profile?.online || false,
             linking_pin: profile?.linking_pin
           }
