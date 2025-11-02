@@ -225,7 +225,7 @@ export default function RouteTracking({ selectedRoute, from, to, onBack, onRoute
       {
         origin: directions.routes[0]?.legs[0]?.start_location,
         destination: directions.routes[0]?.legs[0]?.end_location,
-        travelMode: google.maps.TravelMode.TRANSIT,
+        travelMode: google.maps.TravelMode.TRANSIT
       },
       (result, status) => {
         if (status === "OK") directionsRenderer.setDirections(result);

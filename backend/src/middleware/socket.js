@@ -107,17 +107,18 @@ io.on('connection', (socket) => {
       console.error("Error fetching caregivers:", error);
       return;
     }
-    
-    const caregiverSocket = getReceiverSocketId(caregivers[0].caregiver_user_id)
-    //console.log(caregiverSocket,caregivers );
-    if (caregiverSocket) {
-      io.to(caregiverSocket).emit("location_update", {
-        elderlyId,
-        elderlyName,
-        latitude,
-        longitude,
-        timestamp: new Date(),
-      });
+    if(caregivers[0]){
+      const caregiverSocket = getReceiverSocketId(caregivers[0].caregiver_user_id)
+      //console.log(caregiverSocket,caregivers );
+      if (caregiverSocket) {
+        io.to(caregiverSocket).emit("location_update", {
+          elderlyId,
+          elderlyName,
+          latitude,
+          longitude,
+          timestamp: new Date(),
+        });
+      }
     }
   });
 
